@@ -17,7 +17,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	move_direction = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	aim_position = _mouse_world_position()
-	fire_held = Input.is_action_pressed("fire")
+	fire_held = Input.is_action_pressed("fire") and get_viewport().gui_get_hovered_control() == null
 	reload_held = Input.is_action_pressed("reload")
 
 

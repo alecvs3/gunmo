@@ -69,6 +69,8 @@ tests/       automated tests, mirroring the folders above
 - Run tests (GUT): `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`
 - Lint: `gdlint .`
 - Format check: `gdformat --check .`
+- Multiplayer smoke test: `.	ests
+etun_smoke.ps1 -Godot <console exe>` (run it for any networking change)
 
 ## Glossary
 - **Tier:** one gun on the gun game ladder.
