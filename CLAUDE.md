@@ -1,7 +1,7 @@
 # [GAME NAME] — Project guide for Claude
 
 ## What this is
-A multiplayer shooter made in Godot by two developers, [DEV A] and [DEV B]. Bots fill the other slots.
+A multiplayer shooter made in Godot by two developers: **Alex** (Dev A) and **Yusuf** (Dev B). Bots fill the other slots.
 
 Game modes:
 - **Waves (co-op):** players team up against 25 waves that get harder each time. Players upgrade their weapons between waves, and clearing wave 25 wins. Late waves should demand real strategy, which comes from systems that combine with each other, not from hand-scripted scenarios.
@@ -12,10 +12,10 @@ Game modes:
 Not decided yet (ask, don't assume): [art style] · [target platform]
 
 ## Tech
-- Godot **[4.x.x, exact version]**. Only use APIs from this version. If you're not sure an API exists in it, say so.
+- Godot **4.7.2**. Only use APIs from this version. If you're not sure an API exists in it, say so.
 - GDScript with static typing everywhere (`var hp: int`, `func f(x: float) -> void`).
 - Multiplayer uses Godot's high-level multiplayer API (ENet) with a **host-authoritative listen server**.
-- Tests: [GUT or GdUnit4]. Lint and format: gdtoolkit (`gdlint`, `gdformat`).
+- Tests: GUT 9.7.1 (`addons/gut/`, config in `.gutconfig.json`). Lint and format: gdtoolkit (`gdlint`, `gdformat`).
 
 ## Folder layout
 ```
@@ -58,10 +58,11 @@ tests/       automated tests, mirroring the folders above
 - **Before calling something done,** run the tests and the linter and report the results honestly. If you couldn't run the game or test multiplayer, say so.
 - **Ask instead of guessing.** Don't add addons or dependencies without asking.
 - **Explain what you did** in plain words, so both developers understand every change.
+- **Update `docs/PROGRESS.md`** in the same PR when a feature is finished or a known limitation is added or fixed.
 
 ## Ownership
-- **[DEV A]:** player, weapons, upgrades, gun game ladder
-- **[DEV B]:** enemies, waves, bot AI, HUD and menus
+- **Alex (Dev A):** player, weapons, upgrades, gun game ladder
+- **Yusuf (Dev B):** enemies, waves, bot AI, HUD and menus
 - **Shared (both review):** `autoloads/`, `shared/`, `modes/` base class, `main.tscn`, `project.godot`
 
 ## Commands

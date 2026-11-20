@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PlayerData" format=3]
+
+[ext_resource type="Script" path="res://player/player_data.gd" id="1_pdata"]
+
+[resource]
+script = ExtResource("1_pdata")
+max_health = 100
+move_speed = 300.0
