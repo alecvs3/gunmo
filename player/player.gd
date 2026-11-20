@@ -43,12 +43,12 @@ func _ready() -> void:
 	EventBus.player_spawned.emit(self)
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if not is_alive:
 		return
 	# Input comes from the client: never trust it to be finite.
 	var move: Vector2 = _input.move_direction if _input.move_direction.is_finite() else Vector2.ZERO
-	velocity = move.limit_length(1.0) * player_data.move_speed
+	velocity = PlayerMotor.step(velocity, move, delta, player_data)
 	move_and_slide()
 	var aim_offset: Vector2 = _input.aim_position - global_position
 	if aim_offset.is_finite() and aim_offset.length() > MIN_AIM_DISTANCE:
@@ -62,11 +62,14 @@ func _physics_process(_delta: float) -> void:
 ## Host only.
 func respawn(at: Vector2) -> void:
 	global_position = at
+	velocity = Vector2.ZERO
+	reset_physics_interpolation()
 	_health.reset()
 	_set_alive(true)
 
 
 func _on_died(_killer_id: int) -> void:
+	velocity = Vector2.ZERO
 	_set_alive(false)
 	EventBus.player_died.emit(peer_id)
 

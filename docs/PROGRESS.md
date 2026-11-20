@@ -2,7 +2,7 @@
 
 Update this file in the same PR that finishes a feature or adds/fixes a known limitation.
 
-## Milestone 1 — playable multiplayer core ✅ (in review)
+## Milestone 1 — playable multiplayer core ✅ (merged)
 
 Branch `m1-core`. Neither game mode exists yet; this is a test arena.
 
@@ -25,7 +25,7 @@ Branch `m1-core`. Neither game mode exists yet; this is a test arena.
 health, ammo, enemies, bullets, death and respawn.
 **Not yet verified:** windowed play (visuals, camera, real mouse), play between two computers.
 
-## Networking hardening ✅ (in review, issue #4)
+## Networking hardening ✅ (merged, issue #4)
 
 Branch `net-hardening`, stacked on `m1-core`.
 
@@ -50,10 +50,23 @@ joining nobody fails after 8 s with a clear message; launch args host/join with 
 
 ### Known limitations
 
-- No client-side prediction: clients feel a small input delay.
+- No client-side prediction yet (#7): clients feel a small input delay, and their own player
+  can still stutter slightly because it follows the host's updates directly.
 - Enemies move straight at players and can snag on pillars (no pathfinding).
 - Players don't collide with each other. No friendly fire.
 - No HUD yet (health, ammo, wave).
+
+## Movement feel ✅ (in review, issue #6)
+
+| Feature | Status | Where |
+|---|---|---|
+| Physics interpolation on: no more blur/ghosting on 120-180 Hz screens | Done | `project.godot` |
+| Teleports (respawn, big network corrections) skip interpolation | Done | `player/player.gd`, `shared/components/net_smoother.gd` |
+| Camera updates on physics ticks so it stays in step with the player | Done | `player/player.tscn` |
+| Acceleration 0.12 s, deceleration 0.08 s, top speed 300 -> 220 px/s | Done, tested | `player/player_motor.gd`, `player/data/default_player.tres` |
+
+**Not yet verified:** that the blur is gone and the movement feels right (needs a real window).
+Still to come: client prediction (#7), knockback (#8).
 
 ## Milestone 2 — wave loop (planned)
 

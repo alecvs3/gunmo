@@ -86,6 +86,7 @@ weapon_data = ExtResource("6_pistol")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 enabled = false
+process_callback = 0
 position_smoothing_enabled = true
 
 [node name="InputSync" type="MultiplayerSynchronizer" parent="."]

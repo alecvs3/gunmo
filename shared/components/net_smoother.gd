@@ -18,6 +18,7 @@ func _ready() -> void:
 		target_position = _body.position
 	else:
 		_body.position = target_position
+		_body.reset_physics_interpolation()
 
 
 func _physics_process(delta: float) -> void:
@@ -28,9 +29,14 @@ func _physics_process(delta: float) -> void:
 
 
 ## Client side: one frame of gliding (or snapping) toward target_position.
+## A big jump is a teleport, so physics interpolation is reset instead of sliding there.
 func step_toward_target(delta: float) -> void:
 	var config: NetworkConfig = NetworkManager.config
-	if snap_always or _body.position.distance_to(target_position) > config.snap_distance:
+	if _body.position.distance_to(target_position) > config.snap_distance:
+		_body.position = target_position
+		_body.reset_physics_interpolation()
+		return
+	if snap_always:
 		_body.position = target_position
 		return
 	_body.position = _body.position.lerp(target_position, 1.0 - exp(-config.smoothing_rate * delta))
