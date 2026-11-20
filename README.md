@@ -9,6 +9,9 @@ Two modes are planned: co-op **Waves** and free-for-all **Gun Game**.
 
 ## Getting started
 
+Using Claude Code? Paste the prompt in [docs/ONBOARDING.md](docs/ONBOARDING.md) and it does all of
+this for you. Otherwise:
+
 1. Install **Godot 4.7.2** (standard build, not .NET). Exactly this version, so scene files don't flip back and forth.
 2. Install **Git LFS** once: `git lfs install`
 3. Clone and open `project.godot` in Godot.
