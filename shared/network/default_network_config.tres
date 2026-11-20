@@ -17,4 +17,5 @@ ping_interval = 1.0
 ping_good_ms = 80
 ping_ok_ms = 150
 smoothing_rate = 15.0
+local_smoothing_rate = 30.0
 snap_distance = 200.0

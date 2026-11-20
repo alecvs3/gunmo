@@ -32,7 +32,7 @@ func _ready() -> void:
 	_health.max_health = player_data.max_health
 	var is_local: bool = peer_id == multiplayer.get_unique_id()
 	($Camera2D as Camera2D).enabled = is_local
-	($NetSmoother as NetSmoother).snap_always = is_local
+	($NetSmoother as NetSmoother).is_local = is_local
 	if not multiplayer.is_server():
 		set_physics_process(false)
 		return

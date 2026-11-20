@@ -56,7 +56,7 @@ joining nobody fails after 8 s with a clear message; launch args host/join with 
 - Players don't collide with each other. No friendly fire.
 - No HUD yet (health, ammo, wave).
 
-## Movement feel ✅ (in review, issue #6)
+## Movement feel ✅ (merged, issue #6)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -64,6 +64,7 @@ joining nobody fails after 8 s with a clear message; launch args host/join with 
 | Teleports (respawn, big network corrections) skip interpolation | Done | `player/player.gd`, `shared/components/net_smoother.gd` |
 | Camera updates on physics ticks so it stays in step with the player | Done | `player/player.tscn` |
 | Acceleration 0.12 s, deceleration 0.08 s, top speed 300 -> 220 px/s | Done, tested | `player/player_motor.gd`, `player/data/default_player.tres` |
+| Client's own player glides (rate 30) instead of jumping to each update: less stutter until #7 | Done, tested | `shared/components/net_smoother.gd` |
 
 **Not yet verified:** that the blur is gone and the movement feels right (needs a real window).
 Still to come: client prediction (#7), knockback (#8).

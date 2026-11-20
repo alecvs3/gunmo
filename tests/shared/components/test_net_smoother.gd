@@ -39,8 +39,12 @@ func test_client_snaps_on_big_jumps() -> void:
 	assert_eq(body.position, Vector2(far, 0))
 
 
-func test_snap_always_keeps_local_player_exact() -> void:
-	smoother.snap_always = true
-	smoother.target_position = Vector2(5, 0)
+func test_local_player_catches_up_faster_than_remote_ones() -> void:
+	smoother.target_position = Vector2(50, 0)
 	smoother.step_toward_target(0.016)
-	assert_eq(body.position, Vector2(5, 0))
+	var remote_step: float = body.position.x
+	body.position = Vector2.ZERO
+	smoother.is_local = true
+	smoother.step_toward_target(0.016)
+	assert_gt(body.position.x, remote_step)
+	assert_lt(body.position.x, 50.0, "still glides instead of jumping")
