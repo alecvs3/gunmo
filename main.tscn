@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="2_menu"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_main")
+
+[node name="LevelContainer" type="Node" parent="."]
+
+[node name="LevelSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://levels/test_arena.tscn")
+spawn_path = NodePath("../LevelContainer")
+spawn_limit = 1
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="MainMenu" parent="UI" instance=ExtResource("2_menu")]

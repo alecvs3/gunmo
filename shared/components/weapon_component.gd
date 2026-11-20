@@ -14,9 +14,12 @@ var _cooldown_left: float = 0.0
 var _reload_left: float = 0.0
 
 
+## Host only: on clients the synchronizer has already applied the host's ammo by now.
 func _ready() -> void:
-	ammo = weapon_data.magazine_size
-	set_physics_process(multiplayer.is_server())
+	var is_host: bool = multiplayer.is_server()
+	set_physics_process(is_host)
+	if is_host:
+		ammo = weapon_data.magazine_size
 
 
 func _physics_process(delta: float) -> void:

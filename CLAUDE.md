@@ -12,10 +12,10 @@ Game modes:
 Not decided yet (ask, don't assume): [art style] · [target platform]
 
 ## Tech
-- Godot **[4.x.x, exact version]**. Only use APIs from this version. If you're not sure an API exists in it, say so.
+- Godot **4.7.2**. Only use APIs from this version. If you're not sure an API exists in it, say so.
 - GDScript with static typing everywhere (`var hp: int`, `func f(x: float) -> void`).
 - Multiplayer uses Godot's high-level multiplayer API (ENet) with a **host-authoritative listen server**.
-- Tests: [GUT or GdUnit4]. Lint and format: gdtoolkit (`gdlint`, `gdformat`).
+- Tests: GUT 9.7.1 (`addons/gut/`, config in `.gutconfig.json`). Lint and format: gdtoolkit (`gdlint`, `gdformat`).
 
 ## Folder layout
 ```

@@ -1,0 +1,123 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://levels/test_arena.gd" id="1_arena"]
+[ext_resource type="Script" path="res://weapons/projectile_spawner.gd" id="2_proj"]
+[ext_resource type="Script" path="res://levels/debug_enemy_spawner.gd" id="3_debug"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal"]
+size = Vector2(2080, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vertical"]
+size = Vector2(40, 1200)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
+size = Vector2(120, 120)
+
+[node name="TestArena" type="Node2D"]
+script = ExtResource("1_arena")
+
+[node name="Floor" type="Polygon2D" parent="."]
+color = Color(0.22, 0.24, 0.26, 1)
+polygon = PackedVector2Array(0, 0, 2000, 0, 2000, 1200, 0, 1200)
+
+[node name="Walls" type="StaticBody2D" parent="."]
+collision_mask = 0
+
+[node name="North" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1000, -20)
+shape = SubResource("RectangleShape2D_horizontal")
+
+[node name="South" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1000, 1220)
+shape = SubResource("RectangleShape2D_horizontal")
+
+[node name="West" type="CollisionShape2D" parent="Walls"]
+position = Vector2(-20, 600)
+shape = SubResource("RectangleShape2D_vertical")
+
+[node name="East" type="CollisionShape2D" parent="Walls"]
+position = Vector2(2020, 600)
+shape = SubResource("RectangleShape2D_vertical")
+
+[node name="PillarLeft" type="CollisionShape2D" parent="Walls"]
+position = Vector2(600, 600)
+shape = SubResource("RectangleShape2D_pillar")
+
+[node name="PillarRight" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1400, 600)
+shape = SubResource("RectangleShape2D_pillar")
+
+[node name="NorthVisual" type="Polygon2D" parent="Walls"]
+color = Color(0.45, 0.47, 0.5, 1)
+polygon = PackedVector2Array(-40, -40, 2040, -40, 2040, 0, -40, 0)
+
+[node name="SouthVisual" type="Polygon2D" parent="Walls"]
+color = Color(0.45, 0.47, 0.5, 1)
+polygon = PackedVector2Array(-40, 1200, 2040, 1200, 2040, 1240, -40, 1240)
+
+[node name="WestVisual" type="Polygon2D" parent="Walls"]
+color = Color(0.45, 0.47, 0.5, 1)
+polygon = PackedVector2Array(-40, 0, 0, 0, 0, 1200, -40, 1200)
+
+[node name="EastVisual" type="Polygon2D" parent="Walls"]
+color = Color(0.45, 0.47, 0.5, 1)
+polygon = PackedVector2Array(2000, 0, 2040, 0, 2040, 1200, 2000, 1200)
+
+[node name="PillarLeftVisual" type="Polygon2D" parent="Walls"]
+color = Color(0.45, 0.47, 0.5, 1)
+polygon = PackedVector2Array(540, 540, 660, 540, 660, 660, 540, 660)
+
+[node name="PillarRightVisual" type="Polygon2D" parent="Walls"]
+color = Color(0.45, 0.47, 0.5, 1)
+polygon = PackedVector2Array(1340, 540, 1460, 540, 1460, 660, 1340, 660)
+
+[node name="PlayerSpawnPoints" type="Node2D" parent="."]
+
+[node name="A" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(1000, 450)
+
+[node name="B" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(1000, 750)
+
+[node name="C" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(850, 600)
+
+[node name="D" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(1150, 600)
+
+[node name="EnemySpawnPoints" type="Node2D" parent="."]
+
+[node name="NorthWest" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(100, 100)
+
+[node name="NorthEast" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(1900, 100)
+
+[node name="SouthWest" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(100, 1100)
+
+[node name="SouthEast" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(1900, 1100)
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Players" type="Node2D" parent="."]
+
+[node name="Projectiles" type="Node2D" parent="."]
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://player/player.tscn")
+spawn_path = NodePath("../Players")
+
+[node name="EnemySpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://enemies/test_enemy.tscn")
+spawn_path = NodePath("../Enemies")
+
+[node name="ProjectileSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("../Projectiles")
+script = ExtResource("2_proj")
+
+[node name="DebugEnemySpawner" type="Node" parent="." node_paths=PackedStringArray("enemies_root", "spawn_points")]
+script = ExtResource("3_debug")
+enemies_root = NodePath("../Enemies")
+spawn_points = NodePath("../EnemySpawnPoints")

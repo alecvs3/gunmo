@@ -76,6 +76,11 @@ func test_client_cannot_change_health() -> void:
 	var client_health := ClientHealthComponent.new()
 	client_health.max_health = 50
 	add_child_autofree(client_health)
+	client_health.current_health = 30
+	watch_signals(client_health)
 	client_health.take_damage(20)
 	client_health.heal(5)
-	assert_eq(client_health.current_health, 50)
+	client_health.reset()
+	assert_eq(client_health.current_health, 30)
+	assert_signal_not_emitted(client_health, "damaged")
+	assert_signal_not_emitted(client_health, "healed")

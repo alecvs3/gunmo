@@ -11,8 +11,9 @@ signal died(source_id: int)
 var current_health: int = 0
 
 
+## Host only: on clients the synchronizer has already applied the host's value by now.
 func _ready() -> void:
-	current_health = max_health
+	reset()
 
 
 func is_dead() -> bool:

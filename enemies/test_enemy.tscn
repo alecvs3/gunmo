@@ -1,0 +1,61 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://enemies/test_enemy.gd" id="1_enemy"]
+[ext_resource type="Resource" path="res://enemies/data/test_enemy.tres" id="2_edata"]
+[ext_resource type="Script" path="res://shared/components/health_component.gd" id="3_health"]
+[ext_resource type="Script" path="res://shared/components/hitbox_component.gd" id="4_hitbox"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
+size = Vector2(28, 28)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hitbox"]
+size = Vector2(32, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_contact"]
+size = Vector2(36, 36)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_state"]
+properties/0/path = NodePath(".:position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath("HealthComponent:current_health")
+properties/1/spawn = true
+properties/1/replication_mode = 2
+
+[node name="TestEnemy" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 5
+motion_mode = 1
+script = ExtResource("1_enemy")
+enemy_data = ExtResource("2_edata")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_body")
+
+[node name="Body" type="Polygon2D" parent="."]
+color = Color(0.9, 0.25, 0.25, 1)
+polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
+
+[node name="HealthComponent" type="Node" parent="."]
+script = ExtResource("3_health")
+
+[node name="HitboxComponent" type="Area2D" parent="." node_paths=PackedStringArray("health")]
+collision_layer = 16
+collision_mask = 0
+monitoring = false
+script = ExtResource("4_hitbox")
+health = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent"]
+shape = SubResource("RectangleShape2D_hitbox")
+
+[node name="ContactArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 8
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea"]
+shape = SubResource("RectangleShape2D_contact")
+
+[node name="StateSync" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_state")

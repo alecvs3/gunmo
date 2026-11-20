@@ -8,3 +8,6 @@ signal player_spawned(player: Node2D)
 signal player_died(peer_id: int)
 signal enemy_spawned(enemy: Node2D)
 signal enemy_killed(enemy: Node2D, killer_peer_id: int)
+## Anything that shoots emits this; the level's ProjectileSpawner turns it into a bullet.
+## See Bullet.make_spawn_data() for the dictionary's keys.
+signal shot_fired(spawn_data: Dictionary)
