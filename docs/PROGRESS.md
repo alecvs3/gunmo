@@ -25,17 +25,39 @@ Branch `m1-core`. Neither game mode exists yet; this is a test arena.
 health, ammo, enemies, bullets, death and respawn.
 **Not yet verified:** windowed play (visuals, camera, real mouse), play between two computers.
 
+## Networking hardening ✅ (in review, issue #4)
+
+Branch `net-hardening`, stacked on `m1-core`.
+
+| Feature | Status | Where |
+|---|---|---|
+| Join check (SceneMultiplayer auth): refuses different build/version and full lobbies, with a reason | Done, tested | `shared/network/join_gate.gd`, `handshake.gd`, `build_info.gd` |
+| Faster drop detection (~6–8 s instead of up to 30 s), join timeout (8 s), Cancel button | Done | `autoloads/network_manager.gd`, `ui/main_menu.*` |
+| Clear end reasons: host closed, connection lost, kicked, refused | Done | `autoloads/network_manager.gd` |
+| Host can kick a peer with a reason (`NetworkManager.kick`) | Done (no UI yet) | `autoloads/network_manager.gd` |
+| Ping counter top right, F3 details (all pings, loss, bandwidth, build id) | Done | `shared/network/ping_tracker.gd`, `ui/net_overlay.*` |
+| Smoothing for remote players and enemies | Done, tested | `shared/components/net_smoother.gd` |
+| Esc menu: Resume / Leave match (host: end match for everyone) | Done | `ui/game_menu.*` |
+| Dev launch args `-- --host [port]`, `-- --join ip[:port]` | Done, tested | `shared/network/launch_args.gd`, `main.gd` |
+| Host validates client input (non-finite values ignored) | Done | `player/player.gd` |
+| Network log lines (`[net hh:mm:ss] ...`) | Done | `shared/network/net_log.gd` |
+| Network tuning in a Resource | Done | `shared/network/default_network_config.tres` |
+| Three-process smoke test (host, client, wrong-build client) | Done | `tests/net/run_smoke.ps1` |
+
+**Verified:** 56 GUT tests; smoke test passes; killing the host is detected by the client in ~6 s;
+joining nobody fails after 8 s with a clear message; launch args host/join with no errors.
+**Not yet verified:** the overlay and Esc menu visually, play between two computers.
+
 ### Known limitations
 
 - No client-side prediction: clients feel a small input delay.
 - Enemies move straight at players and can snag on pillars (no pathfinding).
 - Players don't collide with each other. No friendly fire.
-- No HUD, no way to leave a match except closing the window.
-- A failed join can take up to ~30 s to report (ENet timeout).
+- No HUD yet (health, ammo, wave).
 
 ## Milestone 2 — wave loop (planned)
 
 Issues go on the Projects board: GameMode base, MatchSettings, enemy cost + WaveConfig,
 wave budget spawner, WaveMode state machine (25 waves), wave break with ready-up,
 wave-mode death rules, game over/victory, HUD (health/ammo/wave), reload state sync,
-enemy pathfinding, leave-match button, CI for tests + lint.
+enemy pathfinding, CI for tests + lint (the leave-match button is done).

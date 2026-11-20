@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="NetworkConfig" format=3]
+
+[ext_resource type="Script" path="res://shared/network/network_config.gd" id="1_netcfg"]
+
+[resource]
+script = ExtResource("1_netcfg")
+default_port = 7777
+max_players = 8
+require_matching_build = true
+join_timeout = 8.0
+auth_timeout = 3.0
+peer_timeout_factor = 32
+peer_timeout_min_ms = 3000
+peer_timeout_max_ms = 8000
+close_flush_time = 0.25
+ping_interval = 1.0
+ping_good_ms = 80
+ping_ok_ms = 150
+smoothing_rate = 15.0
+snap_distance = 200.0

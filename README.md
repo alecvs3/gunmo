@@ -25,6 +25,15 @@ this for you. Otherwise:
 | Lint | `gdlint .` |
 | Format | `gdformat --check .` (fix with `gdformat .`) |
 | Multiplayer | Debug → Customize Run Instances → 2 instances, press Play, Host in one window, Join in the other |
+| Multiplayer smoke test | `.	ests
+etun_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Starts a host, a client and a wrong-build client headless; all three must print PASS |
+
+**Skip the menu while testing:** in Debug → Customize Run Instances, enable 2 instances and set the
+launch arguments of instance 1 to `-- --host` and instance 2 to `-- --join 127.0.0.1`.
+Both also accept a port: `-- --host 7778`, `-- --join 100.x.y.z:7778`.
+
+**In game:** the ping is in the top right (green/yellow/red), **F3** shows details for every
+player, **Esc** opens Resume / Leave match.
 
 ## Playing together over the internet
 
@@ -40,8 +49,14 @@ The game uses ENet over **UDP port 7777** (changeable in the menu). One of you h
 **Alternative: port forwarding.** The host forwards UDP 7777 on their router to their PC and shares
 their public IP. More setup and exposes a port, so prefer Tailscale.
 
-**Both of you must run the same commit.** Pull the branch you're testing before every session.
-A mismatch usually shows up as nodes failing to spawn or "node not found" errors.
+**Both of you must run the same code.** The host checks every joiner's build id (a hash of all
+scripts and scenes, shown with F3) and refuses a mismatch with a message that shows both ids. So:
+pull the same commit, and commit or discard local changes (including scenes the editor re-saved)
+before playing. Restart the game after pulling. To turn the check off while experimenting, untick
+`require_matching_build` in `shared/network/default_network_config.tres`.
+
+If a join fails, the menu says why (no answer, refused, older build...). Network events are also
+logged as `[net hh:mm:ss] ...` lines in the Output panel and in `user://logs/godot.log`.
 
 ## How we work
 

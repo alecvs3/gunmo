@@ -30,8 +30,9 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	$Body.color = Color.from_hsv(fmod(peer_id * 0.618034, 1.0), 0.55, 0.95)
 	_health.max_health = player_data.max_health
-	var camera: Camera2D = $Camera2D
-	camera.enabled = peer_id == multiplayer.get_unique_id()
+	var is_local: bool = peer_id == multiplayer.get_unique_id()
+	($Camera2D as Camera2D).enabled = is_local
+	($NetSmoother as NetSmoother).snap_always = is_local
 	if not multiplayer.is_server():
 		set_physics_process(false)
 		return
@@ -45,10 +46,12 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	if not is_alive:
 		return
-	velocity = _input.move_direction.limit_length(1.0) * player_data.move_speed
+	# Input comes from the client: never trust it to be finite.
+	var move: Vector2 = _input.move_direction if _input.move_direction.is_finite() else Vector2.ZERO
+	velocity = move.limit_length(1.0) * player_data.move_speed
 	move_and_slide()
 	var aim_offset: Vector2 = _input.aim_position - global_position
-	if aim_offset.length() > MIN_AIM_DISTANCE:
+	if aim_offset.is_finite() and aim_offset.length() > MIN_AIM_DISTANCE:
 		_pivot.rotation = aim_offset.angle()
 	if _input.reload_held:
 		_weapon.start_reload()
