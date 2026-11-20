@@ -31,5 +31,7 @@ extends Resource
 @export_group("Smoothing")
 ## How fast remote objects catch up to the latest network position (higher = snappier).
 @export_range(1.0, 60.0) var smoothing_rate: float = 15.0
+## Same for the client's own player: faster, so it lags the host by only ~1/rate seconds.
+@export_range(1.0, 120.0) var local_smoothing_rate: float = 30.0
 ## Jumps larger than this (pixels) snap instantly instead of gliding (spawns, respawns).
 @export_range(10.0, 2000.0) var snap_distance: float = 200.0
