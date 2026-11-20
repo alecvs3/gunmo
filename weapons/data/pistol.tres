@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "Pistol"
+damage = 20
+fire_rate = 4.0
+bullet_speed = 900.0
+bullet_lifetime = 0.8
+spread = 4.0
+magazine_size = 12
+reload_time = 1.2
