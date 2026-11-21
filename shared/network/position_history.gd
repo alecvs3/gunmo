@@ -36,18 +36,25 @@ func is_empty() -> bool:
 ## Where it was at `tick`, blended between recorded ticks (null when nothing is recorded).
 ## Outside the recorded range it holds the nearest end.
 func sample(tick: float) -> Place:
+	var place := Place.new(Vector2.ZERO, false)
+	return place if sample_into(tick, place) else null
+
+
+## The same without making a new object: fills `place` (false when nothing is recorded).
+## Hit tests call this for every target on every tick, where allocating would add up.
+func sample_into(tick: float, place: Place) -> bool:
 	if _ticks.is_empty():
-		return null
-	if tick <= _ticks[0]:
-		return Place.new(_positions[0], _hittable[0])
+		return false
 	var last: int = _ticks.size() - 1
-	if tick >= _ticks[last]:
-		return Place.new(_positions[last], _hittable[last])
+	if tick <= _ticks[0] or tick >= _ticks[last]:
+		var end: int = 0 if tick <= _ticks[0] else last
+		place.position = _positions[end]
+		place.hittable = _hittable[end]
+		return true
 	var index: int = 0
 	while _ticks[index + 1] <= tick:
 		index += 1
 	var weight: float = (tick - _ticks[index]) / float(_ticks[index + 1] - _ticks[index])
-	return Place.new(
-		_positions[index].lerp(_positions[index + 1], weight),
-		_hittable[index] and _hittable[index + 1]
-	)
+	place.position = _positions[index].lerp(_positions[index + 1], weight)
+	place.hittable = _hittable[index] and _hittable[index + 1]
+	return true

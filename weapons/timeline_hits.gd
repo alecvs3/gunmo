@@ -32,6 +32,8 @@ class Hit:
 
 
 var _targets: Array[Target] = []
+## Reused for every tick tested (see PositionHistory.sample_into).
+var _place := PositionHistory.Place.new(Vector2.ZERO, false)
 
 
 ## The targets for a bot's `shot`: every remote human player on another team. Empty (and
@@ -107,10 +109,9 @@ func _test(shot: Shot, target: Target, tick: int, end_tick: int, end_point: Vect
 	var age: float = tick - shot.fire_tick
 	var from: Vector2 = shot.point_at(age - 1.0)
 	var to: Vector2 = end_point if tick == end_tick else shot.point_at(age)
-	var place: PositionHistory.Place = target.timeline.sample(tick)
-	if place == null or not place.hittable:
+	if not target.timeline.sample_into(tick, _place) or not _place.hittable:
 		return null
-	var fraction: float = target.hitbox.sweep_fraction(from, to, place.position, shot.radius)
+	var fraction: float = target.hitbox.sweep_fraction(from, to, _place.position, shot.radius)
 	if fraction < 0.0:
 		return null
 	return Hit.new(target.hitbox, from.lerp(to, fraction), tick)
