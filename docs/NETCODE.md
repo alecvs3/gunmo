@@ -80,8 +80,9 @@ refused instead of misreading snapshots.
 validated automatically. Bump `Handshake.PROTOCOL`.
 
 **Match state** (the game mode): `GameMode` lives under `Main/ModeContainer`, replicated by
-`ModeSpawner`, and carries a `NetEntity` of kind MATCH. Its `MatchNetState` (phase, wave,
-phase end tick, enemies left, players in/alive/ready) reaches clients with every snapshot;
+`ModeSpawner`, and carries a `NetEntity` of kind MATCH. Its `MatchNetState` (mode kind, phase, wave,
+phase end tick, enemies left, players in/alive/ready, shop open, Gun Game ladder shape and
+winner) reaches clients with every snapshot;
 clients use the newest one and everything announces it through
 `EventBus.match_state_changed`. Timers are host ticks, so every countdown is identical.
 
@@ -100,9 +101,17 @@ are requests (`WaveMode.REQUEST_BUY`) checked with `ShopRules` on the host.
 `NetworkManager.channel.send_event(peer_id, TOPIC, bytes)`; clients listen to
 `channel.event_received`. Pick a new topic number (bullets use 1).
 
-**Bots** (Gun Game): give them a `Player` and fill `PlayerInputSource.scripted` with an
-`InputCommand` each tick from the AI. Everything else (movement, shooting, lag compensation)
-works the same as for humans.
+**Names, teams and scores:** a joiner's name travels in the join hello; the host spawns the
+player with it and `SpawnSync` sends `display_name` and `is_bot` once with the spawn. Team id,
+spawn protection and the score (kills, deaths, tier, tier kills) are part of `PlayerNetState`.
+Team 0 is the co-op team; any other number is a team of its own (Gun Game uses the player's
+id). Hitboxes know their owner, so a shot never hits its own shooter.
+
+**Bots** (Gun Game): `Level.spawn_bot` spawns a normal `Player` with a negative id and adds a
+`BotController` that exists only on the host. Each tick the Player runs the bot's
+`InputCommand` (stamped with the current tick, since the host sees the present) instead of a
+human's, so movement, shooting, lag compensation and replication are the same as for humans.
+Ids are signed everywhere they travel (`Shot.shooter_id`, team ids).
 
 ## Testing
 

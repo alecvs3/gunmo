@@ -1,8 +1,9 @@
-# Runs the headless multiplayer smoke test in four scenarios:
+# Runs the headless multiplayer smoke test in five scenarios:
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
 #   D  shop: purchases checked by the host, shotgun pellets, credits from kills, wave modifiers
+#   E  Gun Game: host + client + 2 bots; names, bot kills, a winner both sides agree on, restart
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 # or set the GODOT environment variable once and run it without -Godot.
@@ -83,5 +84,22 @@ $d += Start-Role "shopclient" ($Port + 3) "" "res://tests/net/shop_smoke.gd"
 Wait-Roles $d
 $passD = Test-Roles @("shophost", "shopclient")
 
-if ($passA -and $passB -and $passC -and $passD) { exit 0 }
+Write-Host "Scenario E: Gun Game with bots (names, ladder, winner, restart)"
+$e = @()
+$e += Start-Role "gunhost" ($Port + 4) "" "res://tests/net/gun_smoke.gd"
+$e += Start-Role "gunclient" ($Port + 4) "" "res://tests/net/gun_smoke.gd"
+Wait-Roles $e
+$passE = Test-Roles @("gunhost", "gunclient")
+$winners = @("gunhost", "gunclient") | ForEach-Object {
+    $line = Select-String -Path (Join-Path $logDir "$_.log") -Pattern "winner id (-?\d+)" | Select-Object -Last 1
+    if ($line) { $line.Matches[0].Groups[1].Value } else { "none" }
+}
+if ($winners[0] -ne $winners[1] -or $winners[0] -eq "none") {
+    Write-Host "SMOKE FAIL gun game: host saw winner $($winners[0]), client saw $($winners[1])" -ForegroundColor Red
+    $passE = $false
+} else {
+    Write-Host "Both sides agree on the winner ($($winners[0]))" -ForegroundColor Green
+}
+
+if ($passA -and $passB -and $passC -and $passD -and $passE) { exit 0 }
 exit 1
