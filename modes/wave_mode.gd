@@ -2,8 +2,9 @@ class_name WaveMode
 extends GameMode
 ## Co-op waves: players team up against waves that grow every time; clearing the last wins.
 ## Host only: every tick it tells WaveFlow the facts (players, alive, ready, wave done),
-## starts waves with the WaveSpawner, revives everyone when a wave is cleared, and keeps the
-## replicated MatchState current. Each wave's enemies come from a seed made of the match seed
+## starts waves with the WaveSpawner, revives the fallen when a wave is cleared (if the match
+## settings say so), lets late joiners spectate until the break, and keeps the replicated
+## MatchState current. Each wave's enemies come from a seed made of the match seed
 ## and the wave number, so a match can be replayed exactly.
 
 var _flow := WaveFlow.new()
@@ -53,7 +54,8 @@ func _handle(event: WaveFlow.Event) -> void:
 			_spawner.start_wave(level, settings.wave_schedule, _flow.wave, seed_value)
 		WaveFlow.Event.WAVE_CLEARED:
 			_ready_peers.clear()
-			_revive(false)
+			if settings.revive_at_break:
+				_revive(false)
 		WaveFlow.Event.VICTORY, WaveFlow.Event.DEFEAT:
 			_spawner.stop()
 
@@ -71,6 +73,15 @@ func _on_ready_changed(peer_id: int, is_ready: bool) -> void:
 		_ready_peers[peer_id] = true
 	else:
 		_ready_peers.erase(peer_id)
+
+
+## Joining during a wave: spectate until the break, when everyone down comes back.
+func _on_peer_joined(peer_id: int) -> void:
+	super(peer_id)
+	var joined: Player = level.player(peer_id)
+	var mid_wave: bool = _flow.phase == GameMode.Phase.ACTIVE
+	if joined != null and mid_wave and settings.late_joiners_spectate:
+		joined.make_spectator()
 
 
 func _on_peer_left(peer_id: int) -> void:

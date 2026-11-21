@@ -7,4 +7,6 @@
 script = ExtResource("1_match")
 first_break_seconds = 30.0
 break_seconds = 20.0
+revive_at_break = true
+late_joiners_spectate = true
 wave_schedule = ExtResource("2_ukfch")

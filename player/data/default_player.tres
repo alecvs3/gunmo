@@ -9,6 +9,7 @@ move_speed = 220.0
 acceleration_time = 0.12
 deceleration_time = 0.08
 camera_follow_time = 0.0
+spectate_follow_time = 0.15
 knockback_friction = 2400.0
 knockback_bounce = 0.3
 knockback_taken = 1.0

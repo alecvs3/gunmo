@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://player/data/default_player.tres" id="2_pdata"]
@@ -11,6 +11,7 @@
 [ext_resource type="Script" path="res://player/player_prediction.gd" id="9_prediction"]
 [ext_resource type="Script" path="res://shared/network/net_entity.gd" id="10_netentity"]
 [ext_resource type="Script" path="res://player/player_camera.gd" id="11_camera"]
+[ext_resource type="Script" path="res://player/player_spectate.gd" id="12_spectate"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 16.0
@@ -55,6 +56,11 @@ process_callback = 1
 script = ExtResource("11_camera")
 body = NodePath("..")
 visual = NodePath("../Visual")
+
+[node name="PlayerSpectate" type="Node" parent="." node_paths=PackedStringArray("player", "camera")]
+script = ExtResource("12_spectate")
+player = NodePath("..")
+camera = NodePath("../PlayerCamera")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_health")

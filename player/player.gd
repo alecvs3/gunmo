@@ -46,6 +46,10 @@ func _ready() -> void:
 	var camera: PlayerCamera = $PlayerCamera
 	camera.enabled = is_owner
 	camera.follow_time = player_data.camera_follow_time
+	camera.spectate_follow_time = player_data.spectate_follow_time
+	$PlayerSpectate.set_process(is_owner)
+	$PlayerSpectate.set_process_unhandled_input(is_owner)
+	add_to_group(Groups.PLAYERS)
 	camera.set_process(is_owner)
 	camera.set_physics_process(is_owner)
 	_input_source.set_process(is_owner)
@@ -84,6 +88,13 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 	var wants_fire: bool = command.has(InputCommand.FIRE)
 	if _weapon.step(delta, wants_fire, command.has(InputCommand.RELOAD)) and not replaying:
 		_fire(command)
+
+
+## Host only: out of the fight without dying (a late joiner spectating until the break).
+func make_spectator() -> void:
+	_move_velocity = Vector2.ZERO
+	_knockback.velocity = Vector2.ZERO
+	_set_alive(false)
 
 
 ## Host only.

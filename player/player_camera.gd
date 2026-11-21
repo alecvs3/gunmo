@@ -15,6 +15,10 @@ const TELEPORT_DISTANCE: float = 100.0
 @export var visual: Node2D
 ## Seconds to catch up with the player. 0 = locked to the player (no lag at all).
 var follow_time: float = 0.0
+## While our player is down: the teammate to watch (null = follow our own player).
+var spectate_target: Node2D = null
+## Seconds to catch up with a spectated teammate (smooths their network updates).
+var spectate_follow_time: float = 0.15
 
 var _previous_tick_position: Vector2 = Vector2.ZERO
 var _current_tick_position: Vector2 = Vector2.ZERO
@@ -45,7 +49,11 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(delta: float) -> void:
-	global_position = follow(global_position, drawn_position(), delta, follow_time)
+	if spectate_target != null and is_instance_valid(spectate_target):
+		var watched: Vector2 = spectate_target.global_position
+		global_position = follow(global_position, watched, delta, spectate_follow_time)
+	else:
+		global_position = follow(global_position, drawn_position(), delta, follow_time)
 
 
 ## Where the engine draws the body this frame: between the last two ticks.

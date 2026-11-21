@@ -12,6 +12,8 @@ extends Resource
 
 ## Seconds the camera takes to catch up with the player. 0 = locked on (no camera lag).
 @export_range(0.0, 1.0) var camera_follow_time: float = 0.0
+## Seconds the camera takes to catch up with a teammate you spectate while down.
+@export_range(0.0, 1.0) var spectate_follow_time: float = 0.0
 
 @export_group("Knockback")
 ## How fast a push dies down (px/s lost per second). 2400 stops a 350 px/s push in ~0.15 s.
