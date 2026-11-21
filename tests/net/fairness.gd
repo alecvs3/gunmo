@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Smoke scenario H, fairness under lag (Yusuf's case: 160 ms round trip): a host and a client with
 ## 80 ms of simulated latency each way play Gun Game against 2 hard bots. Nobody can die (hits still
 ## count as hits), the host's own player can't be hit and both bots are on one team, so they only go
@@ -24,11 +24,6 @@ const TOPIC: int = 1
 const EVENT_ENDED: int = 2
 const EVENT_HURT: int = 4
 
-var _role: String = ""
-var _port: int = 7799
-var _failures := PackedStringArray()
-var _finished: bool = false
-var _input_command_script: GDScript
 ## Client: tick of its own timeline -> where its player was.
 var _own_positions: Dictionary = {}
 var _hurt_pending: int = 0
@@ -37,16 +32,10 @@ var _unfair: int = 0
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "fairhost"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("fairhost", 7799, WATCHDOG_SECONDS)
 
 
 func _run() -> void:
-	_input_command_script = load("res://shared/network/input_command.gd")
 	if _role == "fairhost":
 		await _run_host()
 	else:
@@ -160,33 +149,3 @@ func _walk(move: Vector2) -> void:
 func _players() -> Array[Node]:
 	var players_root: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Players")
 	return players_root.get_children() if players_root != null else []
-
-
-func _own_player() -> Node2D:
-	var path: String = "Main/LevelContainer/TestArena/Players/%d" % root.multiplayer.get_unique_id()
-	return root.get_node_or_null(path) as Node2D
-
-
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)

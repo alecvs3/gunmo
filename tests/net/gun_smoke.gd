@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of Gun Game with a host, a client and two bots, using the quick match
 ## (tests/net/data/quick_gun_game.tres: 3 guns, 2 kills each, 1 on the last, fill to 4).
 ##   1. both sides see 4 players: the two humans by the names they chose, and 2 bots
@@ -16,31 +16,16 @@ const HOST_NAME: String = "SmokeHost"
 const CLIENT_NAME: String = "SmokeClient"
 const HOLD_FIRE_SECONDS: float = 12.0
 
-var _role: String = ""
-var _port: int = 7794
-var _failures := PackedStringArray()
-var _finished: bool = false
-var _phase: Dictionary = {}
-var _fire_button: int = 0
-var _input_command_script: GDScript
 var _state: RefCounted = null
 var _winner_id: int = 0
 var _highest_tier: int = 0
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "gunhost"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("gunhost", 7794, WATCHDOG_SECONDS)
 
 
 func _run() -> void:
-	_phase = load("res://modes/game_mode.gd").get_script_constant_map()["Phase"]
-	_input_command_script = load("res://shared/network/input_command.gd")
-	_fire_button = _input_command_script.get_script_constant_map()["FIRE"]
 	root.get_node("EventBus").match_state_changed.connect(_on_state)
 	if _role == "gunhost":
 		await _run_host()
@@ -208,45 +193,3 @@ func _players() -> Array[Node2D]:
 
 func _player_by_id(peer_id: int) -> Node:
 	return root.get_node_or_null("Main/LevelContainer/TestArena/Players/%d" % peer_id)
-
-
-func _own_player() -> Node2D:
-	return _player_by_id(root.multiplayer.get_unique_id()) as Node2D
-
-
-func _script(player: Node2D, aim: float, buttons: int) -> void:
-	if player == null:
-		return
-	var command: RefCounted = _input_command_script.new()
-	command.aim = aim
-	command.buttons = buttons
-	player.get_node("PlayerInputSource").scripted = command
-
-
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
-func _info(text: String) -> void:
-	print("SMOKE INFO %s: %s" % [_role, text])
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)

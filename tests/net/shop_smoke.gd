@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the shop, credits, weapons and wave modifiers with a host and a
 ## client, using the quick match (1000 starting credits, a modifier from wave 1).
 ## The client buys the shotgun and a damage level (the host must apply both), tries purchases
@@ -14,14 +14,7 @@ const DAMAGE: int = 0
 const KIND_UPGRADE: int = 0
 const KIND_WEAPON: int = 1
 
-var _role: String = ""
-var _port: int = 7796
-var _failures := PackedStringArray()
-var _finished: bool = false
 var _state: RefCounted = null
-var _phase: Dictionary = {}
-var _fire_button: int = 0
-var _input_command_script: GDScript
 var _predicted: int = 0
 var _confirmed: int = 0
 var _saw_modifiers: bool = false
@@ -29,18 +22,10 @@ var _saw_tinted_enemy: bool = false
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "shophost"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("shophost", 7796, WATCHDOG_SECONDS)
 
 
 func _run() -> void:
-	_phase = load("res://modes/game_mode.gd").get_script_constant_map()["Phase"]
-	_input_command_script = load("res://shared/network/input_command.gd")
-	_fire_button = _input_command_script.get_script_constant_map()["FIRE"]
 	var bus: Node = root.get_node("EventBus")
 	bus.match_state_changed.connect(func(state: RefCounted) -> void: _on_state(state))
 	bus.shot_predicted.connect(func(_shot: RefCounted) -> void: _predicted += 1)
@@ -193,32 +178,3 @@ func _nearest_enemy() -> Node2D:
 		if enemy.visible and closer:
 			nearest = enemy
 	return nearest
-
-
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
-func _info(text: String) -> void:
-	print("SMOKE INFO %s: %s" % [_role, text])
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)

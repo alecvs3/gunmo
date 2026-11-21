@@ -3,6 +3,9 @@ extends RefCounted
 ## Live netcode numbers for the F3 overlay and the latency checks, written by the systems
 ## that know them.
 
+## Host: a remote player's inputs stalling this many ticks in a row is logged as a hiccup.
+const STALL_LOG_TICKS: int = 6
+
 ## Owner: size of the last prediction correction, in pixels.
 var prediction_error: float = 0.0
 ## Owner: input commands sent but not yet confirmed by the host.
@@ -38,6 +41,31 @@ class PeerInput:
 			input.buffer_ticks = clampi(int(values[1]), 0, 255)
 			input.late_per_second = clampi(int(values[2]), 0, 1000)
 		return input
+
+
+## Host: how a remote player's inputs arrive (from their CommandQueue), for F3 (shared with
+## clients through PingTracker) and the net log. Call once per tick.
+func report_inputs(peer_id: int, who: String, commands: CommandQueue) -> void:
+	var report: PeerInput = peer_inputs.get(peer_id)
+	if report == null:
+		report = PeerInput.new()
+		peer_inputs[peer_id] = report
+	var jitter_ms: float = commands.jitter.jitter_seconds() * 1000.0
+	if commands.buffer_ticks != report.buffer_ticks:
+		NetLog.write(
+			(
+				"inputs from %s arrive unevenly (jitter %.1f ms): holding back %d tick(s)"
+				% [who, jitter_ms, commands.buffer_ticks]
+			)
+		)
+	report.jitter_ms = jitter_ms
+	report.buffer_ticks = commands.buffer_ticks
+	report.late_per_second = commands.late_per_second()
+	if commands.stall_run == STALL_LOG_TICKS:
+		var stalled_ms: int = roundi(STALL_LOG_TICKS * NetClock.tick_delta() * 1000.0)
+		NetLog.write_limited(
+			"stall_%d" % peer_id, "hiccup: no input from %s for %d ms" % [who, stalled_ms]
+		)
 
 
 func reset() -> void:

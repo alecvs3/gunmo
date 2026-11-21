@@ -34,7 +34,8 @@ static func for_shot(shot: Shot, tree: SceneTree) -> TimelineHits:
 			continue
 		if player.get_hitbox().team == shot.team:
 			continue
-		hits.add_target(player.get_hitbox(), player.timeline, player.timeline_tick, shot)
+		var timeline: PlayerTimeline = player.timeline
+		hits.add_target(player.get_hitbox(), timeline.history, timeline.newest_tick, shot)
 	return hits
 
 

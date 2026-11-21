@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Headless stress test and performance budget: a host and a client, plus 6 bots, so 8
 ## players fire at up to 40 enemies at once (tests/net/data/stress_match.tres). Players can't
 ## die, so the fight never stops. After a warm-up it samples every frame for MEASURE_SECONDS:
@@ -35,30 +35,17 @@ class TickProbe:
 		on_tick.call()
 
 
-var _role: String = ""
-var _port: int = 7796
-var _failures := PackedStringArray()
-var _finished: bool = false
-var _fire_button: int = 0
-var _input_command_script: GDScript
-var _samples: Dictionary = {}
 var _measuring: bool = false
 var _shots: int = 0
 var _tick_start_usec: int = 0
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "stresshost"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("stresshost", 7796, WATCHDOG_SECONDS)
+	_metric_label = "STRESS"
 
 
 func _run() -> void:
-	_input_command_script = load("res://shared/network/input_command.gd")
-	_fire_button = _input_command_script.get_script_constant_map()["FIRE"]
 	_add_tick_probes()
 	if _role == "stresshost":
 		root.get_node("EventBus").shot_fired.connect(
@@ -198,62 +185,5 @@ func _shoot_nearest_enemy() -> void:
 	player.get_node("PlayerInputSource").scripted = command
 
 
-## Packed arrays are copied when read from a Dictionary, so the array is stored back.
-func _add(name: String, value: float) -> void:
-	var values: PackedFloat64Array = _samples.get(name, PackedFloat64Array())
-	values.append(value)
-	_samples[name] = values
-
-
-func _average(name: String) -> float:
-	var values: PackedFloat64Array = _samples.get(name, PackedFloat64Array())
-	var total: float = 0.0
-	for value in values:
-		total += value
-	return total / values.size() if values.size() > 0 else 0.0
-
-
-func _percentile(name: String, fraction: float) -> float:
-	var values: PackedFloat64Array = (_samples.get(name, PackedFloat64Array())).duplicate()
-	if values.is_empty():
-		return 0.0
-	values.sort()
-	return values[mini(floori(fraction * values.size()), values.size() - 1)]
-
-
-func _metric(name: String, value: float) -> void:
-	print("STRESS METRIC %s %.2f" % [name, value])
-
-
 func _level() -> Node:
 	return root.get_node_or_null("Main/LevelContainer/TestArena")
-
-
-func _own_player() -> Node2D:
-	var path: String = "Main/LevelContainer/TestArena/Players/%d" % root.multiplayer.get_unique_id()
-	return root.get_node_or_null(path) as Node2D
-
-
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)
