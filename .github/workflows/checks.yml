@@ -1,5 +1,5 @@
 # Runs on every pull request and every push to main: lint, format, unit tests (GUT) and the
-# multiplayer smoke test (six scenarios incl. a stress test, headless). Uses the official Godot 4.7.2 release.
+# multiplayer smoke test (eight scenarios incl. stress, latency and fairness, headless). Uses the official Godot 4.7.2 release.
 name: checks
 
 on:

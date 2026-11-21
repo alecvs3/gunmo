@@ -6,8 +6,9 @@
 script = ExtResource("1_budget")
 own_input_response_ticks = 1
 own_draw_ahead = true
-remote_smoothing_clean_ms = 50.0
-remote_smoothing_lagged_ms = 100.0
+remote_smoothing_clean_ms = 70.0
+remote_smoothing_lagged_ms = 120.0
+smoothing_excess_ms = 15.0
 ran_dry_clean_per_minute = 2.0
 ran_dry_lagged_per_minute = 20.0
 host_view_delay_ms = 40.0

@@ -18,6 +18,9 @@ signal shot_fired(shot: RefCounted)
 signal shot_predicted(shot: RefCounted)
 ## Every peer: the match state (a MatchNetState) changed. The HUD and results screen use it.
 signal match_state_changed(state: RefCounted)
+## This peer: our own player was hit by a bullet; `from_direction` points from us toward
+## where it came from (the HUD's hit-direction marker).
+signal local_player_hurt(from_direction: Vector2)
 ## This peer: we pressed or un-pressed ready.
 signal local_ready_changed(is_ready: bool)
 ## This peer: while our player is down we watch this player (0 = nobody / back to ourselves).

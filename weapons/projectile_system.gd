@@ -6,7 +6,8 @@ extends Node
 ##   Owner client: a predicted bullet for every EventBus.shot_predicted, shown at once.
 ##   Other clients: a remote bullet for every announcement.
 ## Every hit the host decides is confirmed to the shooter (EVENT_HIT), including hits a
-## piercing bullet flies through.
+## piercing bullet flies through, and the player who was hit is told where it came from
+## (EVENT_HURT, for the hit-direction marker).
 ## Announcements are reliable NetChannel events, so no bullet is ever missed or left flying.
 
 ## Client: one of our own shots hit something (the host's verdict); for hit markers.
@@ -18,6 +19,7 @@ const TOPIC: int = 1
 const EVENT_FIRED: int = 1
 const EVENT_ENDED: int = 2
 const EVENT_HIT: int = 3
+const EVENT_HURT: int = 4
 
 @export var projectiles_root: Node2D
 
@@ -55,7 +57,9 @@ func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
 	projectiles_root.add_child(bullet)
 
 
-func _on_bullet_finished(bullet: Bullet, end_point: Vector2, hit_something: bool) -> void:
+func _on_bullet_finished(
+	bullet: Bullet, end_point: Vector2, hit_something: bool, end_tick: float
+) -> void:
 	_bullets.erase(bullet.shot.key())
 	if bullet.mode != Bullet.Mode.AUTHORITATIVE:
 		return
@@ -64,14 +68,16 @@ func _on_bullet_finished(bullet: Bullet, end_point: Vector2, hit_something: bool
 	buffer.put_32(bullet.shot.shooter_id)
 	buffer.put_u32(bullet.shot.shot_id)
 	NetCodec.put_vector2(buffer, end_point)
-	buffer.put_double(NetworkManager.clock.tick)
+	buffer.put_double(end_tick)
 	buffer.put_u8(1 if hit_something else 0)
 	for peer_id in multiplayer.get_peers():
 		NetworkManager.channel.send_event(peer_id, TOPIC, buffer.data_array)
 
 
-## Host: tell the shooter its bullet hit (the host's own shots are confirmed locally).
-func _on_bullet_hit(bullet: Bullet, at: Vector2) -> void:
+## Host: tell the shooter its bullet hit (the host's own shots are confirmed locally), and
+## the player it hit which way it came from.
+func _on_bullet_hit(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> void:
+	_tell_victim(hitbox.owner_id, -bullet.shot.direction)
 	var shooter_id: int = bullet.shot.shooter_id
 	if shooter_id == multiplayer.get_unique_id():
 		hit_confirmed.emit(bullet.shot.key(), at)
@@ -83,6 +89,17 @@ func _on_bullet_hit(bullet: Bullet, at: Vector2) -> void:
 	buffer.put_u32(bullet.shot.shot_id)
 	NetCodec.put_vector2(buffer, at)
 	NetworkManager.channel.send_event(shooter_id, TOPIC, buffer.data_array)
+
+
+## `from_direction` points from the victim toward where the bullet came from.
+func _tell_victim(victim_id: int, from_direction: Vector2) -> void:
+	if victim_id == multiplayer.get_unique_id():
+		EventBus.local_player_hurt.emit(from_direction)
+	elif victim_id in multiplayer.get_peers():
+		var buffer := StreamPeerBuffer.new()
+		buffer.put_u8(EVENT_HURT)
+		NetCodec.put_vector2(buffer, from_direction)
+		NetworkManager.channel.send_event(victim_id, TOPIC, buffer.data_array)
 
 
 func _on_event_received(topic: int, data: PackedByteArray) -> void:
@@ -97,6 +114,10 @@ func _on_event_received(topic: int, data: PackedByteArray) -> void:
 		EVENT_HIT:
 			var key: String = "%d:%d" % [multiplayer.get_unique_id(), buffer.get_u32()]
 			hit_confirmed.emit(key, NetCodec.get_vector2(buffer))
+		EVENT_HURT:
+			var from_direction: Vector2 = NetCodec.get_vector2(buffer)
+			if from_direction.is_finite():
+				EventBus.local_player_hurt.emit(from_direction.normalized())
 
 
 func _on_shot_ended(buffer: StreamPeerBuffer) -> void:

@@ -187,7 +187,7 @@ feel), bot difficulty, two PCs.
 - Bot difficulty, ladder length and kills per gun are first guesses (`bots/profiles/*.tres`,
   `modes/data/gun_game_match.tres`).
 
-## Foundations, part 1: tooling, safety nets, stress test, latency ✅ (in review)
+## Foundations, part 1: tooling, safety nets, stress test, latency ✅ (merged)
 
 Branch `foundations`. The rest of the Foundations plan (#43 performance fixes, #44 refactors,
 #46 rejoin, #47 soak/fuzz/rate limit, #48 release builds, #49 settings menu, #50 folder guides)
@@ -231,3 +231,37 @@ budgets (first CI run on the PR).
 - The stress test uses one real client; snapshot encoding cost grows with the number of
   clients (each gets its own packets). To measure with more clients in #43.
 - The host's tick cost rose a little with 60 snapshots/s (more encoding); #43 looks at it.
+
+## Latency tier 1: fair play at high ping ✅ (in review, issues #57–#61)
+
+Branch `latency-tier1`. Aimed at Yusuf's report (160 ms round trip): bots "shooting all over
+the place", and getting hit by bullets that missed on his screen.
+
+| Issue | Feature | Status | Where |
+|---|---|---|---|
+| #57 | Packets are read at the start of every physics tick and sent at its end (not once per frame) | Done | `shared/network/net_channel.gd` |
+| #58 | Bots lead moving targets (intercept), from where the target's own screen has them | Done, tested | `bots/bot_brain.gd`, `bots/bot_controller.gd` |
+| #59 | Fair dodging: bots' bullets are tested against remote players on their own timeline | Done, tested | `weapons/timeline_hits.gd`, `weapons/bullet.gd`, `player/player.gd` |
+| #60 | Incoming bullets that pass near you catch up to the present, so the one that hits you visibly arrives | Done, tested | `weapons/bullet.gd` |
+| #61 | Hit-direction marker when you are hit | Done, tested | `ui/hurt_indicator.gd`, `weapons/projectile_system.gd` |
+
+**Measured** (new smoke scenario H: a client with 160 ms round trip against 2 hard bots, alternating
+dodging and standing still): with fair dodging **47 of 47 bot hits (100%) were where the client's
+own screen had it**; with it switched off, 29% of the hits were bullets that had missed on the
+client's screen. Protocol 7.
+**Not verified:** how it feels in a window between your two PCs; the hit marker's look.
+
+### Known limitations
+
+- Fair dodging is for bots' bullets only. Between two humans the shooter is still favoured (lag
+  compensation), so a laggy player can still be hit "around a corner" by another human.
+- A bot's bullet that hits on a laggy player's timeline lands its damage up to that player's
+  latency later than before (that is the point: it waits to see where they really were).
+- Pierce: a fair-dodging hit ends the bullet even if it could pierce.
+- Headless timing is noisy when other programs run (the editor, a game): measured snapshot
+  jitter on one PC ranged 7–27 ms between runs, and the smoothing buffer follows it. Scenario G
+  therefore checks that the buffer is exactly what the jitter calls for (no waste) plus hard
+  caps, rather than tight fixed numbers. The buffer now rate-limits only itself and follows the
+  latency directly, which cut its lagged p95 from about 105 to 65 ms.
+- Light can't be beaten: Yusuf still sees others about his latency in the past. A server between
+  your continents would split it evenly (needs the Linux build, #48).

@@ -6,6 +6,9 @@ extends Node
 ##   events    host -> client, reliable, tagged with a topic (e.g. bullets fired / ended)
 ##   requests  client -> host, reliable, tagged with a topic (e.g. ready up); the host checks them
 ## Everything passes through the NetSimulator, so fake lag affects all of it the same way.
+## Packets are read at the start of every physics tick and sent at its end (a TickEdge child
+## runs before every other node, this node after every other), not just once per rendered
+## frame, so a command or snapshot never waits a frame to leave or to be seen.
 
 ## Host: a client sent input commands.
 signal commands_received(peer_id: int, data: PackedByteArray)
@@ -19,6 +22,37 @@ signal request_received(peer_id: int, topic: int, data: PackedByteArray)
 enum Kind { COMMANDS, SNAPSHOT, EVENT, REQUEST }
 
 var simulator := NetSimulator.new()
+
+
+## Runs `on_tick` at the very start of every physics tick.
+class TickEdge:
+	extends Node
+	var on_tick: Callable
+
+	func _physics_process(_delta: float) -> void:
+		on_tick.call()
+
+
+func _ready() -> void:
+	process_physics_priority = 1000
+	var start := TickEdge.new()
+	start.name = "TickStart"
+	start.process_physics_priority = -1000
+	start.on_tick = _receive_now
+	add_child(start)
+
+
+## End of the tick: everything this tick queued goes out now.
+func _physics_process(_delta: float) -> void:
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet != null and enet.host != null:
+		enet.host.flush()
+
+
+## Start of the tick: read what arrived since the last poll, so this tick can use it.
+func _receive_now() -> void:
+	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
+		multiplayer.poll()
 
 
 func _process(_delta: float) -> void:

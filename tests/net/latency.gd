@@ -9,8 +9,10 @@ extends SceneTree
 ## Usage: -s res://tests/net/latency.gd -- <latencyhost|latencyclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
-const WATCHDOG_SECONDS: float = 90.0
+const WATCHDOG_SECONDS: float = 110.0
 const SETTLE_SECONDS: float = 5.0
+## After switching the simulated lag on (a sudden latency jump looks like jitter for a moment).
+const LAGGED_SETTLE_SECONDS: float = 9.0
 const MEASURE_SECONDS: float = 6.0
 const BUDGET_PATH: String = "res://shared/network/latency_budget.tres"
 
@@ -74,10 +76,12 @@ func _run_client() -> void:
 	await create_timer(1.0).timeout
 	_check(net.join("127.0.0.1", _port) == OK, "join() failed")
 	await _wait_until(func() -> bool: return _own_player() != null, 15.0)
+	await create_timer(SETTLE_SECONDS).timeout
 	await _measure_phase(
 		"clean", _budget.remote_smoothing_clean_ms, _budget.ran_dry_clean_per_minute
 	)
 	net.configure_simulator(80, 10, 0.02)
+	await create_timer(LAGGED_SETTLE_SECONDS).timeout
 	await _measure_phase(
 		"lagged", _budget.remote_smoothing_lagged_ms, _budget.ran_dry_lagged_per_minute
 	)
@@ -85,11 +89,10 @@ func _run_client() -> void:
 	await create_timer(0.5).timeout
 
 
-## Settles, then samples the view delay and its smoothing part every frame and an input
-## response every second, and counts how often drawing ran out of snapshots.
+## Samples the view delay, its smoothing part and what the jitter calls for every frame and an
+## input response every second, and counts how often drawing ran out of snapshots.
 func _measure_phase(phase: String, buffer_budget_ms: float, dry_budget: float) -> void:
 	var clock: Node = root.get_node("NetworkManager").clock
-	await create_timer(SETTLE_SECONDS).timeout
 	var end_msec: int = Time.get_ticks_msec() + roundi(MEASURE_SECONDS * 1000.0)
 	var dry_before: int = clock.ran_dry_count
 	var direction: float = 1.0
@@ -97,6 +100,7 @@ func _measure_phase(phase: String, buffer_budget_ms: float, dry_budget: float) -
 	while Time.get_ticks_msec() < end_msec:
 		_add("%s_delay" % phase, clock.smoothing_delay() * 1000.0)
 		_add("%s_buffer" % phase, clock.buffer_delay() * 1000.0)
+		_add("%s_needed" % phase, _needed_buffer_ms(clock))
 		if Time.get_ticks_msec() >= next_input_msec:
 			next_input_msec = Time.get_ticks_msec() + 1000
 			direction = -direction
@@ -111,12 +115,26 @@ func _measure_phase(phase: String, buffer_budget_ms: float, dry_budget: float) -
 	_metric("%s_own_input_response_max_ticks" % phase, response)
 	_metric("%s_snapshot_jitter_ms" % phase, clock.snapshot_jitter.jitter_seconds() * 1000.0)
 	_metric("%s_ran_dry_per_minute" % phase, dry_per_minute)
+	var excess: float = _average("%s_buffer" % phase) - _average("%s_needed" % phase)
+	_metric("%s_smoothing_excess_ms" % phase, excess)
+	_check(
+		excess <= _budget.smoothing_excess_ms,
+		"%s: buffer %.0f ms more than the jitter needs" % [phase, excess]
+	)
 	_check(buffer_p95 <= buffer_budget_ms, "%s: smoothing p95 %.0f ms" % [phase, buffer_p95])
 	_check(dry_per_minute <= dry_budget, "%s: ran dry %.0f times/min" % [phase, dry_per_minute])
 	_check(
 		response <= _budget.own_input_response_ticks,
 		"%s: own input took %.0f ticks" % [phase, response]
 	)
+
+
+## What the measured jitter calls for right now (NetClock.target_delay, no boost), in ms.
+func _needed_buffer_ms(clock: Node) -> float:
+	var config: Resource = root.get_node("NetworkManager").config
+	var interval: float = config.snapshot_interval_ticks / float(Engine.physics_ticks_per_second)
+	var jitter: float = clock.snapshot_jitter.jitter_seconds()
+	return clock.get_script().target_delay(interval, jitter, 0.0, config) * 1000.0
 
 
 ## From standing still, starts walking in `direction` and counts physics ticks until our

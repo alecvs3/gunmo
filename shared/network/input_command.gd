@@ -7,8 +7,8 @@ extends RefCounted
 const FIRE: int = 1
 const RELOAD: int = 2
 const ALL_BUTTONS: int = FIRE | RELOAD
-## u32 sequence, 2 x f32 move, f64 aim, u8 buttons, f64 view tick.
-const ENCODED_SIZE: int = 29
+## u32 sequence, 2 x f32 move, f64 aim, u8 buttons, f64 view tick, f64 client tick.
+const ENCODED_SIZE: int = 37
 const MAX_PER_PACKET: int = 16
 
 var sequence: int = 0
@@ -19,6 +19,9 @@ var aim: float = 0.0
 var buttons: int = 0
 ## The server tick the owner was drawing when it made this command (for lag compensation).
 var view_tick: float = 0.0
+## The owner's estimate of the host's current tick when it made this command: where on the
+## owner's own timeline this input happened (fair dodging, see TimelineHits).
+var client_tick: float = 0.0
 
 
 func has(button: int) -> bool:
@@ -34,6 +37,7 @@ func sanitized() -> InputCommand:
 	clean.aim = wrapf(aim, -PI, PI) if is_finite(aim) else 0.0
 	clean.buttons = buttons & ALL_BUTTONS
 	clean.view_tick = view_tick if is_finite(view_tick) else 0.0
+	clean.client_tick = client_tick if is_finite(client_tick) else 0.0
 	return clean
 
 
@@ -48,6 +52,7 @@ static func encode_batch(commands: Array[InputCommand]) -> PackedByteArray:
 		buffer.put_double(command.aim)
 		buffer.put_u8(command.buttons)
 		buffer.put_double(command.view_tick)
+		buffer.put_double(command.client_tick)
 	return buffer.data_array
 
 
@@ -65,5 +70,6 @@ static func decode_batch(data: PackedByteArray) -> Array[InputCommand]:
 		command.aim = buffer.get_double()
 		command.buttons = buffer.get_u8()
 		command.view_tick = buffer.get_double()
+		command.client_tick = buffer.get_double()
 		commands.append(command)
 	return commands

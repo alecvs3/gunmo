@@ -58,23 +58,38 @@ frame (always `NetClock.tick_delta()`).
   skip through targets), rewound to the shooter's view (lag compensation, capped at
   `max_rewind`). It tells every other peer the bullet was fired, and everyone where it ended.
 - **Other clients:** place the bullet on their render timeline (REMOTE), so it lines up with the
-  shooter they see, and end it exactly where and when the host said.
+  shooter they see, and end it exactly where and when the host said. A bullet whose path comes
+  near your own player catches up from that past timeline to the present over its first
+  0.2 s, so a bullet that hits you visibly reaches you when the damage lands.
+- **Bots' bullets and fair dodging** (`weapons/timeline_hits.gd`): every input carries the
+  sender's view of the host clock (`InputCommand.client_tick`), and the host records where each
+  remote player's own inputs put them on that timeline (`Player.timeline`). A bot's bullet is
+  tested against a remote human there, tick by tick as their inputs arrive (it may wait up to
+  `max_rewind` after it stops), so a dodge made on a laggy player's own screen counts. Stamps
+  may only be up to `max_rewind` in the past, never in the future or out of order. Human
+  shooters keep shooter-favoured lag compensation. Bots lead moving targets (intercept), from
+  where that player's own screen has them.
+- The player who was hit gets `EVENT_HURT` with the direction it came from (the HUD's
+  hit-direction marker, `ui/hurt_indicator.gd`).
 - `ProjectileSystem.hit_confirmed` fires on the shooter's PC when the host confirms a hit
   (use it for hit markers).
 
 ## Latency: as little delay as possible, smoothing only where it's needed
 
 The goals live in `shared/network/latency_budget.tres`; `test_latency_budget.gd` checks the
-settings and smoke scenario G (`tests/net/latency.gd`) measures them. Every stage:
+settings and smoke scenario G (`tests/net/latency.gd`) measures them: no hitches, a buffer that
+never exceeds what the measured jitter needs (by more than 15 ms, so no wasted delay on any
+machine), and hard caps on top. Every stage:
 
 | Stage | How | Typical |
 |---|---|---|
 | Your aim | The gun follows the mouse every rendered frame | 1 frame |
 | Your movement and shots | Predicted on your PC; `OwnPlayerDrawing` draws you one tick of motion ahead of the physics-interpolated body (`PlayerData.draw_ahead`) | 1 tick to respond |
 | Display | Adaptive V-Sync, 2 swapchain images, agile input flushing (checked by a test) | 1–2 frames |
-| Others on a client | One-way latency + a buffer of one snapshot interval + 1.25 × measured snapshot jitter + 8 ms (35–250 ms). The buffer grows fast when snapshots get uneven or drawing runs dry, shrinks slowly | latency + 35 ms clean |
+| Others on a client | One-way latency (followed directly) + a buffer of one snapshot interval + 1.25 × measured snapshot jitter + 8 ms (35–250 ms). Only the buffer is rate-limited: it grows fast when snapshots get uneven or drawing runs dry, shrinks slowly | latency + 35–55 ms |
 | Others on the host | `DisplayDelay` draws everyone but the host's own player `host_view_delay_ticks` (2) back, so bunched-up inputs don't show; the host's shots are checked at that same moment | 33 ms |
 | Inputs reaching the host | `CommandQueue` holds nothing back unless that player's inputs actually stall; then 1, at most 2 ticks, given back after 5 calm seconds | 0–1 tick |
+| Sending and receiving | `NetChannel` reads packets at the start of every physics tick and sends at its end, never waiting for the rendered frame | 0 frames |
 
 Snapshots go out every tick (60/s). A client gets its own player in full (91 bytes: prediction
 needs every detail) and other players in a 29-byte public form; enemies send quarter-pixel

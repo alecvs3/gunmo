@@ -21,6 +21,9 @@ var display_name: String = ""
 var is_bot: bool = false
 ## Host: drives a bot instead of a human's input (set by Level.spawn_bot).
 var bot: BotController = null
+## Host, remote human players only: where their own inputs put them, by their own view of the
+## host's tick (InputCommand.client_tick). Bots' bullets are tested against it (TimelineHits).
+var timeline: PositionHistory = null
 ## 0 = the co-op team; any other number is a team of its own (see HitboxComponent.team_for).
 var team_id: int = 0:
 	set(value):
@@ -45,6 +48,7 @@ var aim: float = 0.0
 var last_command: int = -1
 
 var _move_velocity: Vector2 = Vector2.ZERO
+var _timeline_tick: int = -1
 var _commands := CommandQueue.new()
 
 @onready var _pivot: Node2D = $Visual/Pivot
@@ -128,6 +132,7 @@ func _physics_process(_delta: float) -> void:
 		_commands.push([_input_source.next_command()])
 	for command in _commands.take_for_tick():
 		simulate(command, false)
+		_record_timeline(command)
 	if bot == null and peer_id != multiplayer.get_unique_id():
 		_report_input()
 
@@ -175,6 +180,23 @@ func get_loadout() -> PlayerLoadout:
 
 func get_score() -> ScoreComponent:
 	return _score
+
+
+func get_hitbox() -> HitboxComponent:
+	return _hitbox
+
+
+## Host: the newest tick on this player's own timeline (-1 = none yet).
+func timeline_tick() -> int:
+	return _timeline_tick
+
+
+## Host: how far this player's own screen is ahead of where the host has them now (seconds):
+## their latency plus input buffer. Bots lead them by it.
+func timeline_lead() -> float:
+	if timeline == null or _timeline_tick < 0:
+		return 0.0
+	return maxf(NetworkManager.clock.tick - _timeline_tick, 0.0) * NetClock.tick_delta()
 
 
 ## Host only: out of the fight without dying (a late joiner spectating until the break).
@@ -267,10 +289,29 @@ func _apply_shared_state(state: PlayerNetState) -> void:
 	_score.apply_replicated(state.kills, state.deaths, state.tier, state.tier_kills)
 
 
+## Host, remote humans: where this command put the player, at the command's own tick. The
+## stamp comes from the client, so it may only be up to max_rewind in the past and never in
+## the future or before the previous one (it can't be used to hide in time).
+func _record_timeline(command: InputCommand) -> void:
+	if timeline == null:
+		return
+	var now: int = NetworkManager.clock.tick
+	var oldest: int = now - NetworkManager.lag_compensator.max_rewind_ticks()
+	var stamp: int = clampi(roundi(command.client_tick), oldest, now)
+	stamp = maxi(stamp, _timeline_tick + 1)
+	if stamp > now:
+		return
+	_timeline_tick = stamp
+	timeline.record(stamp, _hitbox.center(), is_alive and _hitbox.monitorable)
+
+
 func _ready_as_host() -> void:
 	_health.reset()
 	_health.died.connect(_on_died)
 	NetworkManager.channel.commands_received.connect(_on_commands_received)
+	if bot == null and peer_id != multiplayer.get_unique_id():
+		timeline = PositionHistory.new()
+		timeline.capacity = NetworkManager.lag_compensator.max_rewind_ticks() * 3
 	add_to_group(Groups.LIVING_PLAYERS)
 
 

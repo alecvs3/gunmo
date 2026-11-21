@@ -3,7 +3,7 @@
 #   gdformat --check -> (with -Smoke) the multiplayer smoke test
 # Usage (from anywhere in the repo):
 #   .\tools\check.ps1                 everything except the smoke test (about 1 minute)
-#   .\tools\check.ps1 -Smoke          also the smoke scenarios A-F (about 6 more minutes)
+#   .\tools\check.ps1 -Smoke          also the smoke scenarios A-H (about 8 more minutes)
 #   .\tools\check.ps1 -Only tests     one step: import, tests, lint, format or smoke
 #   .\tools\check.ps1 -Fix            run gdformat (fixes formatting) before checking
 # Godot is found from -Godot, the GODOT environment variable, PATH, or the usual folders.
