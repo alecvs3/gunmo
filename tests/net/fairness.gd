@@ -12,7 +12,7 @@ extends "res://tests/net/smoke_script.gd"
 
 const WATCHDOG_SECONDS: float = 90.0
 const MATCH_PATH: String = "res://tests/net/data/quick_gun_game.tres"
-const PLAY_SECONDS: float = 30.0
+const PLAY_SECONDS: float = 20.0
 const MIN_HITS: int = 5
 const MIN_FAIR_SHARE: float = 0.85
 ## Both bots share this team, so they leave each other alone and go for the client.

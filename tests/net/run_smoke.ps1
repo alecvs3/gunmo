@@ -2,22 +2,26 @@
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
-#   D  shop: purchases checked by the host, shotgun pellets, credits from kills, wave modifiers
+#   D  shop: purchases checked by the host, shotgun pellets, perks, credits, wave modifiers
 #   E  Gun Game: host + client + 2 bots; names, bot kills, a winner both sides agree on, restart
 #   F  stress: 8 players (6 bots) vs 40 enemies; host tick time and bandwidth within budget
 #   G  latency: own-input response, smoothing delay and hitches clean and under simulated lag,
 #      host input buffer; checked against shared/network/latency_budget.tres
 #   H  fairness: a client with 160 ms round trip vs 2 bots; bot hits must be where the
 #      client's own screen had it (fair dodging)
+# A-E only check behaviour, so they run at the same time (each on its own port). F, G and H
+# measure timing, so each runs alone afterwards: other processes would skew their numbers.
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
+#   -Only A,E   just those scenarios (letters)
 # or set the GODOT environment variable once and run it without -Godot.
 # Exit code 0 = every role passed. Logs go to %TEMP%\gunmo_net_smoke (or -LogDir).
 param(
     [string]$Godot = $env:GODOT,
     [int]$Port = 7790,
     [int]$TimeoutSeconds = 120,
-    [string]$LogDir = (Join-Path $env:TEMP "gunmo_net_smoke")
+    [string]$LogDir = (Join-Path $env:TEMP "gunmo_net_smoke"),
+    [string[]]$Only = @()
 )
 
 if (-not $Godot -or -not (Test-Path $Godot)) {
@@ -26,121 +30,113 @@ if (-not $Godot -or -not (Test-Path $Godot)) {
 }
 
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$logDir = $LogDir
-New-Item -ItemType Directory -Force $logDir | Out-Null
+New-Item -ItemType Directory -Force $LogDir | Out-Null
 
-function Start-Role([string]$Role, [int]$RolePort, [string]$Sim = "", [string]$Script = "res://tests/net/net_smoke.gd") {
-    $arguments = @("--headless", "--path", "`"$projectRoot`"", "-s", $Script, "--", $Role, "$RolePort")
-    if ($Sim) { $arguments += $Sim }
+# Late roles start a moment after the others, once their host is listening.
+function Role([string]$Name, [string]$Sim = "", [switch]$Late) {
+    return @{ Name = $Name; Sim = $Sim; Late = $Late.IsPresent }
+}
+
+$scenarios = @(
+    @{ Id = "A"; Title = "listen host, lagged client, wrong-build client"; Alone = $false
+       Script = "res://tests/net/net_smoke.gd"; Metrics = ""
+       Roles = @((Role "host"), (Role "badclient" -Late), (Role "client" "80,10,2" -Late)) },
+    @{ Id = "B"; Title = "dedicated server, shooting client, observer"; Alone = $false
+       Script = "res://tests/net/net_smoke.gd"; Metrics = ""
+       Roles = @((Role "dedicated"), (Role "shooter" "60,10,0" -Late), (Role "observer" -Late)) },
+    @{ Id = "C"; Title = "wave loop (ready-up, victory, restart, defeat)"; Alone = $false
+       Script = "res://tests/net/wave_smoke.gd"; Metrics = ""
+       Roles = @((Role "wavehost"), (Role "waveclient")) },
+    @{ Id = "D"; Title = "shop, credits, weapons, perks, wave modifiers"; Alone = $false
+       Script = "res://tests/net/shop_smoke.gd"; Metrics = ""
+       Roles = @((Role "shophost"), (Role "shopclient")) },
+    @{ Id = "E"; Title = "Gun Game with bots (names, ladder, winner, restart)"; Alone = $false
+       Script = "res://tests/net/gun_smoke.gd"; Metrics = ""
+       Roles = @((Role "gunhost"), (Role "gunclient")) },
+    @{ Id = "F"; Title = "stress (8 players vs 40 enemies, performance budget)"; Alone = $true
+       Script = "res://tests/net/stress.gd"; Metrics = "STRESS"
+       Roles = @((Role "stresshost"), (Role "stressclient")) },
+    @{ Id = "G"; Title = "latency budget (clean and with 80 ms simulated lag)"; Alone = $true
+       Script = "res://tests/net/latency.gd"; Metrics = "LATENCY"
+       Roles = @((Role "latencyhost"), (Role "latencyclient" -Late)) },
+    @{ Id = "H"; Title = "fairness under 160 ms round trip (fair dodging)"; Alone = $true
+       Script = "res://tests/net/fairness.gd"; Metrics = "FAIRNESS"
+       Roles = @((Role "fairhost"), (Role "fairclient" -Late)) }
+)
+for ($i = 0; $i -lt $scenarios.Count; $i++) { $scenarios[$i].Port = $Port + $i }
+if ($Only.Count) { $scenarios = @($scenarios | Where-Object { $Only -contains $_.Id }) }
+
+function Start-Role($Scenario, $Role) {
+    $arguments = @("--headless", "--path", "`"$projectRoot`"", "-s", $Scenario.Script, "--",
+        $Role.Name, "$($Scenario.Port)")
+    if ($Role.Sim) { $arguments += $Role.Sim }
     Start-Process -FilePath $Godot -ArgumentList $arguments -NoNewWindow -PassThru `
-        -RedirectStandardOutput (Join-Path $logDir "$Role.log") `
-        -RedirectStandardError (Join-Path $logDir "$Role.err.log")
+        -RedirectStandardOutput (Join-Path $LogDir "$($Role.Name).log") `
+        -RedirectStandardError (Join-Path $LogDir "$($Role.Name).err.log")
 }
 
-function Wait-Roles($Processes) {
-    $Processes | Wait-Process -Timeout $TimeoutSeconds -ErrorAction SilentlyContinue
-    $Processes | Where-Object { -not $_.HasExited } | Stop-Process -Force
+# Starts every role of these scenarios (late ones after a short pause) and waits for all.
+function Invoke-Batch($Batch) {
+    $watch = [Diagnostics.Stopwatch]::StartNew()
+    $processes = @()
+    foreach ($late in @($false, $true)) {
+        $starting = @($Batch | ForEach-Object { $s = $_; $s.Roles | Where-Object { $_.Late -eq $late } |
+            ForEach-Object { @{ Scenario = $s; Role = $_ } } })
+        if ($late -and $starting.Count) { Start-Sleep -Seconds 2 }
+        foreach ($item in $starting) { $processes += Start-Role $item.Scenario $item.Role }
+    }
+    $processes | Wait-Process -Timeout $TimeoutSeconds -ErrorAction SilentlyContinue
+    $processes | Where-Object { -not $_.HasExited } | Stop-Process -Force
+    return $watch.Elapsed.TotalSeconds
 }
 
-function Test-Roles([string[]]$Roles) {
+function Test-Scenario($Scenario) {
     $ok = $true
-    foreach ($role in $Roles) {
-        $result = Select-String -Path (Join-Path $logDir "$role.log") -Pattern "SMOKE (PASS|FAIL)" | Select-Object -Last 1
+    foreach ($role in $Scenario.Roles) {
+        $log = Join-Path $LogDir "$($role.Name).log"
+        $result = Select-String -Path $log -Pattern "SMOKE (PASS|FAIL)" | Select-Object -Last 1
         if ($result -and $result.Line -match "SMOKE PASS") {
             Write-Host $result.Line -ForegroundColor Green
         } else {
-            $line = if ($result) { $result.Line } else { "SMOKE FAIL ${role}: no result (crashed or timed out)" }
-            Write-Host "$line  (log: $logDir\$role.log)" -ForegroundColor Red
+            $line = if ($result) { $result.Line } else { "SMOKE FAIL $($role.Name): no result (crashed or timed out)" }
+            Write-Host "$line  (log: $log)" -ForegroundColor Red
             $ok = $false
         }
+        if ($Scenario.Metrics) {
+            Select-String -Path $log -Pattern "$($Scenario.Metrics) METRIC (\S+) (\S+)" | ForEach-Object {
+                Write-Host ("  {0,-38} {1}" -f $_.Matches[0].Groups[1].Value, $_.Matches[0].Groups[2].Value)
+            }
+        }
     }
+    if ($Scenario.Id -eq "E") { $ok = (Test-GunGameWinner) -and $ok }
     return $ok
 }
 
-Write-Host "Scenario A: listen host, lagged client, wrong-build client"
-$a = @()
-$a += Start-Role "host" $Port
-Start-Sleep -Seconds 2
-$a += Start-Role "badclient" $Port
-$a += Start-Role "client" $Port "80,10,2"
-Wait-Roles $a
-$passA = Test-Roles @("host", "badclient", "client")
-
-Write-Host "Scenario B: dedicated server, shooting client, observer"
-$b = @()
-$b += Start-Role "dedicated" ($Port + 1)
-Start-Sleep -Seconds 2
-$b += Start-Role "shooter" ($Port + 1) "60,10,0"
-$b += Start-Role "observer" ($Port + 1)
-Wait-Roles $b
-$passB = Test-Roles @("dedicated", "shooter", "observer")
-
-Write-Host "Scenario C: wave loop (ready-up, victory, restart, defeat)"
-$c = @()
-$c += Start-Role "wavehost" ($Port + 2) "" "res://tests/net/wave_smoke.gd"
-$c += Start-Role "waveclient" ($Port + 2) "" "res://tests/net/wave_smoke.gd"
-Wait-Roles $c
-$passC = Test-Roles @("wavehost", "waveclient")
-
-Write-Host "Scenario D: shop, credits, weapons, wave modifiers"
-$d = @()
-$d += Start-Role "shophost" ($Port + 3) "" "res://tests/net/shop_smoke.gd"
-$d += Start-Role "shopclient" ($Port + 3) "" "res://tests/net/shop_smoke.gd"
-Wait-Roles $d
-$passD = Test-Roles @("shophost", "shopclient")
-
-Write-Host "Scenario E: Gun Game with bots (names, ladder, winner, restart)"
-$e = @()
-$e += Start-Role "gunhost" ($Port + 4) "" "res://tests/net/gun_smoke.gd"
-$e += Start-Role "gunclient" ($Port + 4) "" "res://tests/net/gun_smoke.gd"
-Wait-Roles $e
-$passE = Test-Roles @("gunhost", "gunclient")
-$winners = @("gunhost", "gunclient") | ForEach-Object {
-    $line = Select-String -Path (Join-Path $logDir "$_.log") -Pattern "winner id (-?\d+)" | Select-Object -Last 1
-    if ($line) { $line.Matches[0].Groups[1].Value } else { "none" }
-}
-if ($winners[0] -ne $winners[1] -or $winners[0] -eq "none") {
-    Write-Host "SMOKE FAIL gun game: host saw winner $($winners[0]), client saw $($winners[1])" -ForegroundColor Red
-    $passE = $false
-} else {
+function Test-GunGameWinner {
+    $winners = @("gunhost", "gunclient") | ForEach-Object {
+        $line = Select-String -Path (Join-Path $LogDir "$_.log") -Pattern "winner id (-?\d+)" | Select-Object -Last 1
+        if ($line) { $line.Matches[0].Groups[1].Value } else { "none" }
+    }
+    if ($winners[0] -ne $winners[1] -or $winners[0] -eq "none") {
+        Write-Host "SMOKE FAIL gun game: host saw winner $($winners[0]), client saw $($winners[1])" -ForegroundColor Red
+        return $false
+    }
     Write-Host "Both sides agree on the winner ($($winners[0]))" -ForegroundColor Green
+    return $true
 }
 
-Write-Host "Scenario F: stress (8 players vs 40 enemies, performance budget)"
-$f = @()
-$f += Start-Role "stresshost" ($Port + 5) "" "res://tests/net/stress.gd"
-$f += Start-Role "stressclient" ($Port + 5) "" "res://tests/net/stress.gd"
-Wait-Roles $f
-$passF = Test-Roles @("stresshost", "stressclient")
-foreach ($role in @("stresshost", "stressclient")) {
-    Select-String -Path (Join-Path $logDir "$role.log") -Pattern "STRESS METRIC (\S+) (\S+)" | ForEach-Object {
-        Write-Host ("  {0,-28} {1}" -f $_.Matches[0].Groups[1].Value, $_.Matches[0].Groups[2].Value)
-    }
+$allOk = $true
+$together = @($scenarios | Where-Object { -not $_.Alone })
+$batches = @()
+if ($together.Count) { $batches += , $together }
+foreach ($scenario in @($scenarios | Where-Object { $_.Alone })) { $batches += , @($scenario) }
+foreach ($batch in $batches) {
+    $names = ($batch | ForEach-Object { "$($_.Id) ($($_.Title))" }) -join ", "
+    Write-Host "Scenario $names"
+    $seconds = Invoke-Batch $batch
+    foreach ($scenario in $batch) { $allOk = (Test-Scenario $scenario) -and $allOk }
+    Write-Host ("  took {0:N0} s" -f $seconds)
 }
 
-Write-Host "Scenario G: latency budget (clean and with 80 ms simulated lag)"
-$g = @()
-$g += Start-Role "latencyhost" ($Port + 6) "" "res://tests/net/latency.gd"
-Start-Sleep -Seconds 1
-$g += Start-Role "latencyclient" ($Port + 6) "" "res://tests/net/latency.gd"
-Wait-Roles $g
-$passG = Test-Roles @("latencyhost", "latencyclient")
-foreach ($role in @("latencyhost", "latencyclient")) {
-    Select-String -Path (Join-Path $logDir "$role.log") -Pattern "LATENCY METRIC (\S+) (\S+)" | ForEach-Object {
-        Write-Host ("  {0,-38} {1}" -f $_.Matches[0].Groups[1].Value, $_.Matches[0].Groups[2].Value)
-    }
-}
-
-Write-Host "Scenario H: fairness under 160 ms round trip (fair dodging)"
-$h = @()
-$h += Start-Role "fairhost" ($Port + 7) "" "res://tests/net/fairness.gd"
-Start-Sleep -Seconds 1
-$h += Start-Role "fairclient" ($Port + 7) "" "res://tests/net/fairness.gd"
-Wait-Roles $h
-$passH = Test-Roles @("fairhost", "fairclient")
-Select-String -Path (Join-Path $logDir "fairclient.log") -Pattern "FAIRNESS METRIC (\S+) (\S+)" | ForEach-Object {
-    Write-Host ("  {0,-38} {1}" -f $_.Matches[0].Groups[1].Value, $_.Matches[0].Groups[2].Value)
-}
-
-if ($passA -and $passB -and $passC -and $passD -and $passE -and $passF -and $passG -and $passH) { exit 0 }
+if ($allOk) { exit 0 }
 exit 1
