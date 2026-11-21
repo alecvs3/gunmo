@@ -55,6 +55,13 @@ func unregister(hitbox: HitboxComponent) -> void:
 	_histories.erase(hitbox)
 
 
+## Every hitbox in the world right now (players and enemies). Bots pick targets from these.
+func hitboxes() -> Array[HitboxComponent]:
+	var found: Array[HitboxComponent] = []
+	found.assign(_histories.keys())
+	return found
+
+
 func max_rewind_ticks() -> int:
 	return ceili(config.max_rewind * NetClock.tick_rate())
 

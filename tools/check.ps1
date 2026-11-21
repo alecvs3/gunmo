@@ -3,7 +3,7 @@
 #   gdformat --check -> (with -Smoke) the multiplayer smoke test
 # Usage (from anywhere in the repo):
 #   .\tools\check.ps1                 everything except the smoke test (about 1 minute)
-#   .\tools\check.ps1 -Smoke          also the five smoke scenarios (about 5 more minutes)
+#   .\tools\check.ps1 -Smoke          also the smoke scenarios A-F (about 6 more minutes)
 #   .\tools\check.ps1 -Only tests     one step: import, tests, lint, format or smoke
 #   .\tools\check.ps1 -Fix            run gdformat (fixes formatting) before checking
 # Godot is found from -Godot, the GODOT environment variable, PATH, or the usual folders.
@@ -99,7 +99,8 @@ function Step-Lint {
     $problems = @($run.Output | Where-Object { $_ -match "^\S.*:\d+: Error:" -or $_ -match "No terminal" })
     if ($run.Code -eq 0) { return @{ Ok = $true; Detail = "clean" } }
     $detail = if ($problems.Count) { "$($problems.Count) problem(s)" } else { "failed" }
-    return @{ Ok = $false; Detail = $detail; Lines = ($problems + ($run.Output | Select-Object -Last 3)) }
+    $lines = @($problems + @($run.Output | Select-Object -Last 1)) | Select-Object -Unique
+    return @{ Ok = $false; Detail = $detail; Lines = $lines }
 }
 
 function Step-Format {
