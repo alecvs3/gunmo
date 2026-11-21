@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://player/player_spectate.gd" id="12_spectate"]
 [ext_resource type="Script" path="res://player/player_loadout.gd" id="13_loadout"]
 [ext_resource type="Script" path="res://shared/components/wallet_component.gd" id="14_wallet"]
+[ext_resource type="Script" path="res://shared/components/score_component.gd" id="15_score"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 16.0
@@ -25,6 +26,12 @@ radius = 18.0
 properties/0/path = NodePath("NetEntity:net_id")
 properties/0/spawn = true
 properties/0/replication_mode = 0
+properties/1/path = NodePath(".:display_name")
+properties/1/spawn = true
+properties/1/replication_mode = 0
+properties/2/path = NodePath(".:is_bot")
+properties/2/spawn = true
+properties/2/replication_mode = 0
 
 [node name="Player" type="CharacterBody2D"]
 collision_layer = 2
@@ -40,6 +47,14 @@ physics_interpolation_mode = 2
 
 [node name="Body" type="Polygon2D" parent="Visual"]
 polygon = PackedVector2Array(16, 0, 11.3, 11.3, 0, 16, -11.3, 11.3, -16, 0, -11.3, -11.3, 0, -16, 11.3, -11.3)
+
+[node name="NameLabel" type="Label" parent="Visual"]
+offset_left = -60.0
+offset_top = -44.0
+offset_right = 60.0
+offset_bottom = -24.0
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
 
 [node name="Pivot" type="Node2D" parent="Visual"]
 
@@ -88,6 +103,9 @@ weapon_data = ExtResource("6_pistol")
 
 [node name="WalletComponent" type="Node" parent="."]
 script = ExtResource("14_wallet")
+
+[node name="ScoreComponent" type="Node" parent="."]
+script = ExtResource("15_score")
 
 [node name="PlayerLoadout" type="Node" parent="." node_paths=PackedStringArray("weapon", "health", "barrel")]
 script = ExtResource("13_loadout")

@@ -6,6 +6,9 @@ extends Node
 
 signal player_spawned(player: Node2D)
 signal player_died(peer_id: int)
+## A player was killed; killer_id is the peer (or bot) id of whoever dealt the last hit
+## (0 = not a player, e.g. an enemy).
+signal player_killed(victim: Node2D, killer_id: int)
 signal enemy_spawned(enemy: Node2D)
 signal enemy_killed(enemy: Node2D, killer_peer_id: int)
 ## Host: something fired a real bullet (a Shot). The level's ProjectileSystem simulates it

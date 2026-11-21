@@ -3,6 +3,7 @@ extends Node
 ## The login step before a peer enters the game, using SceneMultiplayer authentication.
 ## Until both sides call complete_auth(), the peer gets no spawns, syncs or RPCs.
 ## The joiner sends a hello; the host checks it with Handshake and accepts or rejects.
+## The hello also carries the joiner's display name, which the host keeps in `names`.
 
 ## Client side: the host refused us.
 signal join_rejected(reason: String)
@@ -12,6 +13,8 @@ signal peer_rejected(peer_id: int, reason: String)
 var config: NetworkConfig
 ## What we tell the host about ourselves (and, on the host, what joiners must match).
 var hello: Dictionary = {}
+## Host: the cleaned display name each accepted peer sent (peer id -> String).
+var names: Dictionary = {}
 
 var _scene_multiplayer: SceneMultiplayer
 
@@ -23,6 +26,11 @@ func setup(scene_multiplayer: SceneMultiplayer, network_config: NetworkConfig) -
 	_scene_multiplayer.auth_callback = _on_auth_received
 	_scene_multiplayer.auth_timeout = config.auth_timeout
 	_scene_multiplayer.peer_authenticating.connect(_on_peer_authenticating)
+
+
+## The name sent in our hello (and, on the host, our own player's name).
+func set_local_name(player_name: String) -> void:
+	hello["name"] = Handshake.clean_name(player_name)
 
 
 func _on_peer_authenticating(peer_id: int) -> void:
@@ -46,6 +54,7 @@ func _judge(peer_id: int, joiner_hello: Dictionary) -> void:
 		joiner_hello, hello, player_count, config.max_players, config.require_matching_build
 	)
 	if reason.is_empty():
+		names[peer_id] = Handshake.clean_name(joiner_hello.get("name"))
 		_scene_multiplayer.send_auth(peer_id, Handshake.encode(Handshake.accept()))
 		_scene_multiplayer.complete_auth(peer_id)
 		return

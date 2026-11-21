@@ -1,11 +1,13 @@
 class_name ShopPanel
 extends PanelContainer
-## The shop: open in the lobby and between waves, closed during waves; B hides or shows it.
+## The shop: shown while the match says it is open (Waves: the lobby and between waves);
+## B hides or shows it.
 ## Buttons only *ask* to buy (EventBus.shop_purchase_requested); the host checks and applies.
 ## Credits, levels and the equipped weapon come from your own player's replicated state.
 
 var _catalog: ShopCatalog = ShopCatalog.load_default()
 var _phase: int = -1
+var _open: bool = false
 var _hidden_by_player: bool = false
 var _weapon_buttons: Array[Button] = []
 var _upgrade_buttons: Array[Button] = []
@@ -33,18 +35,18 @@ func _ready() -> void:
 	hide()
 	_build_buttons()
 	EventBus.match_state_changed.connect(_on_match_state_changed)
-	NetworkManager.session_ended.connect(func(_reason: String) -> void: _phase = -1)
+	NetworkManager.session_ended.connect(_on_session_ended.unbind(1))
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("shop") and _shop_phase():
+	if event.is_action_pressed("shop") and _open:
 		_hidden_by_player = not _hidden_by_player
 		get_viewport().set_input_as_handled()
 
 
 func _process(_delta: float) -> void:
 	var player: Player = Player.find_local(get_tree())
-	visible = NetworkManager.is_online() and _shop_phase() and not _hidden_by_player
+	visible = NetworkManager.is_online() and _open and not _hidden_by_player
 	if visible and player != null:
 		_refresh(player)
 
@@ -68,14 +70,16 @@ func _add_button(box: VBoxContainer, kind: int, index: int, tip: String) -> Butt
 
 ## A new lobby or break opens the shop again, even if it was hidden last time.
 func _on_match_state_changed(state: RefCounted) -> void:
-	var phase: int = (state as MatchNetState).phase
-	if phase != _phase:
-		_phase = phase
+	var match_state := state as MatchNetState
+	_open = match_state.shop_open
+	if match_state.phase != _phase:
+		_phase = match_state.phase
 		_hidden_by_player = false
 
 
-func _shop_phase() -> bool:
-	return _phase == GameMode.Phase.LOBBY or _phase == GameMode.Phase.BREAK
+func _on_session_ended() -> void:
+	_phase = -1
+	_open = false
 
 
 func _refresh(player: Player) -> void:

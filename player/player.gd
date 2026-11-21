@@ -7,9 +7,29 @@ extends CharacterBody2D
 ##   others  show the host's snapshots, interpolated (NetEntity)
 ## simulate() is the one tick of player logic all of them share, so they agree.
 
+## How see-through a spawn-protected player is drawn.
+const PROTECTED_ALPHA: float = 0.45
+
 @export var player_data: PlayerData
 
 var peer_id: int = 1
+## Set by the host before spawning; sent to clients once with the spawn (SpawnSync).
+var display_name: String = ""
+## Host-run bot (negative peer id). Also spawn-synced, for the scoreboard.
+var is_bot: bool = false
+## 0 = the co-op team; any other number is a team of its own (see HitboxComponent.team_for).
+var team_id: int = 0:
+	set(value):
+		team_id = value
+		if is_node_ready():
+			_hitbox.team = HitboxComponent.team_for(value)
+## Spawn protection (Gun Game): can't be hurt, drawn see-through. Replicated.
+var is_protected: bool = false:
+	set(value):
+		is_protected = value
+		if is_node_ready():
+			_health.invulnerable = value
+			$Visual.modulate.a = PROTECTED_ALPHA if value else 1.0
 ## Clients hide dead players too (it is replicated).
 var is_alive: bool = true:
 	set(value):
@@ -28,6 +48,7 @@ var _commands := CommandQueue.new()
 @onready var _weapon: WeaponComponent = $WeaponComponent
 @onready var _loadout: PlayerLoadout = $PlayerLoadout
 @onready var _wallet: WalletComponent = $WalletComponent
+@onready var _score: ScoreComponent = $ScoreComponent
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _input_source: PlayerInputSource = $PlayerInputSource
 @onready var _prediction: PlayerPrediction = $PlayerPrediction
@@ -48,7 +69,9 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
-	$Visual/Body.color = Color.from_hsv(fmod(peer_id * 0.618034, 1.0), 0.55, 0.95)
+	$Visual/Body.color = Color.from_hsv(fmod(absi(peer_id) * 0.618034, 1.0), 0.55, 0.95)
+	_hitbox.owner_id = peer_id
+	_hitbox.team = HitboxComponent.team_for(team_id)
 	_loadout.configure(player_data)
 	_knockback.configure(
 		player_data.knockback_friction, player_data.knockback_bounce, player_data.knockback_taken
@@ -62,6 +85,8 @@ func _ready() -> void:
 	$PlayerSpectate.set_process(is_owner)
 	$PlayerSpectate.set_process_unhandled_input(is_owner)
 	add_to_group(Groups.PLAYERS)
+	$Visual/NameLabel.text = display_name
+	$Visual/NameLabel.visible = not is_owner
 	camera.set_process(is_owner)
 	camera.set_physics_process(is_owner)
 	_input_source.set_process(is_owner)
@@ -123,6 +148,10 @@ func get_loadout() -> PlayerLoadout:
 	return _loadout
 
 
+func get_score() -> ScoreComponent:
+	return _score
+
+
 ## Host only: out of the fight without dying (a late joiner spectating until the break).
 func make_spectator() -> void:
 	_move_velocity = Vector2.ZERO
@@ -152,6 +181,12 @@ func capture_net_state() -> NetState:
 	state.cooldown_left = _weapon.cooldown_left
 	state.reload_left = _weapon.reload_left
 	state.alive = is_alive
+	state.protected = is_protected
+	state.team_id = team_id
+	state.kills = _score.kills
+	state.deaths = _score.deaths
+	state.tier = _score.tier
+	state.tier_kills = _score.tier_kills
 	state.teleport_count = teleport_count
 	state.last_command = last_command
 	state.weapon_index = _loadout.weapon_index
@@ -171,6 +206,7 @@ func apply_net_state(state: NetState) -> void:
 	_weapon.ammo = player_state.ammo
 	teleport_count = player_state.teleport_count
 	is_alive = player_state.alive
+	_apply_shared_state(player_state)
 
 
 ## Owner client: the host's verdict on where we are; prediction reconciles with it.
@@ -190,6 +226,15 @@ func restore_from_state(state: PlayerNetState) -> void:
 	teleport_count = state.teleport_count
 	last_command = state.last_command
 	is_alive = state.alive
+	_apply_shared_state(state)
+
+
+## Clients: the parts of a snapshot every peer shows the same way.
+func _apply_shared_state(state: PlayerNetState) -> void:
+	is_protected = state.protected
+	if team_id != state.team_id:
+		team_id = state.team_id
+	_score.apply_replicated(state.kills, state.deaths, state.tier, state.tier_kills)
 
 
 func _ready_as_host() -> void:
@@ -233,10 +278,11 @@ func _on_commands_received(sender_id: int, data: PackedByteArray) -> void:
 		_commands.push(InputCommand.decode_batch(data))
 
 
-func _on_died(_killer_id: int) -> void:
+func _on_died(killer_id: int) -> void:
 	_move_velocity = Vector2.ZERO
 	_knockback.velocity = Vector2.ZERO
 	_set_alive(false)
+	EventBus.player_killed.emit(self, killer_id)
 	EventBus.player_died.emit(peer_id)
 
 

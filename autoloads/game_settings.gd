@@ -1,5 +1,6 @@
 extends Node
-## Player-facing settings (audio, controls, display). For now: reports the display setup.
+## Player-facing settings (audio, controls, display). For now: the player's name (saved in
+## user://settings.cfg) and a report of the display setup.
 ## The defaults live in project.godot: adaptive V-Sync (no tearing while the game keeps up,
 ## never waits when it falls behind), the shortest swapchain for the least input delay, and
 ## no frame cap, so the game draws at whatever rate the monitor refreshes.
@@ -13,8 +14,14 @@ const VSYNC_NAMES: Dictionary = {
 	DisplayServer.VSYNC_MAILBOX: "mailbox",
 }
 
+const SETTINGS_PATH: String = "user://settings.cfg"
+
+## Shown above your player and on the scoreboard ("" = "Player <id>").
+var player_name: String = ""
+
 
 func _ready() -> void:
+	_load()
 	if DisplayServer.get_name() == "headless":
 		return
 	print("[display] %s" % display_summary())
@@ -43,3 +50,21 @@ func display_summary() -> String:
 			DisplayServer.screen_get_refresh_rate(screen),
 		]
 	)
+
+
+## Cleans and saves the name (it is also what the next session sends to the host).
+func set_player_name(new_name: String) -> void:
+	var cleaned: String = Handshake.clean_name(new_name)
+	if cleaned == player_name:
+		return
+	player_name = cleaned
+	var file := ConfigFile.new()
+	file.load(SETTINGS_PATH)
+	file.set_value("player", "name", player_name)
+	file.save(SETTINGS_PATH)
+
+
+func _load() -> void:
+	var file := ConfigFile.new()
+	if file.load(SETTINGS_PATH) == OK:
+		player_name = Handshake.clean_name(file.get_value("player", "name", ""))

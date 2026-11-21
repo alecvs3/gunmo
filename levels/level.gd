@@ -20,9 +20,11 @@ func _ready() -> void:
 		navigation_region.bake_navigation_polygon(false)
 
 
-func spawn_player(peer_id: int) -> Player:
+## `display_name` reaches every client with the spawn.
+func spawn_player(peer_id: int, display_name: String = "") -> Player:
 	var new_player: Player = PLAYER_SCENE.instantiate()
 	new_player.name = str(peer_id)
+	new_player.display_name = display_name
 	new_player.position = player_spawn_position(players_root.get_child_count())
 	players_root.add_child(new_player, true)
 	return new_player

@@ -4,13 +4,26 @@ extends RefCounted
 ## Pure logic with no networking, so it can be unit-tested; JoinGate does the sending.
 
 ## Bump when the hello/reply format or any network format (snapshots, commands, events) changes.
-const PROTOCOL: int = 4
+const PROTOCOL: int = 5
 ## bytes_to_var needs at least a 4-byte type header.
 const MIN_PAYLOAD_SIZE: int = 4
+const MAX_NAME_LENGTH: int = 16
 
 
-static func make_hello(version: String, build: String) -> Dictionary:
-	return {"protocol": PROTOCOL, "version": version, "build": build}
+static func make_hello(version: String, build: String, player_name: String = "") -> Dictionary:
+	return {"protocol": PROTOCOL, "version": version, "build": build, "name": player_name}
+
+
+## A display name that is safe to show: printable characters only, trimmed, at most
+## MAX_NAME_LENGTH long. "" when nothing usable is left (callers pick a fallback).
+static func clean_name(raw: Variant) -> String:
+	if not raw is String:
+		return ""
+	var kept: String = ""
+	for character in raw as String:
+		if character.unicode_at(0) >= 32 and character.unicode_at(0) != 127:
+			kept += character
+	return kept.strip_edges().left(MAX_NAME_LENGTH).strip_edges()
 
 
 static func accept() -> Dictionary:

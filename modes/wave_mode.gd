@@ -48,6 +48,7 @@ func restart() -> void:
 		return
 	level.clear_enemies()
 	_start()
+	_reset_scores()
 	_revive(true)
 	for player in level.players():
 		_give_starting_kit(player)
@@ -132,8 +133,11 @@ func _pay_wave_bonus() -> void:
 
 func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:
 	var killer: Player = level.player(killer_peer_id)
+	if killer == null:
+		return
+	killer.get_score().kills += 1
 	var chaser := enemy as ChaserEnemy
-	if killer != null and chaser != null:
+	if chaser != null:
 		killer.get_wallet().add(chaser.enemy_data.bounty)
 
 
@@ -205,6 +209,8 @@ func _count_ready(players: Array[Player]) -> int:
 
 
 func _refresh_state(player_count: int, living: int, ready: int) -> void:
+	state.mode_kind = MatchNetState.ModeKind.WAVES
+	state.shop_open = shop_open()
 	state.phase = _flow.phase
 	state.wave = _flow.wave
 	state.total_waves = _flow.total_waves

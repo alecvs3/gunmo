@@ -26,6 +26,12 @@ func test_player_state_round_trip_is_exact() -> void:
 	state.credits = 123456
 	state.upgrade_levels[0] = 3
 	state.upgrade_levels[6] = 5
+	state.protected = true
+	state.team_id = -7
+	state.kills = 31
+	state.deaths = 4
+	state.tier = 9
+	state.tier_kills = 2
 	var back: PlayerNetState = _round_trip(state, PlayerNetState.new())
 	assert_eq(back.position, state.position)
 	assert_eq(back.move_velocity, state.move_velocity)
@@ -37,6 +43,9 @@ func test_player_state_round_trip_is_exact() -> void:
 	assert_eq([back.teleport_count, back.last_command, back.weapon_index], [3, 4567, 3])
 	assert_eq(back.credits, 123456)
 	assert_eq(back.upgrade_levels, state.upgrade_levels)
+	assert_true(back.protected)
+	assert_eq(back.team_id, -7, "team ids are signed (bots)")
+	assert_eq([back.kills, back.deaths, back.tier, back.tier_kills], [31, 4, 9, 2])
 
 
 func test_player_no_command_yet_round_trips() -> void:
@@ -96,8 +105,16 @@ func test_match_state_round_trip_equals_and_copy() -> void:
 	state.player_count = 3
 	state.living_count = 1
 	state.modifier_mask = 5
+	state.mode_kind = MatchNetState.ModeKind.GUN_GAME
+	state.shop_open = true
+	state.winner_id = -3
+	state.ladder_length = 6
+	state.kills_per_tier = 2
+	state.final_tier_kills = 1
 	var back: MatchNetState = _round_trip(state, MatchNetState.new())
 	assert_true(back.equals(state))
+	assert_eq([back.mode_kind, back.shop_open, back.winner_id], [1, true, -3])
+	assert_eq([back.ladder_length, back.kills_per_tier, back.final_tier_kills], [6, 2, 1])
 	assert_true(state.copy().equals(state))
 	back.ready_count = 3
 	assert_false(back.equals(state))
@@ -109,3 +126,13 @@ func test_match_state_seconds_left() -> void:
 	state.phase_end_tick = 100.0 + NetClock.tick_rate() * 2.0
 	assert_almost_eq(state.seconds_left(100.0), 2.0, 0.0001)
 	assert_eq(state.seconds_left(1e9), 0.0, "never negative")
+
+
+func test_match_state_kills_needed_per_tier() -> void:
+	var state := MatchNetState.new()
+	state.ladder_length = 4
+	state.kills_per_tier = 3
+	state.final_tier_kills = 1
+	assert_eq(state.kills_needed(0), 3)
+	assert_eq(state.kills_needed(2), 3)
+	assert_eq(state.kills_needed(3), 1, "the last gun needs final_tier_kills")

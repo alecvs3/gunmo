@@ -3,6 +3,7 @@ extends RefCounted
 ## One fired bullet: who fired it, from where, which way, and the weapon numbers it carries.
 ## Identified by (shooter_id, shot_id). For players shot_id = command number × MAX_PELLETS +
 ## pellet index, so the owner's predicted bullet and the host's real one share an id.
+## shooter_id is signed: bots have negative ids.
 
 ## Room for pellets in shot ids (see make_id).
 const MAX_PELLETS: int = 16
@@ -56,7 +57,7 @@ func lifetime_ticks() -> float:
 
 
 func encode(buffer: StreamPeerBuffer) -> void:
-	buffer.put_u32(shooter_id)
+	buffer.put_32(shooter_id)
 	buffer.put_u32(shot_id)
 	buffer.put_utf8_string(team)
 	NetCodec.put_vector2(buffer, origin)
@@ -73,7 +74,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 
 static func decode(buffer: StreamPeerBuffer) -> Shot:
 	var shot := Shot.new()
-	shot.shooter_id = buffer.get_u32()
+	shot.shooter_id = buffer.get_32()
 	shot.shot_id = buffer.get_u32()
 	shot.team = StringName(buffer.get_utf8_string())
 	shot.origin = NetCodec.get_vector2(buffer)

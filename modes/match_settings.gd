@@ -2,6 +2,13 @@ class_name MatchSettings
 extends Resource
 ## The rules for one match. Real values live in modes/data/*.tres; a different file can be
 ## chosen with the --match <res://path.tres> launch argument (the smoke test uses a quick one).
+## Each file also says which mode it is for (mode_scene).
+
+## The game mode scene this match runs (modes/*.tscn, listed in Main's ModeSpawner).
+@export var mode_scene: PackedScene
+## Bots added until there are this many players, humans included (modes with bots only).
+## The host's menu can override it.
+@export_range(0, 16) var bot_fill_to: int = 0
 
 ## Seconds of the lobby break before wave 1 (skipped once everyone is ready).
 @export_range(0.0, 600.0) var first_break_seconds: float = 0.0

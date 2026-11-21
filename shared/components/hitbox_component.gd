@@ -9,10 +9,19 @@ extends Area2D
 @export var knockback: KnockbackComponent
 ## Shots from the same team pass through (players don't hurt each other in co-op).
 @export var team: StringName = &""
+## The player this hitbox belongs to (0 = not a player). Its own shots never hit it, even
+## when there are no teams (free-for-all).
+var owner_id: int = 0
 
 var _radius: float = 0.0
 var _half_extents: Vector2 = Vector2.ZERO
 var _shape_offset: Vector2 = Vector2.ZERO
+
+
+## The hitbox team for a team number: 0 is the co-op "players" team, any other number is a
+## team of its own (free-for-all gives every player a different one).
+static func team_for(team_id: int) -> StringName:
+	return &"players" if team_id == 0 else StringName("team_%d" % team_id)
 
 
 func _ready() -> void:
