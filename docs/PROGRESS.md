@@ -315,7 +315,7 @@ lint/format clean.
 - No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
 - Fullscreen uses the screen the window is on; there is no monitor picker.
 
-## Builds: more guns, hit effects and perks (in progress, branch `gameplay/builds`)
+## Builds: more guns, hit effects and perks (in review, issue #67)
 
 Goal: players can build different characters, and late waves get strategy from systems that
 combine (the CLAUDE.md goal) instead of from more health.
