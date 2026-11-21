@@ -12,6 +12,8 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
    SILENCER: how the character holds it), `price`, `pellets`, `pierce`, `damage`, `fire_rate`,
    `bullet_speed`, `bullet_lifetime`, `spread`, `magazine_size`, `reload_time`, `bullet_radius`,
    `knockback`. No numbers in code (rule 6).
+   - Built-in burn, chill, shock, shred or blast: set `effects` to a `HitEffects` sub-resource
+     (see `weapons/data/torch.tres`, `weapons/data/cryo_carbine.tres`). Perks add to it later.
 2. **Add it to the shop catalog:** append it to `weapons` in `upgrades/data/shop_catalog.tres`.
    Every peer names weapons by **catalog index**, so append and never reorder. Index 0 must stay
    the free starting pistol. The shop lists it automatically (`ui/shop_panel.gd`), and the build

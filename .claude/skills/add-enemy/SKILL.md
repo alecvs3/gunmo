@@ -12,7 +12,7 @@ One scene, `enemies/chaser.tscn`, plays every `EnemyData`.
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
    closest type (grunt, runner, brute) and change its numbers: `display_name`, `color`,
    `visual_scale`, `max_health`, `move_speed`, `repath_interval`, `contact_damage`,
-   `contact_interval`, knockback, and the Waves group (`cost`, `first_wave`, `spawn_weight`,
+   `contact_interval`, knockback, `max_slow` (how much chill can slow it), and the Waves group (`cost`, `first_wave`, `spawn_weight`,
    `bounty`). It **must** live in `enemies/data/`: clients only load enemy data from
    `Chaser.DATA_FOLDER`.
 2. **Let the waves buy it:** add it to `enemy_types` in `modes/waves/data/default_waves.tres`
@@ -22,7 +22,8 @@ One scene, `enemies/chaser.tscn`, plays every `EnemyData`.
 
 ## A new behaviour (ranged, splitting, exploding...)
 - Make a new scene and script in `enemies/`, built from the shared components (Health, Hitbox,
-  Knockback; `WeaponComponent` if it shoots). Give it a `NetEntity` (kind `ENEMY`) and
+  Knockback; `WeaponComponent` if it shoots). To take burn, chill and shred, give it a
+  `StatusEffectsComponent` wired to its hitbox (see `_add_status_effects` in `enemies/chaser.gd`). Give it a `NetEntity` (kind `ENEMY`) and
   `capture_net_state()` / `apply_net_state()` like `enemies/chaser.gd`.
 - **AI runs only on the host** (rule 3). Clients only draw it.
 - New tuning goes in `EnemyData` as `@export`s.

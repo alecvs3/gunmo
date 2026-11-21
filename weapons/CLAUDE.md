@@ -17,6 +17,21 @@ reloading are `shared/components/weapon_component.gd`.
    the victim (`EVENT_HURT`). When the bullet ends, everyone is told where and when
    (`EVENT_ENDED`).
 
+## Hit effects and perks
+- `hit_effects.gd` (`HitEffects`): burn, chill, shock, shred and blast numbers, one bit each.
+  A weapon can have some built in (`WeaponData.effects`, a sub-resource in its `.tres`). Perks
+  (`UpgradeData.effects`) add more, once per level (`PlayerStats.effective_effects`).
+- `impact_effects.gd` (host): what they do when a bullet lands or stops. It returns `Flash`
+  records, and `ProjectileSystem` shows them to everyone (`effect_flash.gd`).
+- Burn, chill and shred last on the target: `shared/components/status_effects_component.gd`
+  (host timers). The status bits travel in the enemy snapshot and are drawn by
+  `shared/components/status_marks.gd`.
+- A shot carries `effect_mask` to every peer, so bullets look the same everywhere.
+- **A new effect kind** = a new bit and fields in `HitEffects` (including how two combine in
+  `plus()`), what it does in `ImpactEffects` or `StatusEffectsComponent`, tests in
+  `tests/weapons/test_hit_effects.gd` / `tests/weapons/test_impact_effects.gd`, and a
+  `Handshake.PROTOCOL` bump if a mask or snapshot changes.
+
 ## Rules that aren't obvious
 - **Only AUTHORITATIVE bullets deal damage.**
 - A REMOTE bullet that passes near your own player catches up to the present over 0.2 s, so a
@@ -29,5 +44,6 @@ reloading are `shared/components/weapon_component.gd`.
 `add-weapon` (in `.claude/skills/`).
 
 ## Tests
-`tests/weapons/` (`test_bullet.gd`, `test_shot.gd`, `test_weapon_set.gd`, `test_tier1_latency.gd`),
-`tests/shared/components/test_weapon_component.gd`, and smoke scenarios A, E and H.
+`tests/weapons/` (bullets, shots, the weapon set, hit and impact effects, fair dodging),
+`tests/shared/components/test_weapon_component.gd`, `tests/shared/components/test_status_effects.gd`,
+`tests/upgrades/test_perks.gd`, and smoke scenarios A, D (perks set enemies on fire), E and H.

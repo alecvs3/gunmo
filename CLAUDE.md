@@ -24,10 +24,11 @@ autoloads/       EventBus (signals only), NetworkManager (connection, clock, cha
                  lag compensator, stats), GameSettings (name, fullscreen)
 shared/network/* netcode: clock, channel, snapshots, prediction history, lag compensation
 shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback, Wallet, Score,
-                 DisplayDelay: the parts players, bots and enemies are built from
+                 StatusEffects, DisplayDelay: the parts players, bots and enemies are built from
 player/*         Player scene: input, movement (PlayerMotor), prediction, snapshot (PlayerNetSync)
-weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, fair dodging (TimelineHits)
-upgrades/        ShopCatalog, UpgradeData, PlayerStats (stacking), ShopRules
+weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, hit effects (HitEffects, ImpactEffects),
+                 fair dodging (TimelineHits)
+upgrades/        ShopCatalog, UpgradeData (stats and perks), PlayerStats (stacking), ShopRules
 enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings

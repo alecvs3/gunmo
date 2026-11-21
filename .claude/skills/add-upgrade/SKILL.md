@@ -16,6 +16,16 @@ Area: **Alex** (`upgrades/`).
 3. **Tests:** stacking is covered in `tests/upgrades/test_player_stats.gd`. Add a case if it
    stacks with another upgrade on the same stat. Pricing rules are in `tests/upgrades/test_shop_rules.gd`.
 
+## A perk (adds hit effects to your bullets)
+An upgrade with `effects` set is a perk (`UpgradeData.is_perk()`). A player may own only
+`max_perks` different perks (`upgrades/data/shop_catalog.tres`), and that choice is their build.
+1. Create `upgrades/data/perk_<name>.tres` with `effects` = a `HitEffects` sub-resource. Copy
+   `upgrades/data/perk_incendiary.tres`. Each level adds those effects once.
+2. Append it to `upgrades` in the catalog, like any upgrade.
+3. A new kind of effect (not burn, chill, shock, shred or blast) is bigger: see "Hit effects and
+   perks" in `weapons/CLAUDE.md`.
+4. Tests: `tests/upgrades/test_perks.gd` (owning, the perk limit, stacking).
+
 ## On a new stat
 1. Add the stat to `UpgradeData.Stat` (append at the end; the enum value is saved in `.tres` files).
 2. Apply it in `upgrades/player_stats.gd` (`effective_weapon` or `effective_player`). It must
