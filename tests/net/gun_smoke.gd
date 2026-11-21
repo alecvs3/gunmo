@@ -14,7 +14,8 @@ const WATCHDOG_SECONDS: float = 115.0
 const MATCH_PATH: String = "res://tests/net/data/quick_gun_game.tres"
 const HOST_NAME: String = "SmokeHost"
 const CLIENT_NAME: String = "SmokeClient"
-const HOLD_FIRE_SECONDS: float = 12.0
+## The humans hold fire until a bot has killed someone, at most this long.
+const HOLD_FIRE_SECONDS: float = 25.0
 
 var _state: RefCounted = null
 var _winner_id: int = 0
@@ -44,12 +45,8 @@ func _run_host() -> void:
 	await _wait_until(func() -> bool: return _players().size() == 4, 5.0)
 	_check_roster(CLIENT_NAME)
 	await _hold_fire(HOLD_FIRE_SECONDS)
-	var bot_kills: int = 0
-	for player in _players():
-		if player.get("is_bot"):
-			bot_kills += player.call("get_score").kills
-	_info("bot kills while the humans held fire: %d" % bot_kills)
-	_check(bot_kills > 0, "the bots never killed anyone")
+	_info("bot kills while the humans held fire: %d" % _bot_kills())
+	_check(_bot_kills() > 0, "the bots never killed anyone")
 	await _fight_until_winner(70.0)
 	_info("winner id %d" % _winner_id)
 	await create_timer(1.0).timeout
@@ -68,7 +65,7 @@ func _run_client() -> void:
 	_check(net.join("127.0.0.1", _port) == OK, "join() failed")
 	await _wait_until(func() -> bool: return _own_player() != null and _players().size() == 4, 15.0)
 	_check_roster(HOST_NAME)
-	await _hold_fire(HOLD_FIRE_SECONDS - 1.0)
+	await _hold_fire(HOLD_FIRE_SECONDS)
 	await _fight_until_winner(75.0)
 	_info("winner id %d" % _winner_id)
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 10.0)
@@ -92,9 +89,19 @@ func _check_roster(other_name: String) -> void:
 			_check(str(player.get("display_name")).begins_with("Bot"), "bot without a bot name")
 
 
+## Stands still without firing until a bot has a kill (scores replicate, so the client sees it
+## too), at most `seconds`.
 func _hold_fire(seconds: float) -> void:
 	_script(_own_player(), 0.0, 0)
-	await create_timer(seconds).timeout
+	await _wait_until(func() -> bool: return _bot_kills() > 0, seconds)
+
+
+func _bot_kills() -> int:
+	var kills: int = 0
+	for player in _players():
+		if player.get("is_bot"):
+			kills += player.call("get_score").kills
+	return kills
 
 
 ## Shoots at the nearest living opponent until the match has a winner.
