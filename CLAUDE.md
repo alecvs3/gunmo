@@ -37,7 +37,7 @@ tests/       automated tests, mirroring the folders above
 2. **Every gameplay feature must work in multiplayer from the start.** Test it with 2 instances running (Debug → Customize Run Instances). There is no "add networking later".
 3. **Bots and enemies run only on the host** and are replicated like any other networked entity.
 4. **Use components rather than deep inheritance.** Players, bots and enemies are built from the same `HealthComponent`, `HitboxComponent` and `WeaponComponent`.
-5. **Systems talk through `EventBus` signals** (`enemy_killed`, `wave_started`, `player_died`, ...). No `get_node()` paths that reach into another scene.
+5. **Systems talk through `EventBus` signals** (`enemy_killed`, `wave_started`, `player_killed`, ...). No `get_node()` paths that reach into another scene.
 6. **Tuning numbers live in Resources (`.tres`), never in code:** `WeaponData`, `UpgradeData`, `EnemyData`, `WaveConfig`, `BotProfile`, `MatchSettings`.
 7. **Mode logic stays inside `modes/`.** Shared systems never check which mode is running.
 8. **Only the three autoloads listed above.** Ask before adding another.

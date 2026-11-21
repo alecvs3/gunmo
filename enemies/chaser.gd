@@ -43,7 +43,6 @@ func _ready() -> void:
 		return
 	_health.reset()
 	_health.died.connect(_on_died)
-	EventBus.enemy_spawned.emit(self)
 
 
 func _physics_process(delta: float) -> void:

@@ -250,7 +250,6 @@ func _ready_as_host() -> void:
 	_health.died.connect(_on_died)
 	NetworkManager.channel.commands_received.connect(_on_commands_received)
 	add_to_group(Groups.LIVING_PLAYERS)
-	EventBus.player_spawned.emit(self)
 
 
 ## One shot from the weapon: a bullet per pellet, each with its own seeded spread. Bullets leave
@@ -291,7 +290,6 @@ func _on_died(killer_id: int) -> void:
 	_knockback.velocity = Vector2.ZERO
 	_set_alive(false)
 	EventBus.player_killed.emit(self, killer_id)
-	EventBus.player_died.emit(peer_id)
 
 
 func _set_alive(alive: bool) -> void:
