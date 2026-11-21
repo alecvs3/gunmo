@@ -30,6 +30,13 @@ func is_reloading() -> bool:
 	return reload_left > TIME_EPSILON
 
 
+## 0..1 through the current reload (0 when not reloading). For the HUD.
+func reload_progress() -> float:
+	if not is_reloading() or weapon_data.reload_time <= 0.0:
+		return 0.0
+	return 1.0 - reload_left / weapon_data.reload_time
+
+
 func can_fire() -> bool:
 	return ammo > 0 and cooldown_left <= TIME_EPSILON and not is_reloading()
 

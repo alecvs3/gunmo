@@ -90,6 +90,17 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 		_fire(command)
 
 
+## What the HUD shows about this player: health, ammo, reload (0..1, 0 = not reloading).
+func hud_stats() -> Dictionary:
+	return {
+		"health": _health.current_health,
+		"max_health": _health.max_health,
+		"ammo": _weapon.ammo,
+		"magazine": _weapon.weapon_data.magazine_size,
+		"reload": _weapon.reload_progress(),
+	}
+
+
 ## Host only: out of the fight without dying (a late joiner spectating until the break).
 func make_spectator() -> void:
 	_move_velocity = Vector2.ZERO

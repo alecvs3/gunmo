@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="2_menu"]
 [ext_resource type="PackedScene" path="res://ui/net_overlay.tscn" id="3_overlay"]
 [ext_resource type="PackedScene" path="res://ui/game_menu.tscn" id="4_gamemenu"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="5_hud"]
+[ext_resource type="PackedScene" path="res://ui/results_screen.tscn" id="6_results"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -26,6 +28,10 @@ spawn_limit = 1
 
 [node name="MainMenu" parent="UI" instance=ExtResource("2_menu")]
 
+[node name="Hud" parent="UI" instance=ExtResource("5_hud")]
+
 [node name="NetOverlay" parent="UI" instance=ExtResource("3_overlay")]
+
+[node name="ResultsScreen" parent="UI" instance=ExtResource("6_results")]
 
 [node name="GameMenu" parent="UI" instance=ExtResource("4_gamemenu")]
