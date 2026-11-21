@@ -3,6 +3,8 @@ extends Control
 ## The in-match HUD. Your health, ammo and reload come from your own player (predicted on a
 ## client, so they react instantly); the wave, enemies left, break countdown and ready status
 ## come from the replicated MatchState. Banners announce waves, clears, being down and the end.
+## In Gun Game the match panel shows your gun, kills on it and the leader instead, and a banner
+## announces each new gun.
 
 const BANNER_SECONDS: float = 2.5
 
@@ -13,6 +15,8 @@ var _local_ready: bool = false
 var _spectating: int = 0
 var _banner_left: float = 0.0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
+## Gun Game: the tier our player was on last frame (-1 = unknown), for the next-gun banner.
+var _last_tier: int = -1
 
 @onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
@@ -78,8 +82,12 @@ func _process(delta: float) -> void:
 	visible = NetworkManager.is_online() and _state != null
 	if not visible:
 		return
-	_show_player(Player.find_local(get_tree()))
-	_show_match()
+	var player: Player = Player.find_local(get_tree())
+	_show_player(player)
+	if _state.mode_kind == MatchNetState.ModeKind.GUN_GAME:
+		_show_gun_game(player)
+	else:
+		_show_match()
 	_banner_left -= delta
 	_banner.visible = _banner_left > 0.0
 	_banner.modulate.a = clampf(_banner_left, 0.0, 1.0)
@@ -88,12 +96,13 @@ func _process(delta: float) -> void:
 func _on_match_state_changed(state: RefCounted) -> void:
 	var new_state := (state as MatchNetState).copy()
 	var text: String = banner_for(_previous_phase, _previous_wave, new_state)
+	if new_state.mode_kind == MatchNetState.ModeKind.GUN_GAME:
+		text = _gun_game_banner(new_state)
 	var modifiers: String = _modifiers.names(new_state.modifier_mask)
 	if new_state.phase == GameMode.Phase.ACTIVE and text.begins_with("Wave") and modifiers != "":
 		text += " · " + modifiers
 	if _previous_phase != -1 and not text.is_empty():
-		_banner.text = text
-		_banner_left = BANNER_SECONDS
+		_show_banner(text)
 	_previous_phase = new_state.phase
 	_previous_wave = new_state.wave
 	_state = new_state
@@ -105,6 +114,7 @@ func _on_session_ended() -> void:
 	_previous_wave = 0
 	_local_ready = false
 	_spectating = 0
+	_last_tier = -1
 
 
 func _show_player(player: Player) -> void:
@@ -121,9 +131,12 @@ func _show_player(player: Player) -> void:
 		"Reloading…" if reload > 0.0 else "%d / %d" % [stats["ammo"], stats["magazine"]]
 	)
 	_credits_label.text = "%d credits" % stats["credits"]
+	_credits_label.visible = _state.mode_kind == MatchNetState.ModeKind.WAVES
 	var down: bool = not player.is_alive and _state.phase == GameMode.Phase.ACTIVE
 	_status_label.visible = down
-	if down:
+	if down and _state.mode_kind == MatchNetState.ModeKind.GUN_GAME:
+		_status_label.text = "Respawning…"
+	elif down:
 		var watching: String = "spectating a teammate · click to switch"
 		_status_label.text = (
 			"You're down · " + (watching if _spectating != 0 else "nobody left to watch")
@@ -139,3 +152,33 @@ func _show_match() -> void:
 	_ready_label.text = lines[1]
 	if _state.phase == GameMode.Phase.ACTIVE:
 		_ready_label.text = _modifiers.names(_state.modifier_mask)
+
+
+func _show_gun_game(player: Player) -> void:
+	var ranked: Array[Dictionary] = Scoreboard.ranked_players(get_tree(), _state.mode_kind)
+	_ready_label.text = GunGameHudText.leader_line(ranked, multiplayer.get_unique_id())
+	if player == null:
+		_wave_label.text = "Gun Game"
+		_info_label.text = ""
+		return
+	var score: ScoreComponent = player.get_score()
+	var weapon_name: String = player.get_loadout().current_weapon().display_name
+	_wave_label.text = GunGameHudText.title(_state, score.tier, weapon_name)
+	_info_label.text = GunGameHudText.progress(_state, score.tier, score.tier_kills)
+	if _last_tier >= 0 and score.tier > _last_tier:
+		_show_banner(GunGameHudText.tier_up_banner(weapon_name))
+	_last_tier = score.tier
+
+
+## Gun Game only announces the winner (new guns are announced from the player's tier).
+func _gun_game_banner(state: MatchNetState) -> String:
+	if state.winner_id == 0 or state.phase == _previous_phase:
+		return ""
+	var winner: Player = Player.find_by_id(get_tree(), state.winner_id)
+	var winner_name: String = winner.display_name if winner != null else "Someone"
+	return GunGameHudText.winner_title(winner_name, state.winner_id == multiplayer.get_unique_id())
+
+
+func _show_banner(text: String) -> void:
+	_banner.text = text
+	_banner_left = BANNER_SECONDS

@@ -100,3 +100,13 @@ func test_armor_scales_damage_but_never_below_one() -> void:
 	assert_eq(health.current_health, 88)
 	health.take_damage(1)
 	assert_eq(health.current_health, 87, "a hit always does at least 1")
+
+
+func test_invulnerable_takes_no_damage() -> void:
+	health.invulnerable = true
+	health.take_damage(50, 3)
+	assert_eq(health.current_health, 100)
+	assert_signal_not_emitted(health, "damaged")
+	health.invulnerable = false
+	health.take_damage(50, 3)
+	assert_eq(health.current_health, 50)

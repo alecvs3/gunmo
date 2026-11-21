@@ -2,13 +2,13 @@ extends Node
 ## Root scene. Shows the menu; once hosting starts, the host puts the level into
 ## LevelContainer and the game mode into ModeContainer, and their MultiplayerSpawners
 ## replicate both to every client (late joiners too).
-## Dev launch args (see LaunchArgs) can host or join straight away, or pick match settings.
+## The match settings (and with them the mode) come from the menu's choice, or from the
+## --match launch arg. Dev launch args (see LaunchArgs) can also host or join straight away.
 
 const LEVEL_SCENE: PackedScene = preload("res://levels/test_arena.tscn")
-const MODE_SCENE: PackedScene = preload("res://modes/wave_mode.tscn")
-const DEFAULT_MATCH: MatchSettings = preload("res://modes/data/default_match.tres")
 
-var _match_settings: MatchSettings = DEFAULT_MATCH
+## Set by --match; otherwise the menu decides.
+var _match_settings: MatchSettings = null
 
 @onready var _level_container: Node = $LevelContainer
 @onready var _mode_container: Node = $ModeContainer
@@ -54,10 +54,11 @@ func _load_match_settings(path: String) -> void:
 ## The level first, then the mode (which spawns the players into it).
 func _on_hosting_started() -> void:
 	_menu.hide()
+	var settings: MatchSettings = _match_settings if _match_settings else _menu.chosen_match()
 	var level: Level = LEVEL_SCENE.instantiate()
 	_level_container.add_child(level, true)
-	var mode: GameMode = MODE_SCENE.instantiate()
-	mode.setup(level, _match_settings)
+	var mode: GameMode = settings.mode_scene.instantiate()
+	mode.setup(level, settings)
 	_mode_container.add_child(mode, true)
 
 

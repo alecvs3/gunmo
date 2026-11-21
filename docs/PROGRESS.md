@@ -126,13 +126,13 @@ same phases); a real host runs waves; the HUD checked in screenshots; a fresh cl
 ### Known limitations
 
 - Balance is a first guess: tune `modes/waves/data/default_waves.tres` and `enemies/data/*.tres`.
-- Players have no names yet; the HUD says "spectating a teammate".
+- ~~Players have no names yet~~ (names added in M4; the spectate line still says "a teammate").
 - The command-line `--import` crashes now and then on an already-imported working copy right
   after files changed (a Godot 4.7.2 cache bug; running it again works, a fresh clone
   imports fine). If the editor crashes once after pulling, open it again.
 - Only one map.
 
-## Milestone 3 — upgrades and combat depth ✅ (in review, issues #26–#31)
+## Milestone 3 — upgrades and combat depth ✅ (merged, issues #26–#31)
 
 Branch `milestone-3`, one commit per issue.
 
@@ -156,3 +156,33 @@ earned, and wave modifiers reach the client. Shop, HUD credits and modifier bann
 - Prices, upgrade strengths, bounties and modifier strengths are a first guess (all in `.tres` files).
 - The shop panel has room for about 7 upgrades at 648 px height; more will need a scroll area.
 - No hit marker yet (`ProjectileSystem.hit_confirmed` is there for it).
+
+## Milestone 4 — Gun Game and bots ✅ (in review, issues #33–#37)
+
+Branch `milestone-4`, one commit per issue.
+
+| Issue | Feature | Status | Where |
+|---|---|---|---|
+| #33 | Names (in the join hello, saved in `user://settings.cfg`, shown above players); teams in the snapshot, own bullets never hit yourself; ScoreComponent (kills, deaths, tier); spawn protection; menu mode select + bot count; `MatchSettings.mode_scene`; signed shooter ids; protocol 5 | Done, tested | `shared/`, `player/`, `ui/main_menu.*`, `modes/match_settings.gd` |
+| #34 | GunGameMode: free-for-all, ladder from MatchSettings (SMG → Rifle → Shotgun → Pistol, 3 kills each, 2 on the last), respawn at the point farthest from everyone, winner, restart | Done, tested | `modes/gun_game/`, `modes/data/gun_game_match.tres`, `levels/` |
+| #35 | Bots: BotProfile (easy / normal / hard), BotBrain decisions, host-only BotController (line of sight, reaction time, aim error, turn speed, strafing, navigation), fill empty slots | Done, tested | `bots/` |
+| #36 | Gun Game HUD (gun, kills on it, leader, next-gun banner), Tab scoreboard for both modes, winner on the results screen | Done, tested | `ui/` |
+| #37 | Gun Game smoke scenario (E) and docs | Done | `tests/net/gun_smoke.gd` |
+
+**Verified:** 240 GUT tests; lint/format clean; all five smoke scenarios pass. Scenario E: a host
+and a client named themselves and see each other's names; 2 bots fill the match to 4 (a third bot
+leaves when the client joins); with the humans holding fire the bots find and kill players on
+their own; someone climbs the ladder and wins, both sides agree on the winner, the results screen
+names them and the scoreboard lists all 4; the host restarts and every tier is back at 0.
+**Not yet verified:** playing it in a window (HUD layout, scoreboard, name labels, how the bots
+feel), bot difficulty, two PCs.
+
+### Known limitations
+
+- Bots are Gun Game only. They don't dodge bullets, and they roam between respawn points rather
+  than reading the map.
+- The ladder only uses guns from the shop catalog (4 so far), so the default ladder is short.
+- Gun Game has no lobby or countdown: it starts when the host hosts, and the host's "Play
+  again" restarts it.
+- Bot difficulty, ladder length and kills per gun are first guesses (`bots/profiles/*.tres`,
+  `modes/data/gun_game_match.tres`).

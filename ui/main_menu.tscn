@@ -35,8 +35,34 @@ theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Center/Box"]
 layout_mode = 2
-text = "Milestone 1 test build"
+text = "Test build"
 horizontal_alignment = 1
+
+[node name="NameEdit" type="LineEdit" parent="Center/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Your name"
+max_length = 16
+
+[node name="ModeSelect" type="OptionButton" parent="Center/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BotsRow" type="HBoxContainer" parent="Center/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="BotsLabel" type="Label" parent="Center/Box/BotsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Fill with bots up to"
+
+[node name="BotsSpin" type="SpinBox" parent="Center/Box/BotsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 8.0
+value = 4.0
+suffix = "players"
 
 [node name="HostButton" type="Button" parent="Center/Box"]
 unique_name_in_owner = true

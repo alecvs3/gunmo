@@ -63,3 +63,27 @@ func test_sweep_uses_rewound_position() -> void:
 	assert_not_null(at_past, "hits where the shooter saw it")
 	assert_null(lag.sweep(Vector2.ZERO, Vector2(100, 0), 0.0, LagCompensator.PRESENT, &"x"))
 	assert_null(lag.sweep(Vector2.ZERO, Vector2(100, 0), 0.0, 100.0, &"targets"), "same team")
+
+
+func test_sweep_never_hits_the_shooters_own_hitbox() -> void:
+	var lag: LagCompensator = NetworkManager.lag_compensator
+	var hitbox := HitboxComponent.new()
+	var shape := CollisionShape2D.new()
+	shape.shape = CircleShape2D.new()
+	(shape.shape as CircleShape2D).radius = 10.0
+	hitbox.add_child(shape)
+	hitbox.team = HitboxComponent.team_for(-2)
+	hitbox.owner_id = -2
+	hitbox.position = Vector2(50, 0)
+	add_child_autofree(hitbox)
+	var from := Vector2.ZERO
+	var to := Vector2(100, 0)
+	var present: float = LagCompensator.PRESENT
+	assert_not_null(lag.sweep(from, to, 0.0, present, &"team_5", [], 9), "others' shots hit")
+	assert_null(lag.sweep(from, to, 0.0, present, &"team_5", [], -2), "own shots pass")
+
+
+func test_team_for() -> void:
+	assert_eq(HitboxComponent.team_for(0), &"players", "0 is the co-op team")
+	assert_eq(HitboxComponent.team_for(4), &"team_4")
+	assert_ne(HitboxComponent.team_for(-4), HitboxComponent.team_for(4))

@@ -1,12 +1,19 @@
 class_name MatchNetState
 extends NetState
-## The match as every peer sees it: the phase, the wave, when the current phase ends, how many
-## enemies are left, and how many players are in, alive and ready. Phase values are
-## GameMode.Phase. Clients always use the newest one (no interpolation).
+## The match as every peer sees it: which mode, the phase, the wave, when the current phase
+## ends, how many enemies are left, how many players are in, alive and ready, whether the
+## shop is open, the Gun Game ladder's shape and who won. Phase values are GameMode.Phase.
+## Clients always use the newest one (no interpolation).
 
-## 3 x u8 + f64 + u16 + 3 x u8 + u8 modifier mask.
-const SIZE: int = 17
+## Which layout the HUD, scoreboard and results screen use.
+enum ModeKind { WAVES, GUN_GAME }
 
+const FLAG_SHOP_OPEN: int = 1
+## u8 mode + 3 x u8 + f64 + u16 + 3 x u8 + u8 modifier mask + u8 flags + i32 winner
+## + 3 x u8 ladder.
+const SIZE: int = 26
+
+var mode_kind: int = ModeKind.WAVES
 var phase: int = 0
 var wave: int = 0
 var total_waves: int = 0
@@ -18,9 +25,17 @@ var player_count: int = 0
 var living_count: int = 0
 ## The current wave's modifiers (bit i = ModifierCatalog index i).
 var modifier_mask: int = 0
+var shop_open: bool = false
+## Gun Game: the player who finished the ladder (0 = nobody yet).
+var winner_id: int = 0
+## Gun Game: how many guns the ladder has, kills needed per gun, and on the last gun.
+var ladder_length: int = 0
+var kills_per_tier: int = 0
+var final_tier_kills: int = 0
 
 
 func encode(buffer: StreamPeerBuffer) -> void:
+	buffer.put_u8(mode_kind)
 	buffer.put_u8(phase)
 	buffer.put_u8(clampi(wave, 0, 255))
 	buffer.put_u8(clampi(total_waves, 0, 255))
@@ -30,9 +45,15 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(clampi(player_count, 0, 255))
 	buffer.put_u8(clampi(living_count, 0, 255))
 	buffer.put_u8(modifier_mask & 0xFF)
+	buffer.put_u8(FLAG_SHOP_OPEN if shop_open else 0)
+	buffer.put_32(winner_id)
+	buffer.put_u8(clampi(ladder_length, 0, 255))
+	buffer.put_u8(clampi(kills_per_tier, 0, 255))
+	buffer.put_u8(clampi(final_tier_kills, 0, 255))
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
+	mode_kind = buffer.get_u8()
 	phase = buffer.get_u8()
 	wave = buffer.get_u8()
 	total_waves = buffer.get_u8()
@@ -42,6 +63,11 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	player_count = buffer.get_u8()
 	living_count = buffer.get_u8()
 	modifier_mask = buffer.get_u8()
+	shop_open = buffer.get_u8() & FLAG_SHOP_OPEN != 0
+	winner_id = buffer.get_32()
+	ladder_length = buffer.get_u8()
+	kills_per_tier = buffer.get_u8()
+	final_tier_kills = buffer.get_u8()
 
 
 func byte_size() -> int:
@@ -55,29 +81,27 @@ func seconds_left(now_tick: float) -> float:
 	return maxf((phase_end_tick - now_tick) * NetClock.tick_delta(), 0.0)
 
 
+## Gun Game: kills needed to leave `tier` (the last tier needs final_tier_kills).
+func kills_needed(tier: int) -> int:
+	return final_tier_kills if tier >= ladder_length - 1 else kills_per_tier
+
+
+func is_over() -> bool:
+	return phase == GameMode.Phase.VICTORY or phase == GameMode.Phase.DEFEAT
+
+
 func equals(other: MatchNetState) -> bool:
-	return (
-		phase == other.phase
-		and wave == other.wave
-		and total_waves == other.total_waves
-		and phase_end_tick == other.phase_end_tick
-		and enemies_left == other.enemies_left
-		and ready_count == other.ready_count
-		and player_count == other.player_count
-		and living_count == other.living_count
-		and modifier_mask == other.modifier_mask
-	)
+	var buffer := StreamPeerBuffer.new()
+	encode(buffer)
+	var other_buffer := StreamPeerBuffer.new()
+	other.encode(other_buffer)
+	return buffer.data_array == other_buffer.data_array
 
 
 func copy() -> MatchNetState:
+	var buffer := StreamPeerBuffer.new()
+	encode(buffer)
+	buffer.seek(0)
 	var duplicate := MatchNetState.new()
-	duplicate.phase = phase
-	duplicate.wave = wave
-	duplicate.total_waves = total_waves
-	duplicate.phase_end_tick = phase_end_tick
-	duplicate.enemies_left = enemies_left
-	duplicate.ready_count = ready_count
-	duplicate.player_count = player_count
-	duplicate.living_count = living_count
-	duplicate.modifier_mask = modifier_mask
+	duplicate.decode(buffer)
 	return duplicate

@@ -61,7 +61,7 @@ func _on_bullet_finished(bullet: Bullet, end_point: Vector2, hit_something: bool
 		return
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u8(EVENT_ENDED)
-	buffer.put_u32(bullet.shot.shooter_id)
+	buffer.put_32(bullet.shot.shooter_id)
 	buffer.put_u32(bullet.shot.shot_id)
 	NetCodec.put_vector2(buffer, end_point)
 	buffer.put_double(NetworkManager.clock.tick)
@@ -100,7 +100,7 @@ func _on_event_received(topic: int, data: PackedByteArray) -> void:
 
 
 func _on_shot_ended(buffer: StreamPeerBuffer) -> void:
-	var shooter_id: int = buffer.get_u32()
+	var shooter_id: int = buffer.get_32()
 	var key: String = "%d:%d" % [shooter_id, buffer.get_u32()]
 	var end_point: Vector2 = NetCodec.get_vector2(buffer)
 	var end_tick: float = buffer.get_double()

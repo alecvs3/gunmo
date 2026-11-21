@@ -99,7 +99,7 @@ func _find_target(from: Vector2, to: Vector2) -> LagCompensator.Hit:
 	var at_tick: float = LagCompensator.PRESENT
 	if mode == Mode.AUTHORITATIVE:
 		at_tick = lag.clamped_tick(shot.view_tick + _age_ticks)
-	return lag.sweep(from, to, shot.radius, at_tick, shot.team, _already_hit)
+	return lag.sweep(from, to, shot.radius, at_tick, shot.team, _already_hit, shot.shooter_id)
 
 
 ## Damages (host only) and either stops or, with pierce left, flies on past this target.

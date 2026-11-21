@@ -74,11 +74,14 @@ func sweep(
 	bullet_radius: float,
 	at_tick: float,
 	ignore_team: StringName,
-	exclude: Array[HitboxComponent] = []
+	exclude: Array[HitboxComponent] = [],
+	ignore_owner_id: int = 0
 ) -> Hit:
 	var best: Hit = null
 	for hitbox: HitboxComponent in _histories:
 		if hitbox.team == ignore_team or hitbox in exclude:
+			continue
+		if ignore_owner_id != 0 and hitbox.owner_id == ignore_owner_id:
 			continue
 		var place: Dictionary = _place(hitbox, at_tick)
 		if not place["hittable"]:

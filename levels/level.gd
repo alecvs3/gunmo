@@ -5,11 +5,15 @@ extends Node2D
 ## MultiplayerSpawners replicate what they add.
 
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
+const BOT_CONTROLLER: Script = preload("res://bots/bot_controller.gd")
 
 @export var players_root: Node2D
 @export var enemies_root: Node2D
 @export var player_spawn_points: Node2D
 @export var enemy_spawn_points: Node2D
+## Spread around the whole map; free-for-all respawns pick the one farthest from everyone.
+## Falls back to the player spawn points when empty.
+@export var respawn_points: Node2D
 ## Where enemies can walk. Baked on the host when the level starts, from the static colliders
 ## in the "navigation_obstacles" group (walls, pillars); clients don't need it.
 @export var navigation_region: NavigationRegion2D
@@ -20,12 +24,30 @@ func _ready() -> void:
 		navigation_region.bake_navigation_polygon(false)
 
 
-func spawn_player(peer_id: int) -> Player:
+## `display_name` reaches every client with the spawn.
+func spawn_player(peer_id: int, display_name: String = "") -> Player:
 	var new_player: Player = PLAYER_SCENE.instantiate()
 	new_player.name = str(peer_id)
+	new_player.display_name = display_name
 	new_player.position = player_spawn_position(players_root.get_child_count())
 	players_root.add_child(new_player, true)
 	return new_player
+
+
+## A bot: a normal player (negative id) driven by a BotController that only the host has.
+func spawn_bot(bot_id: int, display_name: String, profile: BotProfile) -> Player:
+	var new_bot: Player = PLAYER_SCENE.instantiate()
+	new_bot.name = str(bot_id)
+	new_bot.display_name = display_name
+	new_bot.is_bot = true
+	var controller: BotController = BOT_CONTROLLER.new()
+	controller.name = "BotController"
+	controller.profile = profile
+	controller.roam_points = _respawn_positions()
+	new_bot.bot = controller
+	new_bot.add_child(controller)
+	players_root.add_child(new_bot, true)
+	return new_bot
 
 
 func remove_player(peer_id: int) -> void:
@@ -50,6 +72,36 @@ func players() -> Array[Player]:
 func player_spawn_position(index: int) -> Vector2:
 	var points: Array[Node] = player_spawn_points.get_children()
 	return (points[index % points.size()] as Node2D).position
+
+
+## The respawn point whose nearest other player is farthest away.
+func farthest_respawn_point(others: Array[Vector2]) -> Vector2:
+	return farthest_from(_respawn_positions(), others)
+
+
+## Of `candidates`, the one with the largest distance to its nearest point in `others`
+## (the first candidate when there is nobody to avoid).
+static func farthest_from(candidates: Array[Vector2], others: Array[Vector2]) -> Vector2:
+	var best: Vector2 = candidates[0]
+	var best_distance: float = -1.0
+	for candidate in candidates:
+		var nearest: float = INF
+		for other in others:
+			nearest = minf(nearest, candidate.distance_squared_to(other))
+		if nearest > best_distance:
+			best = candidate
+			best_distance = nearest
+	return best
+
+
+func _respawn_positions() -> Array[Vector2]:
+	var root: Node2D = respawn_points if respawn_points != null else player_spawn_points
+	if root.get_child_count() == 0:
+		root = player_spawn_points
+	var positions: Array[Vector2] = []
+	for point: Node2D in root.get_children():
+		positions.append(point.position)
+	return positions
 
 
 func enemy_spawn_positions() -> Array[Vector2]:

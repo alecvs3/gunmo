@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="2_menu"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="5_hud"]
 [ext_resource type="PackedScene" path="res://ui/results_screen.tscn" id="6_results"]
 [ext_resource type="PackedScene" path="res://ui/shop_panel.tscn" id="7_shop"]
+[ext_resource type="PackedScene" path="res://ui/scoreboard.tscn" id="8_scoreboard"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -21,7 +22,7 @@ spawn_limit = 1
 [node name="ModeContainer" type="Node" parent="."]
 
 [node name="ModeSpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("res://modes/wave_mode.tscn")
+_spawnable_scenes = PackedStringArray("res://modes/wave_mode.tscn", "res://modes/gun_game/gun_game_mode.tscn")
 spawn_path = NodePath("../ModeContainer")
 spawn_limit = 1
 
@@ -36,5 +37,7 @@ spawn_limit = 1
 [node name="NetOverlay" parent="UI" instance=ExtResource("3_overlay")]
 
 [node name="ResultsScreen" parent="UI" instance=ExtResource("6_results")]
+
+[node name="Scoreboard" parent="UI" instance=ExtResource("8_scoreboard")]
 
 [node name="GameMenu" parent="UI" instance=ExtResource("4_gamemenu")]

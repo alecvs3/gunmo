@@ -1,11 +1,12 @@
 class_name GameMode
 extends Node
-## Base for every game mode (Waves now, Gun Game later). One mode node lives under
+## Base for every game mode (Waves, Gun Game). One mode node lives under
 ## Main/ModeContainer on every peer:
 ##   host     runs the rules, spawns players into the level, keeps `state` up to date
 ##   clients  receive `state` (newest only, through NetEntity) and send requests to the host
 ## Everything else (HUD, results screen) listens to EventBus.match_state_changed and never
-## asks which mode is running (rule 7).
+## asks which mode is running (rule 7); MatchNetState.mode_kind only picks their layout.
+## The base keeps every player's kills and deaths; modes add their own scoring on top.
 
 enum Phase { LOBBY, BREAK, ACTIVE, VICTORY, DEFEAT }
 
@@ -36,6 +37,7 @@ func _ready() -> void:
 	NetworkManager.peer_left.connect(_on_peer_left)
 	NetworkManager.channel.request_received.connect(_on_request_received)
 	EventBus.match_restart_requested.connect(restart)
+	EventBus.player_killed.connect(_on_player_killed)
 	_start()
 	for peer_id in NetworkManager.peers:
 		_on_peer_joined(peer_id)
@@ -96,7 +98,27 @@ func _on_ready_changed(_peer_id: int, _is_ready: bool) -> void:
 func _on_peer_joined(peer_id: int) -> void:
 	if peer_id == 1 and NetworkManager.is_dedicated:
 		return
-	level.spawn_player(peer_id)
+	level.spawn_player(peer_id, NetworkManager.display_name(peer_id))
+
+
+## Host: a death for the victim and, unless it was a suicide or not a player, a kill for the
+## killer. Returns the killer's player (null when there is none to credit).
+func _on_player_killed(victim: Node2D, killer_id: int) -> Player:
+	var victim_player := victim as Player
+	if victim_player == null:
+		return null
+	victim_player.get_score().deaths += 1
+	var killer: Player = level.player(killer_id)
+	if killer == null or killer == victim_player:
+		return null
+	killer.get_score().kills += 1
+	return killer
+
+
+## Host: every player's score back to zero (a restart).
+func _reset_scores() -> void:
+	for player in level.players():
+		player.get_score().reset()
 
 
 func _on_peer_left(peer_id: int) -> void:

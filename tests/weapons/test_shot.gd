@@ -56,3 +56,12 @@ func test_pellet_ids_are_unique_per_command() -> void:
 		for pellet in Shot.MAX_PELLETS:
 			ids[Shot.make_id(command, pellet)] = true
 	assert_eq(ids.size(), 49 * Shot.MAX_PELLETS)
+
+
+func test_bot_shooter_ids_are_signed() -> void:
+	var shot: Shot = Shot.from_weapon(data, Vector2.ZERO, Vector2.RIGHT)
+	shot.shooter_id = -4
+	shot.shot_id = 7
+	var buffer := StreamPeerBuffer.new()
+	shot.encode(buffer)
+	assert_eq(Shot.decode(NetCodec.buffer_from(buffer.data_array)).key(), "-4:7")

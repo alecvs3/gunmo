@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="BotProfile" format=3]
+
+[ext_resource type="Script" path="res://bots/bot_profile.gd" id="1_profile"]
+
+[resource]
+script = ExtResource("1_profile")
+display_name = "Normal"
+reaction_time = 0.35
+aim_error_degrees = 7.0
+aim_error_period = 0.6
+turn_speed_degrees = 420.0
+fire_cone_degrees = 6.0
+awareness_range = 750.0
+preferred_distance = 320.0
+strafe = 0.5
+strafe_period = 1.5
+repath_interval = 0.5

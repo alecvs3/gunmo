@@ -118,6 +118,19 @@ func kick(peer_id: int, reason: String) -> void:
 		(multiplayer as SceneMultiplayer).disconnect_peer(peer_id)
 
 
+## Sent to the host when we join (and used for our own player when we host).
+func set_local_name(player_name: String) -> void:
+	gate.set_local_name(player_name)
+
+
+## Host: the name a peer chose, or "Player <id>" when it sent none.
+func display_name(peer_id: int) -> String:
+	var chosen: String = (
+		str(gate.hello["name"]) if peer_id == 1 else str(gate.names.get(peer_id, ""))
+	)
+	return chosen if not chosen.is_empty() else "Player %d" % peer_id
+
+
 func is_online() -> bool:
 	return state == State.HOSTING or state == State.CONNECTED
 
@@ -196,6 +209,7 @@ func _close() -> void:
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	peers.clear()
+	gate.names.clear()
 	ping.reset()
 	clock.reset()
 	channel.reset()
@@ -229,6 +243,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	peers.erase(peer_id)
+	gate.names.erase(peer_id)
 	NetLog.write("peer %d disconnected" % peer_id)
 	peer_left.emit(peer_id)
 

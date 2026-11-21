@@ -65,3 +65,15 @@ func test_reject_and_accept_messages() -> void:
 	assert_true(Handshake.accept()["ok"])
 	assert_false(Handshake.reject("nope")["ok"])
 	assert_eq(Handshake.reject("nope")["reason"], "nope")
+
+
+func test_hello_carries_the_name() -> void:
+	assert_eq(Handshake.make_hello("0.1.0", "abc", "Alex")["name"], "Alex")
+
+
+func test_clean_name_trims_limits_and_drops_control_characters() -> void:
+	assert_eq(Handshake.clean_name("  Yusuf  "), "Yusuf")
+	assert_eq(Handshake.clean_name("a" + char(10) + "b" + char(9) + "c"), "abc")
+	assert_eq(Handshake.clean_name("x".repeat(40)).length(), Handshake.MAX_NAME_LENGTH)
+	assert_eq(Handshake.clean_name(42), "", "only strings")
+	assert_eq(Handshake.clean_name("   "), "")
