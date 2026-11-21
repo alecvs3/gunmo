@@ -133,6 +133,7 @@ foreach ($scenario in @($scenarios | Where-Object { $_.Alone })) { $batches += ,
 foreach ($batch in $batches) {
     $names = ($batch | ForEach-Object { "$($_.Id) ($($_.Title))" }) -join ", "
     Write-Host "Scenario $names"
+    Start-Sleep -Seconds 2  # let the previous batch's processes finish exiting
     $seconds = Invoke-Batch $batch
     foreach ($scenario in $batch) { $allOk = (Test-Scenario $scenario) -and $allOk }
     Write-Host ("  took {0:N0} s" -f $seconds)
