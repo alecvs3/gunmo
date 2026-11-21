@@ -92,3 +92,11 @@ func test_apply_replicated_shows_host_value_clamped() -> void:
 	health.apply_replicated(500)
 	assert_eq(health.current_health, 100)
 	assert_signal_not_emitted(health, "damaged")
+
+
+func test_armor_scales_damage_but_never_below_one() -> void:
+	health.damage_taken_multiplier = 0.6
+	health.take_damage(20)
+	assert_eq(health.current_health, 88)
+	health.take_damage(1)
+	assert_eq(health.current_health, 87, "a hit always does at least 1")

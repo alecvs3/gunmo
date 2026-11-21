@@ -95,6 +95,7 @@ func test_match_state_round_trip_equals_and_copy() -> void:
 	state.ready_count = 2
 	state.player_count = 3
 	state.living_count = 1
+	state.modifier_mask = 5
 	var back: MatchNetState = _round_trip(state, MatchNetState.new())
 	assert_true(back.equals(state))
 	assert_true(state.copy().equals(state))

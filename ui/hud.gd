@@ -12,6 +12,7 @@ var _previous_wave: int = 0
 var _local_ready: bool = false
 var _spectating: int = 0
 var _banner_left: float = 0.0
+var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 
 @onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
@@ -87,6 +88,9 @@ func _process(delta: float) -> void:
 func _on_match_state_changed(state: RefCounted) -> void:
 	var new_state := (state as MatchNetState).copy()
 	var text: String = banner_for(_previous_phase, _previous_wave, new_state)
+	var modifiers: String = _modifiers.names(new_state.modifier_mask)
+	if new_state.phase == GameMode.Phase.ACTIVE and text.begins_with("Wave") and modifiers != "":
+		text += " · " + modifiers
 	if _previous_phase != -1 and not text.is_empty():
 		_banner.text = text
 		_banner_left = BANNER_SECONDS
@@ -133,3 +137,5 @@ func _show_match() -> void:
 	)
 	_info_label.text = lines[0]
 	_ready_label.text = lines[1]
+	if _state.phase == GameMode.Phase.ACTIVE:
+		_ready_label.text = _modifiers.names(_state.modifier_mask)

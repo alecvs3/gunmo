@@ -7,6 +7,8 @@ signal healed(amount: int)
 signal died(source_id: int)
 
 @export_range(1, 10000) var max_health: int = 100
+## Incoming damage is multiplied by this (armor); every hit still does at least 1.
+var damage_taken_multiplier: float = 1.0
 
 var current_health: int = 0
 
@@ -24,7 +26,8 @@ func is_dead() -> bool:
 func take_damage(amount: int, source_id: int = 0) -> void:
 	if not _can_modify() or amount <= 0 or is_dead():
 		return
-	var dealt: int = mini(amount, current_health)
+	var scaled: int = maxi(roundi(amount * damage_taken_multiplier), 1)
+	var dealt: int = mini(scaled, current_health)
 	current_health -= dealt
 	damaged.emit(dealt, source_id)
 	if current_health == 0:

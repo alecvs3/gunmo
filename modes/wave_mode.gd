@@ -14,6 +14,8 @@ const REQUEST_BUY: int = 2
 var _flow := WaveFlow.new()
 var _ready_peers: Dictionary = {}
 var _match_seed: int = 0
+var _modifier_mask: int = 0
+var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 
 @onready var _spawner: WaveSpawner = $WaveSpawner
 
@@ -64,8 +66,11 @@ func _handle(event: WaveFlow.Event) -> void:
 	match event:
 		WaveFlow.Event.WAVE_STARTED:
 			_ready_peers.clear()
+			_modifier_mask = _pick_modifiers()
 			var seed_value: int = hash([_match_seed, _flow.wave])
-			_spawner.start_wave(level, settings.wave_schedule, _flow.wave, seed_value)
+			_spawner.start_wave(
+				level, settings.wave_schedule, _flow.wave, seed_value, _modifier_mask
+			)
 		WaveFlow.Event.WAVE_CLEARED:
 			_ready_peers.clear()
 			_pay_wave_bonus()
@@ -73,6 +78,17 @@ func _handle(event: WaveFlow.Event) -> void:
 				_revive(false)
 		WaveFlow.Event.VICTORY, WaveFlow.Event.DEFEAT:
 			_spawner.stop()
+
+
+## This wave's modifiers, from their own seed so they don't change which enemies spawn.
+func _pick_modifiers() -> int:
+	var schedule: WaveSchedule = settings.wave_schedule
+	var count: int = ModifierCatalog.count_for_wave(
+		_flow.wave, schedule.first_modifier_wave, schedule.double_modifier_wave
+	)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([_match_seed, _flow.wave, "modifiers"])
+	return _modifiers.pick(count, rng)
 
 
 ## Brings back the players who are down (or, with `everyone`, resets all of them).
@@ -197,4 +213,5 @@ func _refresh_state(player_count: int, living: int, ready: int) -> void:
 	state.player_count = player_count
 	state.living_count = living
 	state.ready_count = ready
+	state.modifier_mask = _modifier_mask if _flow.phase == GameMode.Phase.ACTIVE else 0
 	publish_state()
