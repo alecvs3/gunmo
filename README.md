@@ -36,6 +36,9 @@ Add `--net-sim 100,20,5` to any instance to fake 100 ms lag, ±20 ms jitter and 
 `-- --dedicated` runs a server with no player of its own. How the netcode works:
 [docs/NETCODE.md](docs/NETCODE.md).
 
+**Smoothness check:** `godot --path . -s res://tests/visual/frame_pacing.gd` opens a window for a
+few seconds and reports whether the view moves evenly every frame.
+
 **In game:** the ping is in the top right (green/yellow/red), **F3** shows details for every
 player, **Esc** opens Resume / Leave match.
 

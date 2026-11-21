@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://player/data/default_player.tres" id="2_pdata"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://player/player_input_source.gd" id="8_input"]
 [ext_resource type="Script" path="res://player/player_prediction.gd" id="9_prediction"]
 [ext_resource type="Script" path="res://shared/network/net_entity.gd" id="10_netentity"]
+[ext_resource type="Script" path="res://player/player_camera.gd" id="11_camera"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 16.0
@@ -46,10 +47,14 @@ polygon = PackedVector2Array(6, -4, 28, -4, 28, 4, 6, 4)
 [node name="Muzzle" type="Marker2D" parent="Visual/Pivot"]
 position = Vector2(30, 0)
 
-[node name="Camera2D" type="Camera2D" parent="Visual"]
+[node name="PlayerCamera" type="Camera2D" parent="." node_paths=PackedStringArray("body", "visual")]
+physics_interpolation_mode = 2
+top_level = true
 enabled = false
-process_callback = 0
-position_smoothing_enabled = true
+process_callback = 1
+script = ExtResource("11_camera")
+body = NodePath("..")
+visual = NodePath("../Visual")
 
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_health")

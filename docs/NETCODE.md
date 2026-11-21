@@ -101,6 +101,15 @@ works the same as for humans.
 - **F3 overlay:** ping, loss, bandwidth, tick, how far behind others are drawn, size of the last
   prediction correction, unconfirmed inputs, snapshot size.
 
+## Any refresh rate
+
+The simulation (movement, shooting, networking) always runs at 60 ticks per second; drawing
+runs at the monitor's rate. The engine's physics interpolation draws bodies between ticks, and
+`PlayerCamera` follows that drawn position every frame, so 60, 144 and 240 Hz screens all
+scroll smoothly. Never move the view or a visible node from `_physics_process` unless the
+engine interpolates it; never tie gameplay to the frame rate. Check with
+`godot --path . -s res://tests/visual/frame_pacing.gd` (opens a window for a few seconds).
+
 ## Tuning
 
 Everything is in `shared/network/default_network_config.tres` (snapshot rate, interpolation

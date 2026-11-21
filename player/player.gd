@@ -43,7 +43,11 @@ func _ready() -> void:
 	)
 	_commands.configure(NetworkManager.config)
 	var is_owner: bool = peer_id == multiplayer.get_unique_id()
-	($Visual/Camera2D as Camera2D).enabled = is_owner
+	var camera: PlayerCamera = $PlayerCamera
+	camera.enabled = is_owner
+	camera.follow_time = player_data.camera_follow_time
+	camera.set_process(is_owner)
+	camera.set_physics_process(is_owner)
 	_input_source.set_process(is_owner)
 	_prediction.set_process(is_owner and not multiplayer.is_server())
 	if is_owner and not multiplayer.is_server():
