@@ -8,6 +8,9 @@ extends GameMode
 ## everyone standing when a wave is cleared. Each wave's enemies come from a seed made of the
 ## match seed and the wave number, so a match can be replayed exactly.
 
+## NetChannel request topic: [kind (ShopRules.KIND_*), index].
+const REQUEST_BUY: int = 2
+
 var _flow := WaveFlow.new()
 var _ready_peers: Dictionary = {}
 var _match_seed: int = 0
@@ -18,8 +21,14 @@ var _match_seed: int = 0
 func _ready() -> void:
 	super()
 	set_physics_process(multiplayer.is_server())
+	EventBus.shop_purchase_requested.connect(_on_shop_purchase_requested)
 	if multiplayer.is_server():
 		EventBus.enemy_killed.connect(_on_enemy_killed)
+
+
+## The shop is open in the lobby and in breaks.
+func shop_open() -> bool:
+	return can_ready_up()
 
 
 func _physics_process(_delta: float) -> void:
@@ -110,6 +119,52 @@ func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:
 	var chaser := enemy as ChaserEnemy
 	if killer != null and chaser != null:
 		killer.get_wallet().add(chaser.enemy_data.bounty)
+
+
+## This peer's shop asked to buy: the host applies it, a client asks the host.
+func _on_shop_purchase_requested(kind: int, index: int) -> void:
+	if multiplayer.is_server():
+		_buy(multiplayer.get_unique_id(), kind, index)
+	else:
+		NetworkManager.channel.send_request(REQUEST_BUY, PackedByteArray([kind, index]))
+
+
+func _on_request(peer_id: int, topic: int, data: PackedByteArray) -> void:
+	if topic == REQUEST_BUY and data.size() == 2:
+		_buy(peer_id, data[0], data[1])
+
+
+## Host: the rules decide; only then are credits taken and the item applied.
+func _buy(peer_id: int, kind: int, index: int) -> void:
+	var buyer: Player = level.player(peer_id)
+	if buyer == null:
+		return
+	var loadout: PlayerLoadout = buyer.get_loadout()
+	var wallet: WalletComponent = buyer.get_wallet()
+	var reason: String = _purchase_problem(loadout, wallet, kind, index)
+	if not reason.is_empty():
+		NetLog.write("purchase by %d refused: %s" % [peer_id, reason])
+		return
+	wallet.spend(ShopRules.price(loadout.catalog, kind, index, loadout.level(index)))
+	if kind == ShopRules.KIND_UPGRADE:
+		loadout.add_level(index)
+	else:
+		loadout.equip_weapon(index)
+
+
+func _purchase_problem(
+	loadout: PlayerLoadout, wallet: WalletComponent, kind: int, index: int
+) -> String:
+	var catalog: ShopCatalog = loadout.catalog
+	if kind == ShopRules.KIND_UPGRADE:
+		return ShopRules.check_upgrade(
+			shop_open(), catalog, index, loadout.level(index), wallet.credits
+		)
+	if kind == ShopRules.KIND_WEAPON:
+		return ShopRules.check_weapon(
+			shop_open(), catalog, index, loadout.weapon_index, wallet.credits
+		)
+	return "Unknown purchase."
 
 
 func _on_peer_left(peer_id: int) -> void:

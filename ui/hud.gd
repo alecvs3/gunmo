@@ -77,7 +77,7 @@ func _process(delta: float) -> void:
 	visible = NetworkManager.is_online() and _state != null
 	if not visible:
 		return
-	_show_player(_own_player())
+	_show_player(Player.find_local(get_tree()))
 	_show_match()
 	_banner_left -= delta
 	_banner.visible = _banner_left > 0.0
@@ -133,12 +133,3 @@ func _show_match() -> void:
 	)
 	_info_label.text = lines[0]
 	_ready_label.text = lines[1]
-
-
-func _own_player() -> Player:
-	var own_id: int = multiplayer.get_unique_id()
-	for node in get_tree().get_nodes_in_group(Groups.PLAYERS):
-		var player := node as Player
-		if player != null and player.peer_id == own_id:
-			return player
-	return null

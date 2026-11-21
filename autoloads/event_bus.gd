@@ -22,5 +22,8 @@ signal match_state_changed(state: RefCounted)
 signal local_ready_changed(is_ready: bool)
 ## This peer: while our player is down we watch this player (0 = nobody / back to ourselves).
 signal spectating_changed(peer_id: int)
+## This peer's shop: the player clicked buy (kind = ShopRules.KIND_*). The mode turns it into
+## a request the host checks.
+signal shop_purchase_requested(kind: int, index: int)
 ## Host UI: the host asked to play the match again (results screen).
 signal match_restart_requested

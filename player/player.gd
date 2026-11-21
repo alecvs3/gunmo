@@ -33,6 +33,16 @@ var _commands := CommandQueue.new()
 @onready var _prediction: PlayerPrediction = $PlayerPrediction
 
 
+## This peer's own player, if it has one (the HUD and shop read it).
+static func find_local(tree: SceneTree) -> Player:
+	var own_id: int = tree.get_multiplayer().get_unique_id()
+	for node in tree.get_nodes_in_group(Groups.PLAYERS):
+		var player := node as Player
+		if player != null and player.peer_id == own_id:
+			return player
+	return null
+
+
 func _enter_tree() -> void:
 	peer_id = name.to_int()
 
