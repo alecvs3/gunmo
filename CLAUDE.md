@@ -17,20 +17,35 @@ Not decided yet (ask, don't assume): [art style] · [target platform]
 - Multiplayer uses Godot's high-level multiplayer API (ENet) with a **host-authoritative listen server**.
 - Tests: GUT 9.7.1 (`addons/gut/`, config in `.gutconfig.json`). Lint and format: gdtoolkit (`gdlint`, `gdformat`).
 
-## Folder layout
+## System map
+Folders marked * have their own `CLAUDE.md` with the details. Read it before working there.
 ```
-autoloads/   EventBus, NetworkManager, GameSettings
-shared/      components (HealthComponent, HitboxComponent, ...), shared utils
-player/      player scene, input, movement
-weapons/     weapon scenes and logic; data in weapons/data/*.tres
-upgrades/    upgrade logic; data in upgrades/data/*.tres
-enemies/     enemy scenes and AI (wave mode)
-bots/        bot AI (gun game); profiles in bots/profiles/*.tres
-modes/       GameMode base, WaveMode, GunGameMode, waves/data/*.tres
-ui/          HUD, menus, lobby
-levels/      maps
-tests/       automated tests, mirroring the folders above
+autoloads/       EventBus (signals only), NetworkManager (connection, clock, channel, replicator,
+                 lag compensator, stats), GameSettings (name, fullscreen)
+shared/network/* netcode: clock, channel, snapshots, prediction history, lag compensation
+shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback, Wallet, Score,
+                 DisplayDelay: the parts players, bots and enemies are built from
+player/*         Player scene: input, movement (PlayerMotor), prediction, snapshot (PlayerNetSync)
+weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, fair dodging (TimelineHits)
+upgrades/        ShopCatalog, UpgradeData, PlayerStats (stacking), ShopRules
+enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres
+bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
+modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings
+ui/*             menus, HUD, scoreboard, shop, results, F3 overlay
+levels/          maps (Level: where things spawn, never when)
+tests/           GUT tests mirroring the folders; tests/net/ = multiplayer smoke scenarios
 ```
+**One tick on the host** (60 Hz): NetChannel reads packets first → each Player takes its next
+InputCommand (human: CommandQueue, bot: BotController) and runs `simulate()` → enemies, bullets
+and modes run → Replicator captures every NetEntity and sends snapshots → NetChannel sends last.
+**On a client:** your own player is predicted (PlayerPrediction runs `simulate()` on your input
+right away, then reconciles with the host's state); everything else is drawn from snapshots at
+NetClock's render tick. **A shot:** `simulate()` fires → EventBus `shot_fired` (host) or
+`shot_predicted` (owner) → ProjectileSystem spawns a Bullet → the host decides the hit and tells
+everyone how the bullet ended.
+
+**Recipes** (`.claude/skills/`): step-by-step checklists for adding a weapon, enemy, upgrade,
+wave modifier, networked field, client request or game mode. Use one when it fits.
 
 ## Architecture rules
 1. **The host decides everything that matters:** damage, health, kills, spawns, wave state, upgrades, ladder progress and all bot and enemy AI. Clients send only inputs and requests, and the host checks them. Never trust a client to report damage or kills.
@@ -38,7 +53,7 @@ tests/       automated tests, mirroring the folders above
 3. **Bots and enemies run only on the host** and are replicated like any other networked entity.
 4. **Use components rather than deep inheritance.** Players, bots and enemies are built from the same `HealthComponent`, `HitboxComponent` and `WeaponComponent`.
 5. **Systems talk through `EventBus` signals** (`enemy_killed`, `wave_started`, `player_killed`, ...). No `get_node()` paths that reach into another scene.
-6. **Tuning numbers live in Resources (`.tres`), never in code:** `WeaponData`, `UpgradeData`, `EnemyData`, `WaveConfig`, `BotProfile`, `MatchSettings`.
+6. **Tuning numbers live in Resources (`.tres`), never in code:** `WeaponData`, `UpgradeData`, `EnemyData`, `WaveSchedule`, `WaveModifier`, `BotProfile`, `MatchSettings`.
 7. **Mode logic stays inside `modes/`.** Shared systems never check which mode is running.
 8. **Only the three autoloads listed above.** Ask before adding another.
 9. **Networking follows `docs/NETCODE.md`:** the host decides, the owner predicts, others interpolate. Continuous state goes through `NetEntity` snapshots (never a continuous `MultiplayerSynchronizer`), player actions through `InputCommand`, one-off messages through `NetChannel` events. Keep `Player.simulate()` deterministic and bump `Handshake.PROTOCOL` when a network format changes.
@@ -60,6 +75,7 @@ tests/       automated tests, mirroring the folders above
 - **Ask instead of guessing.** Don't add addons or dependencies without asking.
 - **Explain what you did** in plain words, so both developers understand every change.
 - **Update `docs/PROGRESS.md`** in the same PR when a feature is finished or a known limitation is added or fixed.
+- **Keep the guides current.** If a change makes a folder `CLAUDE.md`, a recipe or the system map above wrong, fix it in the same PR. `tests/test_guides.gd` fails when a file path a guide names no longer exists.
 
 ## Ownership
 - **Alex (Dev A):** player, weapons, upgrades, gun game ladder
