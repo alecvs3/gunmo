@@ -2,12 +2,12 @@ extends GutTest
 ## BotBrain's decisions.
 
 
-func _candidate(id: int, position: Vector2, visible: bool = true) -> Dictionary:
-	return {"id": id, "position": position, "visible": visible}
+func _candidate(id: int, position: Vector2, visible: bool = true) -> BotBrain.Candidate:
+	return BotBrain.Candidate.new(id, position, visible)
 
 
 func test_choose_target_picks_the_nearest_visible_in_range() -> void:
-	var candidates: Array[Dictionary] = [
+	var candidates: Array[BotBrain.Candidate] = [
 		_candidate(2, Vector2(300, 0)),
 		_candidate(3, Vector2(100, 0), false),
 		_candidate(4, Vector2(200, 0)),
@@ -17,14 +17,14 @@ func test_choose_target_picks_the_nearest_visible_in_range() -> void:
 
 
 func test_choose_target_none_when_nothing_visible_in_range() -> void:
-	var candidates: Array[Dictionary] = [
+	var candidates: Array[BotBrain.Candidate] = [
 		_candidate(2, Vector2(100, 0), false), _candidate(3, Vector2(900, 0))
 	]
 	assert_eq(BotBrain.choose_target(Vector2.ZERO, candidates, 500.0, 0), 0)
 
 
 func test_choose_target_keeps_the_current_target_a_little_farther() -> void:
-	var candidates: Array[Dictionary] = [
+	var candidates: Array[BotBrain.Candidate] = [
 		_candidate(2, Vector2(560, 0)), _candidate(3, Vector2(450, 0))
 	]
 	assert_eq(BotBrain.choose_target(Vector2.ZERO, candidates, 500.0, 2), 2, "sticky")

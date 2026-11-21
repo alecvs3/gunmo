@@ -90,17 +90,17 @@ func sweep(
 			continue
 		if ignore_owner_id != 0 and hitbox.owner_id == ignore_owner_id:
 			continue
-		var place: Dictionary = _place(hitbox, at_tick)
-		if not place["hittable"]:
+		var place: PositionHistory.Place = _place(hitbox, at_tick)
+		if not place.hittable:
 			continue
-		var fraction: float = hitbox.sweep_fraction(from, to, place["position"], bullet_radius)
+		var fraction: float = hitbox.sweep_fraction(from, to, place.position, bullet_radius)
 		if fraction >= 0.0 and (best == null or fraction < best.fraction):
 			best = Hit.new(hitbox, from.lerp(to, fraction), fraction)
 	return best
 
 
-func _place(hitbox: HitboxComponent, at_tick: float) -> Dictionary:
+func _place(hitbox: HitboxComponent, at_tick: float) -> PositionHistory.Place:
 	var history: PositionHistory = _histories[hitbox]
 	if at_tick == PRESENT or history.is_empty():
-		return {"position": hitbox.center(), "hittable": hitbox.is_hittable()}
+		return PositionHistory.Place.new(hitbox.center(), hitbox.is_hittable())
 	return history.sample(at_tick)

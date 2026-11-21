@@ -10,25 +10,37 @@ extends RefCounted
 const KEEP_TARGET_RANGE: float = 1.25
 
 
-## The id of the target to fight, or 0 for none. `candidates` are
-## {"id": int, "position": Vector2, "visible": bool}; only visible ones count. The current
+## Something a bot could fight.
+class Candidate:
+	var id: int
+	var position: Vector2
+	## In the bot's line of sight.
+	var visible: bool
+
+	func _init(candidate_id: int, at: Vector2, can_see: bool) -> void:
+		id = candidate_id
+		position = at
+		visible = can_see
+
+
+## The id of the target to fight, or 0 for none. Only visible candidates count. The current
 ## target is kept while it stays visible and within reach; otherwise the nearest wins.
 static func choose_target(
-	from: Vector2, candidates: Array[Dictionary], awareness_range: float, current_id: int
+	from: Vector2, candidates: Array[Candidate], awareness_range: float, current_id: int
 ) -> int:
 	var best_id: int = 0
 	var best_distance: float = INF
 	for candidate in candidates:
-		if not candidate["visible"]:
+		if not candidate.visible:
 			continue
-		var distance: float = from.distance_to(candidate["position"])
+		var distance: float = from.distance_to(candidate.position)
 		var reach: float = awareness_range
-		if candidate["id"] == current_id:
+		if candidate.id == current_id:
 			reach *= KEEP_TARGET_RANGE
 			if distance <= reach:
 				return current_id
 		if distance <= reach and distance < best_distance:
-			best_id = candidate["id"]
+			best_id = candidate.id
 			best_distance = distance
 	return best_id
 

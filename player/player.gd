@@ -48,6 +48,18 @@ var move_velocity: Vector2 = Vector2.ZERO
 
 var _commands := CommandQueue.new()
 
+
+## What the HUD shows about a player (hud_stats).
+class HudStats:
+	var health: int = 0
+	var max_health: int = 0
+	var ammo: int = 0
+	var magazine: int = 0
+	## 0..1 while reloading, 0 when not.
+	var reload: float = 0.0
+	var credits: int = 0
+
+
 @onready var _pivot: Node2D = $Visual/Pivot
 @onready var _look: PlayerLook = $Visual/Pivot/Look
 @onready var _health: HealthComponent = $HealthComponent
@@ -160,16 +172,16 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 		_fire(command)
 
 
-## What the HUD shows about this player: health, ammo, reload (0..1, 0 = not reloading).
-func hud_stats() -> Dictionary:
-	return {
-		"health": _health.current_health,
-		"max_health": _health.max_health,
-		"ammo": _weapon.ammo,
-		"magazine": _weapon.weapon_data.magazine_size,
-		"reload": _weapon.reload_progress(),
-		"credits": _wallet.credits,
-	}
+## What the HUD shows about this player.
+func hud_stats() -> HudStats:
+	var stats := HudStats.new()
+	stats.health = _health.current_health
+	stats.max_health = _health.max_health
+	stats.ammo = _weapon.ammo
+	stats.magazine = _weapon.weapon_data.magazine_size
+	stats.reload = _weapon.reload_progress()
+	stats.credits = _wallet.credits
+	return stats
 
 
 func get_wallet() -> WalletComponent:

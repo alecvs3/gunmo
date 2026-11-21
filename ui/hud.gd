@@ -120,17 +120,15 @@ func _on_session_ended() -> void:
 func _show_player(player: Player) -> void:
 	if player == null:
 		return
-	var stats: Dictionary = player.hud_stats()
-	_health_bar.max_value = stats["max_health"]
-	_health_bar.value = stats["health"]
-	_health_label.text = "%d / %d" % [stats["health"], stats["max_health"]]
-	var reload: float = stats["reload"]
+	var stats: Player.HudStats = player.hud_stats()
+	_health_bar.max_value = stats.max_health
+	_health_bar.value = stats.health
+	_health_label.text = "%d / %d" % [stats.health, stats.max_health]
+	var reload: float = stats.reload
 	_reload_bar.visible = reload > 0.0
 	_reload_bar.value = reload
-	_ammo_label.text = (
-		"Reloading…" if reload > 0.0 else "%d / %d" % [stats["ammo"], stats["magazine"]]
-	)
-	_credits_label.text = "%d credits" % stats["credits"]
+	_ammo_label.text = ("Reloading…" if reload > 0.0 else "%d / %d" % [stats.ammo, stats.magazine])
+	_credits_label.text = "%d credits" % stats.credits
 	_credits_label.visible = _state.mode_kind == MatchNetState.ModeKind.WAVES
 	var down: bool = not player.is_alive and _state.phase == GameMode.Phase.ACTIVE
 	_status_label.visible = down
@@ -155,7 +153,7 @@ func _show_match() -> void:
 
 
 func _show_gun_game(player: Player) -> void:
-	var ranked: Array[Dictionary] = Scoreboard.ranked_players(get_tree(), _state.mode_kind)
+	var ranked: Array[Scoreboard.Row] = Scoreboard.ranked_players(get_tree(), _state.mode_kind)
 	_ready_label.text = GunGameHudText.leader_line(ranked, multiplayer.get_unique_id())
 	if player == null:
 		_wave_label.text = "Gun Game"

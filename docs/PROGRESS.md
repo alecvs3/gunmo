@@ -232,7 +232,7 @@ budgets (first CI run on the PR).
   clients (each gets its own packets). To measure with more clients in #43.
 - The host's tick cost rose a little with 60 snapshots/s (more encoding); #43 looks at it.
 
-## Placeholder art: Kenney top-down shooter ✅ (in review, issue #62)
+## Placeholder art: Kenney top-down shooter ✅ (merged, issue #62)
 
 Branch `placeholder-art`. Mostly looks; the gameplay changes are where shots start, the aim
 angle, and the player's collision sizes. Network messages are unchanged.
@@ -263,7 +263,7 @@ budget; the rerun passed, and this change doesn't touch networking).
 - Characters are picked from the peer id, so two players can get the same one.
 - Bullets are still shapes; menus and HUD are unchanged.
 
-## Latency tier 1: fair play at high ping ✅ (in review, issues #57–#61)
+## Latency tier 1: fair play at high ping ✅ (merged, issues #57–#61)
 
 Branch `latency-tier1`. Aimed at Yusuf's report (160 ms round trip): bots "shooting all over
 the place", and getting hit by bullets that missed on his screen.
@@ -297,7 +297,7 @@ client's screen. Protocol 7.
 - Light can't be beaten: Yusuf still sees others about his latency in the past. A server between
   your continents would split it evenly (needs the Linux build, #48).
 
-## Fullscreen (in review, issue #65)
+## Fullscreen ✅ (merged, issue #65)
 
 Branch `ui/fullscreen`. Display only: nothing is sent over the network.
 
@@ -314,3 +314,20 @@ lint/format clean.
 
 - No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
 - Fullscreen uses the screen the window is on; there is no monitor picker.
+
+## Foundations: refactors for clarity ✅ (in review, issue #44)
+
+Branch `refactor-clarity`. No behaviour or network format change (protocol stays 7).
+
+| What | Where |
+|---|---|
+| A player's snapshot (capture, show, restore) is its own component; `Player` forwards to it | `player/player_net_sync.gd` (new node in `player.tscn`) |
+| The fair-dodging timeline is its own class | `player/player_timeline.gd` |
+| The host's report on how a player's inputs arrive moved to the stats it fills | `NetStats.report_inputs` |
+| Every smoke scenario extends one base instead of copying the same helpers (about 400 lines less) | `tests/net/smoke_script.gd` |
+| Typed classes instead of loose Dictionaries | `LaunchArgs.Options`, `PositionHistory.Place`, `TimelineHits.Hit`, `Player.HudStats`, `Scoreboard.Row`, `BotBrain.Candidate` |
+
+`player/player.gd` went from 389 to about 300 lines. `MatchNetState` keeps its mode-specific
+fields (26 bytes; splitting it would change the network format for little gain).
+**Checked:** 292 GUT tests, lint, format, and all 18 smoke roles pass. Tests that called the
+changed functions now use the typed fields instead of Dictionary keys.

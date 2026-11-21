@@ -13,22 +13,31 @@ const JOIN: String = "join"
 const DEDICATED: String = "dedicated"
 
 
-## Returns {"action", "address", "port", "net_sim", "match"}. net_sim is [] or
-## [latency, jitter, loss] with loss as a 0..1 share; match is "" or a resource path.
-static func parse(args: PackedStringArray, default_port: int) -> Dictionary:
-	var result: Dictionary = {
-		"action": NONE, "address": "", "port": default_port, "net_sim": [], "match": ""
-	}
-	result["net_sim"] = _parse_net_sim(args)
+## What the command line asked for.
+class Options:
+	## NONE, HOST, JOIN or DEDICATED.
+	var action: String = NONE
+	var address: String = ""
+	var port: int = 0
+	## [] or [latency ms, jitter ms, loss as a 0..1 share].
+	var net_sim: Array = []
+	## "" or a MatchSettings resource path.
+	var match_path: String = ""
+
+
+static func parse(args: PackedStringArray, default_port: int) -> Options:
+	var result := Options.new()
+	result.port = default_port
+	result.net_sim = _parse_net_sim(args)
 	var match_index: int = args.find("--match")
 	if match_index != -1 and match_index + 1 < args.size():
-		result["match"] = args[match_index + 1]
+		result.match_path = args[match_index + 1]
 	for action: String in [HOST, DEDICATED]:
 		var index: int = args.find("--" + action)
 		if index != -1:
-			result["action"] = action
+			result.action = action
 			if index + 1 < args.size() and _is_port(args[index + 1]):
-				result["port"] = args[index + 1].to_int()
+				result.port = args[index + 1].to_int()
 			return result
 	var join_index: int = args.find("--join")
 	if (
@@ -40,12 +49,12 @@ static func parse(args: PackedStringArray, default_port: int) -> Dictionary:
 	return result
 
 
-static func _parse_join_target(target: String, result: Dictionary) -> void:
-	result["action"] = JOIN
-	result["address"] = target
+static func _parse_join_target(target: String, result: Options) -> void:
+	result.action = JOIN
+	result.address = target
 	if target.count(":") == 1 and _is_port(target.get_slice(":", 1)):
-		result["address"] = target.get_slice(":", 0)
-		result["port"] = target.get_slice(":", 1).to_int()
+		result.address = target.get_slice(":", 0)
+		result.port = target.get_slice(":", 1).to_int()
 
 
 static func _parse_net_sim(args: PackedStringArray) -> Array:

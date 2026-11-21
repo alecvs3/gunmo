@@ -53,7 +53,7 @@ func test_fair_dodging_counts_a_dodge_on_the_targets_own_screen() -> void:
 		timeline.record(tick, Vector2(100, 200), true)
 	var hits := TimelineHits.new()
 	hits.add_target(hitbox, timeline, func() -> int: return 110, shot)
-	assert_true(hits.check(shot, 110, shot.point_at(10)).is_empty(), "it had moved out of the way")
+	assert_null(hits.check(shot, 110, shot.point_at(10)), "it had moved out of the way")
 	assert_true(hits.settled(110))
 
 
@@ -66,13 +66,13 @@ func test_fair_dodging_hits_where_the_target_really_was() -> void:
 	var newest: Array[int] = [102]
 	var hits := TimelineHits.new()
 	hits.add_target(hitbox, timeline, func() -> int: return newest[0], shot)
-	assert_true(hits.check(shot, 110, shot.point_at(10)).is_empty(), "inputs not here yet")
+	assert_null(hits.check(shot, 110, shot.point_at(10)), "inputs not here yet")
 	assert_false(hits.settled(110), "waits for the target's inputs")
 	newest[0] = 110
-	var hit: Dictionary = hits.check(shot, 110, shot.point_at(10))
-	assert_false(hit.is_empty())
-	assert_eq(hit["tick"], 105, "the bullet reaches x=90 (100 - radius) in tick 105")
-	assert_eq(hit["hitbox"], hitbox)
+	var hit: TimelineHits.Hit = hits.check(shot, 110, shot.point_at(10))
+	assert_not_null(hit)
+	assert_eq(hit.tick, 105, "the bullet reaches x=90 (100 - radius) in tick 105")
+	assert_eq(hit.hitbox, hitbox)
 
 
 func test_unhittable_on_its_timeline_is_skipped() -> void:
@@ -82,7 +82,7 @@ func test_unhittable_on_its_timeline_is_skipped() -> void:
 		timeline.record(tick, Vector2(100, 0), false)
 	var hits := TimelineHits.new()
 	hits.add_target(_hitbox(), timeline, func() -> int: return 110, shot)
-	assert_true(hits.check(shot, 110, shot.point_at(10)).is_empty())
+	assert_null(hits.check(shot, 110, shot.point_at(10)))
 
 
 func test_catch_up_moves_from_the_past_to_the_present() -> void:
