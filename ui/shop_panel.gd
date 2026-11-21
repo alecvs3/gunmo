@@ -25,10 +25,41 @@ static func weapon_label(weapon: WeaponData, equipped: bool) -> String:
 	return "%s · %d" % [weapon.display_name, weapon.price]
 
 
-static func upgrade_label(upgrade: UpgradeData, level: int) -> String:
+## "Magazine 2/5 · +1 ammo · 150": what the next level gives `weapon` (the gun held) and its
+## price.
+static func upgrade_label(upgrade: UpgradeData, level: int, weapon: WeaponData) -> String:
 	if level >= upgrade.max_level:
 		return "%s %d/%d (max)" % [upgrade.display_name, level, upgrade.max_level]
-	return "%s %d/%d · %d" % [upgrade.display_name, level, upgrade.max_level, upgrade.cost(level)]
+	return (
+		"%s %d/%d · %s · %d"
+		% [
+			upgrade.display_name,
+			level,
+			upgrade.max_level,
+			gain_text(upgrade, weapon),
+			upgrade.cost(level),
+		]
+	)
+
+
+## What one more level of `upgrade` adds, for `weapon` when it is a gun stat.
+static func gain_text(upgrade: UpgradeData, weapon: WeaponData) -> String:
+	match upgrade.stat:
+		UpgradeData.Stat.DAMAGE:
+			if weapon.blast_damage_per_level > 0:
+				return (
+					"+%d dmg, +%d blast" % [weapon.damage_per_level, weapon.blast_damage_per_level]
+				)
+			return "+%d dmg" % weapon.damage_per_level
+		UpgradeData.Stat.FIRE_RATE:
+			return "+%s shots/s" % String.num(weapon.fire_rate_per_level, 2)
+		UpgradeData.Stat.MAGAZINE:
+			return "+%d ammo" % weapon.magazine_per_level
+		UpgradeData.Stat.RELOAD_SPEED:
+			return "-%s s" % String.num(weapon.reload_per_level, 2)
+		UpgradeData.Stat.KNOCKBACK:
+			return "+%d push" % roundi(weapon.knockback_per_level)
+	return "+%d%%" % roundi(upgrade.per_level * 100.0)
 
 
 func _ready() -> void:
@@ -95,6 +126,7 @@ func _refresh(player: Player) -> void:
 		_weapon_buttons[i].disabled = not problem.is_empty()
 	for i in _upgrade_buttons.size():
 		var level: int = loadout.level(i)
-		_upgrade_buttons[i].text = upgrade_label(_catalog.upgrades[i], level)
+		var held: WeaponData = _catalog.weapon(loadout.weapon_index)
+		_upgrade_buttons[i].text = upgrade_label(_catalog.upgrades[i], level, held)
 		var problem: String = ShopRules.check_upgrade(true, _catalog, i, level, credits)
 		_upgrade_buttons[i].disabled = not problem.is_empty()

@@ -5,9 +5,8 @@
 [resource]
 script = ExtResource("1_updata")
 display_name = "Magazine"
-description = "More shots before reloading."
+description = "More shots before reloading. How much depends on your gun."
 stat = 2
-per_level = 0.2
 max_level = 5
 base_cost = 100
 cost_growth = 1.5

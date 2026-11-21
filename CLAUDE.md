@@ -29,7 +29,8 @@ player/*         Player scene: input, movement (PlayerMotor), prediction, snapsh
 weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, rockets (Explosion), fair dodging
                  (TimelineHits)
 shared/          WindowRules (window modes, min size, UI scales), Groups
-upgrades/        ShopCatalog, UpgradeData (stats), PlayerStats (stacking), ShopRules
+upgrades/        ShopCatalog, UpgradeData (stats), PlayerStats (each gun's per-level amounts),
+                 ShopRules
 enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings

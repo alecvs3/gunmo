@@ -33,6 +33,20 @@ enum Projectile { BULLET, ROCKET }
 ## Push given to whatever the bullet hits (px/s along the bullet's path).
 @export_range(0.0, 3000.0) var knockback: float = 0.0
 
+@export_group("Per upgrade level")
+## What one level of each gun upgrade adds to this gun (shop upgrades on DAMAGE, FIRE_RATE,
+## MAGAZINE, RELOAD_SPEED and KNOCKBACK). Every gun sets its own, so every level does
+## something that fits it: a rocket launcher gets +1 rocket, an SMG +6 rounds.
+@export_range(0, 1000) var damage_per_level: int = 0
+## Added to blast_damage per DAMAGE level (exploding guns).
+@export_range(0, 1000) var blast_damage_per_level: int = 0
+## Shots per second.
+@export_range(0.0, 10.0) var fire_rate_per_level: float = 0.0
+@export_range(0, 100) var magazine_per_level: int = 0
+## Seconds taken off the reload.
+@export_range(0.0, 5.0) var reload_per_level: float = 0.0
+@export_range(0.0, 1000.0) var knockback_per_level: float = 0.0
+
 @export_group("Looks")
 ## Drawn over the character's hands, its front end at the muzzle (e.g. a launcher tube). None =
 ## the character picture's own gun.

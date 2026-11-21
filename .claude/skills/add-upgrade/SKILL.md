@@ -7,9 +7,14 @@ description: Add a new shop upgrade (a stat players buy levels of between waves)
 
 Area: **Alex** (`upgrades/`).
 
+## How much a level gives
+- **Gun stats** (damage, fire rate, magazine, reload speed, knockback): each gun sets what one
+  level adds to it, in its `.tres` ("Per upgrade level" in `WeaponData`). Leave `per_level` at 0.
+- **Player stats** (move speed, max health): `per_level` on the upgrade (0.1 = +10% per level).
+
 ## On an existing stat (data only)
 1. **Create `upgrades/data/<name>.tres`** (an `UpgradeData`, `upgrades/upgrade_data.gd`):
-   `display_name`, `description`, `stat`, `per_level` (0.1 = +10% per level), `max_level`,
+   `display_name`, `description`, `stat`, `per_level` (player stats only), `max_level`,
    `base_cost`, `cost_growth`.
 2. **Append it to `upgrades`** in `upgrades/data/shop_catalog.tres`. Never reorder: levels
    travel by index. There's room for `ShopCatalog.MAX_UPGRADES` (16).
@@ -18,7 +23,9 @@ Area: **Alex** (`upgrades/`).
 
 ## On a new stat
 1. Add the stat to `UpgradeData.Stat` (append at the end; the enum value is saved in `.tres` files).
-2. Apply it in `upgrades/player_stats.gd` (`effective_weapon` or `effective_player`). It must
+2. Apply it in `upgrades/player_stats.gd` (`effective_weapon` or `effective_player`). A gun
+   stat needs a `<stat>_per_level` field on every gun (`weapons/weapon_data.gd`), an entry in
+   `UpgradeData.is_weapon_stat`, and a line in `ShopPanel.gain_text` (`ui/shop_panel.gd`). It must
    stay pure and deterministic, because the host and the predicting owner both compute it.
 3. Use the effective number where it matters (`player/player_loadout.gd` hands out the effective
    `WeaponData` and `PlayerData`).

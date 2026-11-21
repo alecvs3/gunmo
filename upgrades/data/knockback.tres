@@ -5,9 +5,8 @@
 [resource]
 script = ExtResource("1_updata")
 display_name = "Knockback"
-description = "Push enemies further."
+description = "Push enemies further. How much depends on your gun."
 stat = 6
-per_level = 0.25
 max_level = 5
 base_cost = 100
 cost_growth = 1.5

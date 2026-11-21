@@ -419,3 +419,22 @@ Protocol 9 (shots carry their projectile type; new blast event; the builds field
 - The shooter sees their own rocket's blast when the host's message arrives (one round trip
   after the rocket lands on their screen).
 - **Not verified:** how it looks and feels in a window.
+
+## Upgrades per gun (in review, issue #79)
+
+The gun upgrades used to add a percentage of the gun's number, rounded, so some levels added
+nothing (the Rocket Launcher's 3 rockets went 4, 4, 5, 5, 6). Now every gun says what one level
+of each gun upgrade gives it.
+
+| Feature | Status | Where |
+|---|---|---|
+| Per-level amounts on every gun for Damage, Fire rate, Magazine, Reload speed and Knockback (e.g. Magazine: Pistol +2, SMG +6, Shotgun/Rifle/Rocket +1); every level always adds something | Done, tested | `weapons/data/*.tres`, `upgrades/player_stats.gd` |
+| The Rocket Launcher's blast grows with Damage too (+6 per level) | Done, tested | `weapons/data/rocket_launcher.tres` |
+| Levels carry over when you switch guns and give the new gun's amounts | Done, tested | `upgrades/player_stats.gd` |
+| The shop shows what the next level gives the gun you hold ("Magazine 2/5 · +1 ammo · 150") | Done, not checked in a window | `ui/shop_panel.gd` |
+| Move speed and Max health stay a percentage, the same for everyone | Unchanged | `upgrades/data/*.tres` |
+
+### Known limitations
+
+- The amounts are a first guess, roughly matching the old percentages.
+- A reload never gets shorter than 0.1 s.
