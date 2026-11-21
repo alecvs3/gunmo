@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://ui/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://ui/fullscreen_check.gd" id="2_fullscreen"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -90,6 +91,11 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 2
 text = "Cancel"
+
+[node name="FullscreenCheck" type="CheckBox" parent="Center/Box"]
+layout_mode = 2
+text = "Fullscreen (F11)"
+script = ExtResource("2_fullscreen")
 
 [node name="QuitButton" type="Button" parent="Center/Box"]
 unique_name_in_owner = true

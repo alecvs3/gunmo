@@ -7,8 +7,8 @@ extends Node
 
 @export var weapon: WeaponComponent
 @export var health: HealthComponent
-## Tinted with the weapon's color, so everyone can see what you carry.
-@export var barrel: Polygon2D
+## Shows the weapon's pose, so everyone can see what you carry.
+@export var look: PlayerLook
 
 var catalog: ShopCatalog = ShopCatalog.load_default()
 var weapon_index: int = 0
@@ -87,7 +87,7 @@ func _apply(new_weapon: bool) -> void:
 		weapon.equip(stats)
 	else:
 		weapon.set_stats(stats)
-	barrel.color = stats.color
+	look.pose = stats.pose
 	if _base_player != null:
 		effective_player = PlayerStats.effective_player(_base_player, catalog, levels)
 		health.max_health = effective_player.max_health

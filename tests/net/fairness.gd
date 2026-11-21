@@ -18,7 +18,7 @@ const MIN_FAIR_SHARE: float = 0.85
 ## Both bots share this team, so they leave each other alone and go for the client.
 const BOT_TEAM: int = -100
 ## Player hitbox radius + bullet radius + a little slack for blending between ticks (px).
-const ON_PLAYER_DISTANCE: float = 30.0
+const ON_PLAYER_DISTANCE: float = 33.0
 ## ProjectileSystem's event topic and kinds.
 const TOPIC: int = 1
 const EVENT_ENDED: int = 2

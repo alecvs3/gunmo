@@ -11,6 +11,7 @@ chill_seconds = 1.5
 [resource]
 script = ExtResource("1_wdata")
 display_name = "Cryo Carbine"
+pose = 1
 price = 350
 pellets = 1
 pierce = 0

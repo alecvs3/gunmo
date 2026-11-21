@@ -232,7 +232,38 @@ budgets (first CI run on the PR).
   clients (each gets its own packets). To measure with more clients in #43.
 - The host's tick cost rose a little with 60 snapshots/s (more encoding); #43 looks at it.
 
-## Latency tier 1: fair play at high ping ✅ (in review, issues #57–#61)
+## Placeholder art: Kenney top-down shooter ✅ (merged, issue #62)
+
+Branch `placeholder-art`. Mostly looks; the gameplay changes are where shots start, the aim
+angle, and the player's collision sizes. Network messages are unchanged.
+
+| What | How | Where |
+|---|---|---|
+| Players | One character sprite under the aim pivot (it turns with the aim) replaces the octagon and barrel. Each peer gets a character from its peer id (Man Blue, Man Brown, Survivor, Soldier); bots get Robot or Hitman. Every peer picks the same one, so nothing is sent. | `player/player_look.gd`, `player/character_look.gd`, `player/looks/*.tres`, `PlayerData.player_looks` / `bot_looks` |
+| Weapon poses | `WeaponData.pose` (gun / machine / silencer) replaces the barrel color: pistol gun, SMG and rifle machine, shotgun silencer | `weapons/weapon_data.gd`, `weapons/data/*.tres` |
+| Enemies | Zombie sprite, tinted by `EnemyData.color` and the wave modifiers, drawn at `EnemyData.visual_scale` (brute 1.25), turns to face where it moves on every peer | `enemies/chaser.*`, `enemies/data/*.tres` |
+| Arena | Floor and walls use repeating 64 px tiles | `levels/test_arena.tscn` |
+| Shots leave the barrel | Each look stores where its drawn barrel ends per pose (`gun_muzzle`, `machine_muzzle`, `silencer_muzzle`, about 10 px to the gun side). The host and the owner start shots there, from the held weapon's pose. The owner's aim turns the character slightly so the barrel line, not the head, passes through the mouse | `player/character_look.gd`, `player/looks/*.tres`, `player/player.gd`, `player/player_input_source.gd` |
+| Player collision | Body circle 16 → 18 px radius (walls), hit circle 18 → 21 px (about the shoulder width of the sprites) | `player/player.tscn` |
+
+Assets: `assets/kenney_top_down_shooter/` (only the PNGs used, CC0, see its `License.txt`).
+
+**Verified:** 273 GUT tests (new `tests/player/test_player_look.gd`); lint/format clean; smoke
+scenarios A–G pass (a first run had scenario G's lagged smoothing at 107 ms against its 100 ms
+budget; the rerun passed, and this change doesn't touch networking).
+**Not yet verified:** how it looks in a window and with two instances.
+
+### Known limitations
+
+- The hit circle is round while the sprite is about 30 × 43 px, so it covers a little empty space
+  in front of and behind the character. A capsule that turns with the aim would need the lag
+  compensator to remember rotation too.
+- Bots aim at targets from their body's center, so their shots pass about 10 px beside the target.
+- Hugging a wall can put the barrel tip past the wall's edge (as with the old 30 px muzzle).
+- Characters are picked from the peer id, so two players can get the same one.
+- Bullets are still shapes; menus and HUD are unchanged.
+
+## Latency tier 1: fair play at high ping ✅ (merged, issues #57–#61)
 
 Branch `latency-tier1`. Aimed at Yusuf's report (160 ms round trip): bots "shooting all over
 the place", and getting hit by bullets that missed on his screen.
@@ -266,6 +297,24 @@ client's screen. Protocol 7.
 - Light can't be beaten: Yusuf still sees others about his latency in the past. A server between
   your continents would split it evenly (needs the Linux build, #48).
 
+## Fullscreen ✅ (merged, issue #65)
+
+Branch `ui/fullscreen`. Display only: nothing is sent over the network.
+
+| What | How | Where |
+|---|---|---|
+| Fullscreen setting | `GameSettings.fullscreen`, saved in `user://settings.cfg` next to the name and applied on start. Borderless fullscreen (covers the screen, quick Alt+Tab) | `autoloads/game_settings.gd` |
+| Keys | Input action `toggle_fullscreen`: **F11** and **Alt+Enter**, handled before the GUI so Alt+Enter doesn't also press a focused button | `project.godot`, `autoloads/game_settings.gd` |
+| Menus | "Fullscreen (F11)" checkbox in the main menu and the Esc menu; both follow the keys and each other | `ui/fullscreen_check.gd`, `ui/main_menu.tscn`, `ui/game_menu.tscn` |
+
+**Verified:** 6 new GUT tests (`tests/autoloads/test_game_settings.gd`, using a test settings file);
+lint/format clean.
+
+### Known limitations
+
+- No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
+- Fullscreen uses the screen the window is on; there is no monitor picker.
+
 ## Builds: more guns, hit effects and perks (in progress, branch `gameplay/builds`)
 
 Goal: players can build different characters, and late waves get strategy from systems that
@@ -292,7 +341,6 @@ Protocol 8 (enemy snapshots +1 byte for status flags, bullets +1 byte for their 
   players (arcs and blasts still hit them). Torch and Cryo Carbine are left off the ladder for
   that reason. Chilling players would also need the slow in the owner's prediction.
 - Arcs and blasts use where foes are now (not lag-compensated) and go through walls.
-- New guns use the default barrel look; after the placeholder-art PR (#64) they need a `pose`.
 - Each Torch shot is 2 reliable bullet events, so a full lobby of Torches adds traffic (#43).
 - **Not verified:** playing it in a window (shop layout, effect rings, arcs, blasts), how the
   guns feel, two PCs.

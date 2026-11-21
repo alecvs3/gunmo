@@ -11,6 +11,7 @@ blast_radius = 110.0
 [resource]
 script = ExtResource("1_wdata")
 display_name = "Launcher"
+pose = 2
 price = 500
 pellets = 1
 pierce = 0

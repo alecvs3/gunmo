@@ -11,6 +11,7 @@ shred_seconds = 4.0
 [resource]
 script = ExtResource("1_wdata")
 display_name = "Railgun"
+pose = 1
 price = 600
 pellets = 1
 pierce = 6

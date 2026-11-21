@@ -102,13 +102,13 @@ func test_loadout_levels_cap_and_heal() -> void:
 	var weapon := WeaponComponent.new()
 	weapon.weapon_data = _weapon()
 	var health := HealthComponent.new()
-	var barrel := Polygon2D.new()
+	var look := PlayerLook.new()
 	var loadout := PlayerLoadout.new()
 	loadout.weapon = weapon
 	loadout.health = health
-	loadout.barrel = barrel
+	loadout.look = look
 	loadout.catalog = catalog
-	for node: Node in [weapon, health, barrel, loadout]:
+	for node: Node in [weapon, health, look, loadout]:
 		add_child_autofree(node)
 	var base := PlayerData.new()
 	base.max_health = 100

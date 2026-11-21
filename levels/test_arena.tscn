@@ -1,7 +1,9 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://levels/level.gd" id="1_arena"]
 [ext_resource type="Script" path="res://weapons/projectile_system.gd" id="2_proj"]
+[ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/tiles/floor_concrete.png" id="3_floor"]
+[ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/tiles/wall_planks.png" id="4_wall"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal"]
 size = Vector2(2080, 40)
@@ -30,13 +32,15 @@ navigation_region = NodePath("NavigationRegion")
 respawn_points = NodePath("RespawnPoints")
 
 [node name="Floor" type="Polygon2D" parent="."]
-color = Color(0.22, 0.24, 0.26, 1)
+texture_repeat = 2
+texture = ExtResource("3_floor")
 polygon = PackedVector2Array(0, 0, 2000, 0, 2000, 1200, 0, 1200)
 
 [node name="NavigationRegion" type="NavigationRegion2D" parent="."]
 navigation_polygon = SubResource("NavigationPolygon_arena")
 
 [node name="Walls" type="StaticBody2D" parent="." groups=["navigation_obstacles"]]
+texture_repeat = 2
 collision_mask = 0
 
 [node name="North" type="CollisionShape2D" parent="Walls"]
@@ -64,27 +68,27 @@ position = Vector2(1400, 600)
 shape = SubResource("RectangleShape2D_pillar")
 
 [node name="NorthVisual" type="Polygon2D" parent="Walls"]
-color = Color(0.45, 0.47, 0.5, 1)
+texture = ExtResource("4_wall")
 polygon = PackedVector2Array(-40, -40, 2040, -40, 2040, 0, -40, 0)
 
 [node name="SouthVisual" type="Polygon2D" parent="Walls"]
-color = Color(0.45, 0.47, 0.5, 1)
+texture = ExtResource("4_wall")
 polygon = PackedVector2Array(-40, 1200, 2040, 1200, 2040, 1240, -40, 1240)
 
 [node name="WestVisual" type="Polygon2D" parent="Walls"]
-color = Color(0.45, 0.47, 0.5, 1)
+texture = ExtResource("4_wall")
 polygon = PackedVector2Array(-40, 0, 0, 0, 0, 1200, -40, 1200)
 
 [node name="EastVisual" type="Polygon2D" parent="Walls"]
-color = Color(0.45, 0.47, 0.5, 1)
+texture = ExtResource("4_wall")
 polygon = PackedVector2Array(2000, 0, 2040, 0, 2040, 1200, 2000, 1200)
 
 [node name="PillarLeftVisual" type="Polygon2D" parent="Walls"]
-color = Color(0.45, 0.47, 0.5, 1)
+texture = ExtResource("4_wall")
 polygon = PackedVector2Array(540, 540, 660, 540, 660, 660, 540, 660)
 
 [node name="PillarRightVisual" type="Polygon2D" parent="Walls"]
-color = Color(0.45, 0.47, 0.5, 1)
+texture = ExtResource("4_wall")
 polygon = PackedVector2Array(1340, 540, 1460, 540, 1460, 660, 1340, 660)
 
 [node name="PlayerSpawnPoints" type="Node2D" parent="."]
