@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="2_menu"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://ui/results_screen.tscn" id="6_results"]
 [ext_resource type="PackedScene" path="res://ui/shop_panel.tscn" id="7_shop"]
 [ext_resource type="PackedScene" path="res://ui/scoreboard.tscn" id="8_scoreboard"]
+[ext_resource type="Script" path="res://ui/hurt_indicator.gd" id="9_hurt"]
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main")
@@ -31,6 +32,16 @@ spawn_limit = 1
 [node name="MainMenu" parent="UI" instance=ExtResource("2_menu")]
 
 [node name="Hud" parent="UI" instance=ExtResource("5_hud")]
+
+[node name="HurtIndicator" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_hurt")
 
 [node name="ShopPanel" parent="UI" instance=ExtResource("7_shop")]
 

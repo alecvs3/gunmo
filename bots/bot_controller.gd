@@ -45,6 +45,7 @@ func next_command() -> InputCommand:
 	_sequence += 1
 	command.sequence = _sequence
 	command.view_tick = NetworkManager.clock.tick
+	command.client_tick = NetworkManager.clock.tick
 	if _player == null or not _player.is_alive:
 		_target_id = 0
 		_path = PackedVector2Array()
@@ -102,7 +103,8 @@ func _fight(target: HitboxComponent, command: InputCommand) -> void:
 	var target_position: Vector2 = target.center()
 	var to_target: Vector2 = target_position - _player.global_position
 	_last_seen = target_position
-	var desired: float = to_target.angle() + _aim_error
+	var aim_point: Vector2 = _lead(target)
+	var desired: float = (aim_point - _player.global_position).angle() + _aim_error
 	_aim = BotBrain.turn_towards(_aim, desired, _turn_step())
 	command.move = BotBrain.move_direction(
 		_player.global_position,
@@ -116,6 +118,22 @@ func _fight(target: HitboxComponent, command: InputCommand) -> void:
 	var in_range: bool = to_target.length() <= _weapon_range()
 	if reacted and in_range and BotBrain.aim_ready(_aim, desired, cone):
 		command.buttons |= InputCommand.FIRE
+
+
+## Where to aim at `target`: where it will be when the bullet gets there. A remote human is
+## first moved to where their own screen has them (the host sees them their latency late),
+## so bots aim at the player the human sees, and a dodge on that screen still works.
+func _lead(target: HitboxComponent) -> Vector2:
+	var body := target.get_parent() as CharacterBody2D
+	var velocity: Vector2 = body.velocity if body != null else Vector2.ZERO
+	var position: Vector2 = target.center()
+	var human := body as Player
+	if human != null:
+		position += velocity * human.timeline_lead()
+	var weapon: WeaponData = _player.get_loadout().current_weapon()
+	return BotBrain.intercept(
+		_player.global_position, position, velocity, weapon.bullet_speed, weapon.bullet_lifetime
+	)
 
 
 ## Nobody in sight: go where someone was last seen, else to a random respawn point.

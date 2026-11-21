@@ -16,10 +16,14 @@ const DEFAULT_PATH: String = "res://shared/network/latency_budget.tres"
 
 @export_group("Other players and enemies")
 ## A client draws remote objects (one-way latency + a smoothing buffer) behind the host. The
-## latency is the connection's; the buffer is ours. Buffer on a clean connection (ms, p95):
+## latency is the connection's; the buffer is ours. The buffer's upper limit on a clean
+## connection (ms, p95):
 @export_range(0.0, 500.0) var remote_smoothing_clean_ms: float = 0.0
-## The buffer with 80 ms ± 10 ms simulated latency and 2% loss (ms, p95).
+## The same with 80 ms ± 10 ms simulated latency and 2% loss (ms, p95).
 @export_range(0.0, 1000.0) var remote_smoothing_lagged_ms: float = 0.0
+## No waste: on average the buffer may exceed what the measured jitter calls for
+## (NetClock.target_delay) by at most this much (ms). Holds on any machine, however noisy.
+@export_range(0.0, 200.0) var smoothing_excess_ms: float = 0.0
 ## Smoothness: how often drawing may run out of snapshots (a visible hitch), per minute.
 @export_range(0.0, 600.0) var ran_dry_clean_per_minute: float = 0.0
 @export_range(0.0, 600.0) var ran_dry_lagged_per_minute: float = 0.0

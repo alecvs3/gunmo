@@ -20,7 +20,8 @@ var ran_dry_count: int = 0
 
 var _estimate: float = 0.0
 var _synced: bool = false
-var _delay: float = 0.0
+## Client: the smoothing buffer on top of the one-way latency (seconds); rate-limited.
+var _buffer: float = 0.0
 ## Extra delay after running dry (half a snapshot interval each time); fades at dry_boost_decay.
 var _boost: float = 0.0
 var _dry: bool = false
@@ -90,7 +91,7 @@ func reset() -> void:
 	tick = 0
 	_estimate = 0.0
 	_synced = false
-	_delay = config.interpolation_delay if config != null else 0.1
+	_buffer = config.interpolation_delay if config != null else 0.1
 	_boost = 0.0
 	_dry = false
 	_newest_tick = -1
@@ -110,7 +111,7 @@ func observe_server_tick(server_tick: int, half_rtt_seconds: float) -> void:
 		_estimate, target, _synced, config.clock_snap_ticks, config.clock_correction
 	)
 	if not _synced:
-		_delay = config.interpolation_delay
+		_buffer = config.interpolation_delay
 		_one_way = half_rtt_seconds
 	else:
 		_one_way = lerpf(_one_way, half_rtt_seconds, config.clock_correction)
@@ -137,14 +138,14 @@ func observe_snapshot_arrival(server_tick: int, now_seconds: float) -> int:
 func smoothing_delay() -> float:
 	if multiplayer.is_server():
 		return config.host_view_delay_ticks * tick_delta()
-	return _delay
+	return _one_way + _buffer
 
 
 ## The part of smoothing_delay() that is buffering, not latency (seconds).
 func buffer_delay() -> float:
 	if multiplayer.is_server():
 		return smoothing_delay()
-	return maxf(_delay - _one_way, 0.0)
+	return _buffer
 
 
 ## Client: estimated one-way latency to the host (seconds).
@@ -161,7 +162,7 @@ func server_tick_now() -> float:
 func render_tick() -> float:
 	if multiplayer.is_server():
 		return float(tick - config.host_view_delay_ticks)
-	return _estimate - _delay * tick_rate()
+	return _estimate - smoothing_delay() * tick_rate()
 
 
 func _adapt_delay(delta: float) -> void:
@@ -172,9 +173,10 @@ func _adapt_delay(delta: float) -> void:
 	_dry = dry
 	_boost = maxf(_boost - config.dry_boost_decay * delta, 0.0)
 	var interval: float = config.snapshot_interval_ticks * tick_delta()
-	var buffer: float = target_delay(interval, snapshot_jitter.jitter_seconds(), _boost, config)
-	var target: float = _one_way + buffer
-	_delay = stepped_delay(_delay, target, delta, config.delay_raise_rate, config.delay_lower_rate)
+	var target: float = target_delay(interval, snapshot_jitter.jitter_seconds(), _boost, config)
+	_buffer = stepped_delay(
+		_buffer, target, delta, config.delay_raise_rate, config.delay_lower_rate
+	)
 
 
 func _check_hiccup() -> void:
@@ -189,7 +191,7 @@ func _check_hiccup() -> void:
 					% [
 						roundi(silent * 1000.0),
 						snapshot_jitter.jitter_seconds() * 1000.0,
-						roundi(_delay * 1000.0),
+						roundi(smoothing_delay() * 1000.0),
 					]
 				)
 			)
