@@ -9,6 +9,8 @@ extends Node2D
 ##                  players they see, and ended where and when the host says
 
 signal finished(bullet: Bullet, end_point: Vector2, hit_something: bool)
+## AUTHORITATIVE: the bullet hit something (it may fly on if it pierces).
+signal hit_landed(bullet: Bullet, at: Vector2)
 
 enum Mode { AUTHORITATIVE, PREDICTED, REMOTE }
 
@@ -19,6 +21,8 @@ var mode: Mode = Mode.AUTHORITATIVE
 
 var _age_ticks: float = 0.0
 var _done: bool = false
+var _pierce_left: int = 0
+var _already_hit: Array[HitboxComponent] = []
 ## REMOTE: where and when the host ended this bullet (end tick < 0 = not known yet).
 var _end_tick: float = -1.0
 var _end_point: Vector2 = Vector2.ZERO
@@ -28,6 +32,7 @@ var _end_hit: bool = false
 func setup(fired_shot: Shot, bullet_mode: Mode) -> void:
 	shot = fired_shot
 	mode = bullet_mode
+	_pierce_left = shot.pierce
 	position = shot.origin
 	rotation = shot.direction.angle()
 
@@ -94,13 +99,20 @@ func _find_target(from: Vector2, to: Vector2) -> LagCompensator.Hit:
 	var at_tick: float = LagCompensator.PRESENT
 	if mode == Mode.AUTHORITATIVE:
 		at_tick = lag.clamped_tick(shot.view_tick + _age_ticks)
-	return lag.sweep(from, to, shot.radius, at_tick, shot.team)
+	return lag.sweep(from, to, shot.radius, at_tick, shot.team, _already_hit)
 
 
+## Damages (host only) and either stops or, with pierce left, flies on past this target.
 func _hit(target: LagCompensator.Hit) -> void:
 	if mode == Mode.AUTHORITATIVE:
 		target.hitbox.hit(shot.damage, shot.shooter_id, shot.direction * shot.knockback)
-	_finish(target.point, true)
+		hit_landed.emit(self, target.point)
+	if _pierce_left <= 0:
+		_finish(target.point, true)
+		return
+	_pierce_left -= 1
+	_already_hit.append(target.hitbox)
+	position = target.point
 
 
 func _wall_fraction(from: Vector2, to: Vector2) -> float:

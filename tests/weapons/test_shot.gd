@@ -36,6 +36,7 @@ func test_encode_decode_round_trip() -> void:
 	shot.team = &"players"
 	shot.fire_tick = 1000.0
 	shot.view_tick = 993.5
+	shot.pierce = 2
 	var buffer := StreamPeerBuffer.new()
 	shot.encode(buffer)
 	var decoded: Shot = Shot.decode(NetCodec.buffer_from(buffer.data_array))
@@ -46,3 +47,12 @@ func test_encode_decode_round_trip() -> void:
 	assert_eq(decoded.damage, 35)
 	assert_eq(decoded.fire_tick, 1000.0)
 	assert_eq(decoded.view_tick, 993.5)
+	assert_eq(decoded.pierce, 2)
+
+
+func test_pellet_ids_are_unique_per_command() -> void:
+	var ids: Dictionary = {}
+	for command in range(1, 50):
+		for pellet in Shot.MAX_PELLETS:
+			ids[Shot.make_id(command, pellet)] = true
+	assert_eq(ids.size(), 49 * Shot.MAX_PELLETS)

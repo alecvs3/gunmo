@@ -90,7 +90,13 @@ clients use the newest one and everything announces it through
 with the sender's peer id and must check it against the rules before acting (see
 `GameMode._on_request_received`).
 
-**A one-off event** (pickup taken, upgrade bought): host sends
+**Shop and loadouts:** the ShopCatalog and ModifierCatalog are fixed files; items travel by
+index (weapon index, 16 upgrade levels and credits in `PlayerNetState`; the modifier bitmask in
+`MatchNetState` and each enemy's spawn data). `PlayerLoadout` applies weapon and upgrades through
+`PlayerStats` identically on every peer, so the owner predicts with the host's stats. Purchases
+are requests (`WaveMode.REQUEST_BUY`) checked with `ShopRules` on the host.
+
+**A one-off event** (pickup taken): host sends
 `NetworkManager.channel.send_event(peer_id, TOPIC, bytes)`; clients listen to
 `channel.event_received`. Pick a new topic number (bullets use 1).
 

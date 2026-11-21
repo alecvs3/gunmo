@@ -108,3 +108,24 @@ func _make_target(at: Vector2, max_health: int, radius: float = 16.0) -> Diction
 	add_child_autofree(knockback)
 	add_child_autofree(hitbox)
 	return {"health": health, "knockback": knockback, "hitbox": hitbox}
+
+
+func test_pierce_passes_through_targets_then_stops() -> void:
+	data.pierce = 1
+	var first: Dictionary = _make_target(Vector2(30, 0), 100)
+	var second: Dictionary = _make_target(Vector2(80, 0), 100)
+	var third: Dictionary = _make_target(Vector2(130, 0), 100)
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)
+	watch_signals(bullet)
+	_tick(bullet, 30)
+	assert_eq((first["health"] as HealthComponent).current_health, 65)
+	assert_eq((second["health"] as HealthComponent).current_health, 65, "pierced into the second")
+	assert_eq((third["health"] as HealthComponent).current_health, 100, "pierce 1 = two targets")
+	assert_signal_emit_count(bullet, "hit_landed", 2)
+
+
+func test_pierced_target_is_not_hit_twice() -> void:
+	data.pierce = 3
+	var only: Dictionary = _make_target(Vector2(30, 0), 100)
+	_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 30)
+	assert_eq((only["health"] as HealthComponent).current_health, 65)

@@ -1,7 +1,8 @@
-# Runs the headless multiplayer smoke test in three scenarios:
+# Runs the headless multiplayer smoke test in four scenarios:
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
+#   D  shop: purchases checked by the host, shotgun pellets, credits from kills, wave modifiers
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 # or set the GODOT environment variable once and run it without -Godot.
@@ -75,5 +76,12 @@ $c += Start-Role "waveclient" ($Port + 2) "" "res://tests/net/wave_smoke.gd"
 Wait-Roles $c
 $passC = Test-Roles @("wavehost", "waveclient")
 
-if ($passA -and $passB -and $passC) { exit 0 }
+Write-Host "Scenario D: shop, credits, weapons, wave modifiers"
+$d = @()
+$d += Start-Role "shophost" ($Port + 3) "" "res://tests/net/shop_smoke.gd"
+$d += Start-Role "shopclient" ($Port + 3) "" "res://tests/net/shop_smoke.gd"
+Wait-Roles $d
+$passD = Test-Roles @("shophost", "shopclient")
+
+if ($passA -and $passB -and $passC -and $passD) { exit 0 }
 exit 1

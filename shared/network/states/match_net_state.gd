@@ -4,8 +4,8 @@ extends NetState
 ## enemies are left, and how many players are in, alive and ready. Phase values are
 ## GameMode.Phase. Clients always use the newest one (no interpolation).
 
-## 3 x u8 + f64 + u16 + 3 x u8.
-const SIZE: int = 16
+## 3 x u8 + f64 + u16 + 3 x u8 + u8 modifier mask.
+const SIZE: int = 17
 
 var phase: int = 0
 var wave: int = 0
@@ -16,6 +16,8 @@ var enemies_left: int = 0
 var ready_count: int = 0
 var player_count: int = 0
 var living_count: int = 0
+## The current wave's modifiers (bit i = ModifierCatalog index i).
+var modifier_mask: int = 0
 
 
 func encode(buffer: StreamPeerBuffer) -> void:
@@ -27,6 +29,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(clampi(ready_count, 0, 255))
 	buffer.put_u8(clampi(player_count, 0, 255))
 	buffer.put_u8(clampi(living_count, 0, 255))
+	buffer.put_u8(modifier_mask & 0xFF)
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -38,6 +41,7 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	ready_count = buffer.get_u8()
 	player_count = buffer.get_u8()
 	living_count = buffer.get_u8()
+	modifier_mask = buffer.get_u8()
 
 
 func byte_size() -> int:
@@ -61,6 +65,7 @@ func equals(other: MatchNetState) -> bool:
 		and ready_count == other.ready_count
 		and player_count == other.player_count
 		and living_count == other.living_count
+		and modifier_mask == other.modifier_mask
 	)
 
 
@@ -74,4 +79,5 @@ func copy() -> MatchNetState:
 	duplicate.ready_count = ready_count
 	duplicate.player_count = player_count
 	duplicate.living_count = living_count
+	duplicate.modifier_mask = modifier_mask
 	return duplicate

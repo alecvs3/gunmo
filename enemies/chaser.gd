@@ -15,9 +15,14 @@ const DATA_FOLDER: String = "res://enemies/data/"
 
 ## Synced once at spawn, so clients play the same type.
 var data_path: String = ""
+## The wave's modifiers (ModifierCatalog bitmask); set before spawning, synced once.
+var modifier_mask: int = 0
 
 var _contact_cooldown_left: float = 0.0
 var _repath_left: float = 0.0
+var _speed: float = 0.0
+var _regen_per_second: float = 0.0
+var _regen_carry: float = 0.0
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
@@ -28,8 +33,7 @@ var _repath_left: float = 0.0
 func _ready() -> void:
 	if not multiplayer.is_server():
 		_load_data_from_host()
-	($Body as Polygon2D).color = enemy_data.color
-	_health.max_health = enemy_data.max_health
+	_apply_modifiers(ModifierCatalog.load_default().combined(modifier_mask))
 	_knockback.configure(
 		enemy_data.knockback_friction, enemy_data.knockback_bounce, enemy_data.knockback_taken
 	)
@@ -43,6 +47,7 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_regenerate(delta)
 	_move(delta)
 	_deal_contact_damage(delta)
 
@@ -65,7 +70,7 @@ func _move(delta: float) -> void:
 	var target: Node2D = _find_nearest_target()
 	var chase: Vector2 = Vector2.ZERO
 	if target != null:
-		chase = _direction_towards(target.global_position, delta) * enemy_data.move_speed
+		chase = _direction_towards(target.global_position, delta) * _speed
 	velocity = chase + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -115,6 +120,30 @@ func _deal_contact_damage(delta: float) -> void:
 func _on_died(killer_peer_id: int) -> void:
 	EventBus.enemy_killed.emit(self, killer_peer_id)
 	queue_free()
+
+
+## The wave's modifiers change health, speed, armor and regeneration, and tint the enemy so
+## players can read the wave (every peer tints; only the host's numbers matter).
+func _apply_modifiers(combined: WaveModifier) -> void:
+	var tinted: Color = enemy_data.color
+	if modifier_mask != 0:
+		tinted = enemy_data.color.lerp(combined.color, 0.45)
+	($Body as Polygon2D).color = tinted
+	_health.max_health = maxi(roundi(enemy_data.max_health * combined.health_multiplier), 1)
+	_health.damage_taken_multiplier = combined.damage_taken_multiplier
+	_speed = enemy_data.move_speed * combined.speed_multiplier
+	_regen_per_second = combined.regen_per_second
+
+
+## Host: heal a share of max health per second (whole points; the rest carries over).
+func _regenerate(delta: float) -> void:
+	if _regen_per_second <= 0.0 or _health.current_health >= _health.max_health:
+		return
+	_regen_carry += _regen_per_second * _health.max_health * delta
+	var whole: int = floori(_regen_carry)
+	if whole > 0:
+		_regen_carry -= whole
+		_health.heal(whole)
 
 
 ## Clients: the host told us which type this is; only enemy data files are accepted.

@@ -11,6 +11,7 @@ var _queue: Array[EnemyData] = []
 var _interval: float = 1.0
 var _time_left: float = 0.0
 var _rng := RandomNumberGenerator.new()
+var _modifier_mask: int = 0
 
 
 ## The spawn point to use: a random one at least min_distance from every player, or (when
@@ -39,9 +40,13 @@ func _ready() -> void:
 	set_physics_process(multiplayer.is_server())
 
 
-## Plans the wave (the same seed gives the same enemies) and starts releasing it.
-func start_wave(level: Level, schedule: WaveSchedule, wave: int, seed_value: int) -> void:
+## Plans the wave (the same seed gives the same enemies) and starts releasing it. Every enemy
+## gets the wave's modifiers (ModifierCatalog bitmask).
+func start_wave(
+	level: Level, schedule: WaveSchedule, wave: int, seed_value: int, modifier_mask: int
+) -> void:
 	_level = level
+	_modifier_mask = modifier_mask
 	_schedule = schedule
 	_rng.seed = seed_value
 	_queue = WaveBudget.plan(schedule, wave, _rng)
@@ -75,6 +80,7 @@ func _physics_process(delta: float) -> void:
 func _spawn(data: EnemyData) -> void:
 	var enemy: ChaserEnemy = CHASER_SCENE.instantiate()
 	enemy.enemy_data = data
+	enemy.modifier_mask = _modifier_mask
 	var player_positions: Array[Vector2] = []
 	for player in _level.players():
 		if player.is_alive:

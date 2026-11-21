@@ -103,7 +103,7 @@ own movement responds within 3 ticks under lag, position matches the host exactl
 before: 67%), frame-to-frame unevenness 7–13% (≈0.1 px), player perfectly still on screen.
 **Not yet verified:** how it feels to play; other monitors and PCs (Yusuf's).
 
-## Milestone 2 — wave loop ✅ (in review, issues #18–#24)
+## Milestone 2 — wave loop ✅ (merged, issues #18–#24)
 
 Branch `milestone-2`, one commit per issue.
 
@@ -127,7 +127,32 @@ same phases); a real host runs waves; the HUD checked in screenshots; a fresh cl
 
 - Balance is a first guess: tune `modes/waves/data/default_waves.tres` and `enemies/data/*.tres`.
 - Players have no names yet; the HUD says "spectating a teammate".
-- The command-line `--import` crashed three times on an already-imported working copy right
-  after scene files changed (a Godot 4.7.2 cache bug; the next run always works, a fresh clone
+- The command-line `--import` crashes now and then on an already-imported working copy right
+  after files changed (a Godot 4.7.2 cache bug; running it again works, a fresh clone
   imports fine). If the editor crashes once after pulling, open it again.
-- Only one map and one weapon; upgrades between waves come in Milestone 3.
+- Only one map.
+
+## Milestone 3 — upgrades and combat depth ✅ (in review, issues #26–#31)
+
+Branch `milestone-3`, one commit per issue.
+
+| Issue | Feature | Status | Where |
+|---|---|---|---|
+| #26 | SMG, shotgun (6 seeded pellets), rifle (pierces 2); one weapon slot, weapon index in the snapshot; per-hit confirmations | Done, tested | `weapons/`, `player/player_loadout.gd` |
+| #27 | Credits: bounty to the killer, wave-clear bonus (50 + 10 × wave) to everyone standing, starting credits, reset on restart | Done, tested | `shared/components/wallet_component.gd`, `modes/wave_mode.gd` |
+| #28 | 7 upgrades (damage, fire rate, magazine, reload speed, move speed, max health, knockback); levels add up per stat; levels in the snapshot for prediction | Done, tested | `upgrades/` |
+| #29 | Shop: host-checked purchase requests; panel in lobby/breaks, B toggles | Done, tested, checked in a window | `upgrades/shop_rules.gd`, `ui/shop_panel.*` |
+| #30 | Wave modifiers: armored, fast, regenerating; one from wave 6, two from wave 16; enemies tinted; HUD shows them | Done, tested | `modes/waves/` |
+| #31 | Shop smoke scenario (D) and docs | Done | `tests/net/shop_smoke.gd` |
+
+**Verified:** 208 GUT tests; lint/format clean; all four smoke scenarios pass. Scenario D: a client buys
+the shotgun and a damage level (applied on the host and client), the host refuses a duplicate weapon
+and a mid-wave purchase, the shotgun fires exactly 6 pellets per shot, hits are confirmed, credits are
+earned, and wave modifiers reach the client. Shop, HUD credits and modifier banner checked in a window.
+**Not yet verified:** economy and balance over a full 25-wave match with people; two PCs.
+
+### Known limitations
+
+- Prices, upgrade strengths, bounties and modifier strengths are a first guess (all in `.tres` files).
+- The shop panel has room for about 7 upgrades at 648 px height; more will need a scroll area.
+- No hit marker yet (`ProjectileSystem.hit_confirmed` is there for it).

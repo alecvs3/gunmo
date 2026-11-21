@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://player/data/default_player.tres" id="2_pdata"]
@@ -12,6 +12,8 @@
 [ext_resource type="Script" path="res://shared/network/net_entity.gd" id="10_netentity"]
 [ext_resource type="Script" path="res://player/player_camera.gd" id="11_camera"]
 [ext_resource type="Script" path="res://player/player_spectate.gd" id="12_spectate"]
+[ext_resource type="Script" path="res://player/player_loadout.gd" id="13_loadout"]
+[ext_resource type="Script" path="res://shared/components/wallet_component.gd" id="14_wallet"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 16.0
@@ -83,6 +85,15 @@ shape = SubResource("CircleShape2D_hitbox")
 [node name="WeaponComponent" type="Node" parent="."]
 script = ExtResource("5_weapon")
 weapon_data = ExtResource("6_pistol")
+
+[node name="WalletComponent" type="Node" parent="."]
+script = ExtResource("14_wallet")
+
+[node name="PlayerLoadout" type="Node" parent="." node_paths=PackedStringArray("weapon", "health", "barrel")]
+script = ExtResource("13_loadout")
+weapon = NodePath("../WeaponComponent")
+health = NodePath("../HealthComponent")
+barrel = NodePath("../Visual/Pivot/Barrel")
 
 [node name="PlayerInputSource" type="Node" parent="." node_paths=PackedStringArray("pivot")]
 script = ExtResource("8_input")

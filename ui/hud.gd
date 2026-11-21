@@ -12,11 +12,13 @@ var _previous_wave: int = 0
 var _local_ready: bool = false
 var _spectating: int = 0
 var _banner_left: float = 0.0
+var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 
 @onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
 @onready var _ammo_label: Label = %AmmoLabel
 @onready var _reload_bar: ProgressBar = %ReloadBar
+@onready var _credits_label: Label = %CreditsLabel
 @onready var _wave_label: Label = %WaveLabel
 @onready var _info_label: Label = %InfoLabel
 @onready var _ready_label: Label = %ReadyLabel
@@ -76,7 +78,7 @@ func _process(delta: float) -> void:
 	visible = NetworkManager.is_online() and _state != null
 	if not visible:
 		return
-	_show_player(_own_player())
+	_show_player(Player.find_local(get_tree()))
 	_show_match()
 	_banner_left -= delta
 	_banner.visible = _banner_left > 0.0
@@ -86,6 +88,9 @@ func _process(delta: float) -> void:
 func _on_match_state_changed(state: RefCounted) -> void:
 	var new_state := (state as MatchNetState).copy()
 	var text: String = banner_for(_previous_phase, _previous_wave, new_state)
+	var modifiers: String = _modifiers.names(new_state.modifier_mask)
+	if new_state.phase == GameMode.Phase.ACTIVE and text.begins_with("Wave") and modifiers != "":
+		text += " · " + modifiers
 	if _previous_phase != -1 and not text.is_empty():
 		_banner.text = text
 		_banner_left = BANNER_SECONDS
@@ -115,6 +120,7 @@ func _show_player(player: Player) -> void:
 	_ammo_label.text = (
 		"Reloading…" if reload > 0.0 else "%d / %d" % [stats["ammo"], stats["magazine"]]
 	)
+	_credits_label.text = "%d credits" % stats["credits"]
 	var down: bool = not player.is_alive and _state.phase == GameMode.Phase.ACTIVE
 	_status_label.visible = down
 	if down:
@@ -131,12 +137,5 @@ func _show_match() -> void:
 	)
 	_info_label.text = lines[0]
 	_ready_label.text = lines[1]
-
-
-func _own_player() -> Player:
-	var own_id: int = multiplayer.get_unique_id()
-	for node in get_tree().get_nodes_in_group(Groups.PLAYERS):
-		var player := node as Player
-		if player != null and player.peer_id == own_id:
-			return player
-	return null
+	if _state.phase == GameMode.Phase.ACTIVE:
+		_ready_label.text = _modifiers.names(_state.modifier_mask)

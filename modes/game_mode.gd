@@ -103,12 +103,20 @@ func _on_peer_left(peer_id: int) -> void:
 	level.remove_player(peer_id)
 
 
-## Requests come from clients: they are only honoured when the rules allow them.
+## Requests come from clients: they are only honoured when the rules allow them. Ready-up is
+## handled here; other topics go to the mode (_on_request).
 func _on_request_received(peer_id: int, topic: int, data: PackedByteArray) -> void:
-	if topic != REQUEST_READY or data.size() != 1 or level.player(peer_id) == null:
+	if level.player(peer_id) == null:
 		return
-	if can_ready_up():
+	if topic != REQUEST_READY:
+		_on_request(peer_id, topic, data)
+	elif data.size() == 1 and can_ready_up():
 		_on_ready_changed(peer_id, data[0] == 1)
+
+
+## Host: a request this base class doesn't handle. Subclasses override.
+func _on_request(_peer_id: int, _topic: int, _data: PackedByteArray) -> void:
+	pass
 
 
 ## A new phase or wave clears this peer's ready flag.

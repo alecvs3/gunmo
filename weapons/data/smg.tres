@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "SMG"
+color = Color(0.25, 0.45, 0.75, 1)
+price = 250
+pellets = 1
+pierce = 0
+damage = 9
+fire_rate = 11.0
+bullet_speed = 1000.0
+bullet_lifetime = 0.6
+spread = 9.0
+magazine_size = 30
+reload_time = 1.4
+bullet_radius = 3.0
+knockback = 40.0

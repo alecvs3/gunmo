@@ -5,6 +5,8 @@ extends Node
 ##         shooter (who already shows its own); when it ends, everyone is told where and when.
 ##   Owner client: a predicted bullet for every EventBus.shot_predicted, shown at once.
 ##   Other clients: a remote bullet for every announcement.
+## Every hit the host decides is confirmed to the shooter (EVENT_HIT), including hits a
+## piercing bullet flies through.
 ## Announcements are reliable NetChannel events, so no bullet is ever missed or left flying.
 
 ## Client: one of our own shots hit something (the host's verdict); for hit markers.
@@ -15,6 +17,7 @@ const BULLET_SCENE: PackedScene = preload("res://weapons/bullet.tscn")
 const TOPIC: int = 1
 const EVENT_FIRED: int = 1
 const EVENT_ENDED: int = 2
+const EVENT_HIT: int = 3
 
 @export var projectiles_root: Node2D
 
@@ -47,6 +50,7 @@ func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
 	var bullet: Bullet = BULLET_SCENE.instantiate()
 	bullet.setup(shot, mode)
 	bullet.finished.connect(_on_bullet_finished)
+	bullet.hit_landed.connect(_on_bullet_hit)
 	_bullets[shot.key()] = bullet
 	projectiles_root.add_child(bullet)
 
@@ -66,6 +70,21 @@ func _on_bullet_finished(bullet: Bullet, end_point: Vector2, hit_something: bool
 		NetworkManager.channel.send_event(peer_id, TOPIC, buffer.data_array)
 
 
+## Host: tell the shooter its bullet hit (the host's own shots are confirmed locally).
+func _on_bullet_hit(bullet: Bullet, at: Vector2) -> void:
+	var shooter_id: int = bullet.shot.shooter_id
+	if shooter_id == multiplayer.get_unique_id():
+		hit_confirmed.emit(bullet.shot.key(), at)
+		return
+	if shooter_id not in multiplayer.get_peers():
+		return
+	var buffer := StreamPeerBuffer.new()
+	buffer.put_u8(EVENT_HIT)
+	buffer.put_u32(bullet.shot.shot_id)
+	NetCodec.put_vector2(buffer, at)
+	NetworkManager.channel.send_event(shooter_id, TOPIC, buffer.data_array)
+
+
 func _on_event_received(topic: int, data: PackedByteArray) -> void:
 	if topic != TOPIC or data.is_empty():
 		return
@@ -75,6 +94,9 @@ func _on_event_received(topic: int, data: PackedByteArray) -> void:
 			_spawn(Shot.decode(buffer), Bullet.Mode.REMOTE)
 		EVENT_ENDED:
 			_on_shot_ended(buffer)
+		EVENT_HIT:
+			var key: String = "%d:%d" % [multiplayer.get_unique_id(), buffer.get_u32()]
+			hit_confirmed.emit(key, NetCodec.get_vector2(buffer))
 
 
 func _on_shot_ended(buffer: StreamPeerBuffer) -> void:
@@ -83,8 +105,6 @@ func _on_shot_ended(buffer: StreamPeerBuffer) -> void:
 	var end_point: Vector2 = NetCodec.get_vector2(buffer)
 	var end_tick: float = buffer.get_double()
 	var hit_something: bool = buffer.get_u8() == 1
-	if hit_something and shooter_id == multiplayer.get_unique_id():
-		hit_confirmed.emit(key, end_point)
 	var bullet: Bullet = _bullets.get(key)
 	if bullet != null:
 		bullet.end_at(end_point, end_tick, hit_something)

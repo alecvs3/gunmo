@@ -66,13 +66,19 @@ func clamped_tick(view_tick: float) -> float:
 
 
 ## The first hitbox a bullet of `bullet_radius` moving from->to touches, with every target
-## placed where it was at `at_tick` (PRESENT = where it is now). Ignores `ignore_team`.
+## placed where it was at `at_tick` (PRESENT = where it is now). Ignores `ignore_team` and
+## the hitboxes in `exclude` (ones a piercing bullet already went through).
 func sweep(
-	from: Vector2, to: Vector2, bullet_radius: float, at_tick: float, ignore_team: StringName
+	from: Vector2,
+	to: Vector2,
+	bullet_radius: float,
+	at_tick: float,
+	ignore_team: StringName,
+	exclude: Array[HitboxComponent] = []
 ) -> Hit:
 	var best: Hit = null
 	for hitbox: HitboxComponent in _histories:
-		if hitbox.team == ignore_team:
+		if hitbox.team == ignore_team or hitbox in exclude:
 			continue
 		var place: Dictionary = _place(hitbox, at_tick)
 		if not place["hittable"]:

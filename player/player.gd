@@ -26,9 +26,21 @@ var _commands := CommandQueue.new()
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hitbox: HitboxComponent = $HitboxComponent
 @onready var _weapon: WeaponComponent = $WeaponComponent
+@onready var _loadout: PlayerLoadout = $PlayerLoadout
+@onready var _wallet: WalletComponent = $WalletComponent
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _input_source: PlayerInputSource = $PlayerInputSource
 @onready var _prediction: PlayerPrediction = $PlayerPrediction
+
+
+## This peer's own player, if it has one (the HUD and shop read it).
+static func find_local(tree: SceneTree) -> Player:
+	var own_id: int = tree.get_multiplayer().get_unique_id()
+	for node in tree.get_nodes_in_group(Groups.PLAYERS):
+		var player := node as Player
+		if player != null and player.peer_id == own_id:
+			return player
+	return null
 
 
 func _enter_tree() -> void:
@@ -37,7 +49,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	$Visual/Body.color = Color.from_hsv(fmod(peer_id * 0.618034, 1.0), 0.55, 0.95)
-	_health.max_health = player_data.max_health
+	_loadout.configure(player_data)
 	_knockback.configure(
 		player_data.knockback_friction, player_data.knockback_bounce, player_data.knockback_taken
 	)
@@ -80,7 +92,8 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 		return
 	var delta: float = NetClock.tick_delta()
 	_pivot.rotation = command.aim
-	_move_velocity = PlayerMotor.step(_move_velocity, command.move, delta, player_data)
+	var stats: PlayerData = _loadout.effective_player
+	_move_velocity = PlayerMotor.step(_move_velocity, command.move, delta, stats)
 	velocity = _move_velocity + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -98,7 +111,16 @@ func hud_stats() -> Dictionary:
 		"ammo": _weapon.ammo,
 		"magazine": _weapon.weapon_data.magazine_size,
 		"reload": _weapon.reload_progress(),
+		"credits": _wallet.credits,
 	}
+
+
+func get_wallet() -> WalletComponent:
+	return _wallet
+
+
+func get_loadout() -> PlayerLoadout:
+	return _loadout
 
 
 ## Host only: out of the fight without dying (a late joiner spectating until the break).
@@ -132,6 +154,9 @@ func capture_net_state() -> NetState:
 	state.alive = is_alive
 	state.teleport_count = teleport_count
 	state.last_command = last_command
+	state.weapon_index = _loadout.weapon_index
+	state.upgrade_levels = _loadout.levels.duplicate()
+	state.credits = _wallet.credits
 	return state
 
 
@@ -140,7 +165,9 @@ func apply_net_state(state: NetState) -> void:
 	var player_state := state as PlayerNetState
 	position = player_state.position
 	_pivot.rotation = player_state.aim
+	_loadout.load_state(player_state.weapon_index, player_state.upgrade_levels)
 	_health.apply_replicated(player_state.health)
+	_wallet.apply_replicated(player_state.credits)
 	_weapon.ammo = player_state.ammo
 	teleport_count = player_state.teleport_count
 	is_alive = player_state.alive
@@ -156,6 +183,8 @@ func restore_from_state(state: PlayerNetState) -> void:
 	position = state.position
 	_move_velocity = state.move_velocity
 	_knockback.velocity = state.knockback
+	_loadout.load_state(state.weapon_index, state.upgrade_levels)
+	_wallet.apply_replicated(state.credits)
 	_weapon.restore(state.ammo, state.cooldown_left, state.reload_left)
 	_health.apply_replicated(state.health)
 	teleport_count = state.teleport_count
@@ -171,18 +200,28 @@ func _ready_as_host() -> void:
 	EventBus.player_spawned.emit(self)
 
 
-## The bullet leaves the muzzle of the simulated body (not the eased visuals), so the host and
-## the owner compute the same origin.
+## One shot from the weapon: a bullet per pellet, each with its own seeded spread. Bullets leave
+## the muzzle of the simulated body (not the eased visuals), so the host and the owner compute
+## the same origins and directions.
 func _fire(command: InputCommand) -> void:
 	var origin: Vector2 = global_position + _muzzle.position.rotated(command.aim)
-	var seed_value: int = WeaponComponent.shot_seed(peer_id, command.sequence)
+	for pellet in _weapon.weapon_data.pellets:
+		_emit_shot(_make_shot(command, origin, Shot.make_id(command.sequence, pellet)))
+
+
+func _make_shot(command: InputCommand, origin: Vector2, shot_id: int) -> Shot:
+	var seed_value: int = WeaponComponent.shot_seed(peer_id, shot_id)
 	var direction: Vector2 = _weapon.spread_direction(Vector2.from_angle(command.aim), seed_value)
 	var shot: Shot = Shot.from_weapon(_weapon.weapon_data, origin, direction)
 	shot.shooter_id = peer_id
-	shot.shot_id = command.sequence
+	shot.shot_id = shot_id
 	shot.team = _hitbox.team
 	shot.fire_tick = NetworkManager.clock.server_tick_now()
 	shot.view_tick = command.view_tick
+	return shot
+
+
+func _emit_shot(shot: Shot) -> void:
 	if multiplayer.is_server():
 		EventBus.shot_fired.emit(shot)
 	else:

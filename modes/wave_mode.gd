@@ -3,13 +3,19 @@ extends GameMode
 ## Co-op waves: players team up against waves that grow every time; clearing the last wins.
 ## Host only: every tick it tells WaveFlow the facts (players, alive, ready, wave done),
 ## starts waves with the WaveSpawner, revives the fallen when a wave is cleared (if the match
-## settings say so), lets late joiners spectate until the break, and keeps the replicated
-## MatchState current. Each wave's enemies come from a seed made of the match seed
-## and the wave number, so a match can be replayed exactly.
+## settings say so), lets late joiners spectate until the break, keeps the replicated
+## MatchState current, and pays credits: each enemy's bounty to its killer and a bonus to
+## everyone standing when a wave is cleared. Each wave's enemies come from a seed made of the
+## match seed and the wave number, so a match can be replayed exactly.
+
+## NetChannel request topic: [kind (ShopRules.KIND_*), index].
+const REQUEST_BUY: int = 2
 
 var _flow := WaveFlow.new()
 var _ready_peers: Dictionary = {}
 var _match_seed: int = 0
+var _modifier_mask: int = 0
+var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 
 @onready var _spawner: WaveSpawner = $WaveSpawner
 
@@ -17,6 +23,14 @@ var _match_seed: int = 0
 func _ready() -> void:
 	super()
 	set_physics_process(multiplayer.is_server())
+	EventBus.shop_purchase_requested.connect(_on_shop_purchase_requested)
+	if multiplayer.is_server():
+		EventBus.enemy_killed.connect(_on_enemy_killed)
+
+
+## The shop is open in the lobby and in breaks.
+func shop_open() -> bool:
+	return can_ready_up()
 
 
 func _physics_process(_delta: float) -> void:
@@ -35,6 +49,8 @@ func restart() -> void:
 	level.clear_enemies()
 	_start()
 	_revive(true)
+	for player in level.players():
+		_give_starting_kit(player)
 
 
 func _start() -> void:
@@ -50,14 +66,29 @@ func _handle(event: WaveFlow.Event) -> void:
 	match event:
 		WaveFlow.Event.WAVE_STARTED:
 			_ready_peers.clear()
+			_modifier_mask = _pick_modifiers()
 			var seed_value: int = hash([_match_seed, _flow.wave])
-			_spawner.start_wave(level, settings.wave_schedule, _flow.wave, seed_value)
+			_spawner.start_wave(
+				level, settings.wave_schedule, _flow.wave, seed_value, _modifier_mask
+			)
 		WaveFlow.Event.WAVE_CLEARED:
 			_ready_peers.clear()
+			_pay_wave_bonus()
 			if settings.revive_at_break:
 				_revive(false)
 		WaveFlow.Event.VICTORY, WaveFlow.Event.DEFEAT:
 			_spawner.stop()
+
+
+## This wave's modifiers, from their own seed so they don't change which enemies spawn.
+func _pick_modifiers() -> int:
+	var schedule: WaveSchedule = settings.wave_schedule
+	var count: int = ModifierCatalog.count_for_wave(
+		_flow.wave, schedule.first_modifier_wave, schedule.double_modifier_wave
+	)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([_match_seed, _flow.wave, "modifiers"])
+	return _modifiers.pick(count, rng)
 
 
 ## Brings back the players who are down (or, with `everyone`, resets all of them).
@@ -79,9 +110,77 @@ func _on_ready_changed(peer_id: int, is_ready: bool) -> void:
 func _on_peer_joined(peer_id: int) -> void:
 	super(peer_id)
 	var joined: Player = level.player(peer_id)
+	if joined != null:
+		_give_starting_kit(joined)
 	var mid_wave: bool = _flow.phase == GameMode.Phase.ACTIVE
 	if joined != null and mid_wave and settings.late_joiners_spectate:
 		joined.make_spectator()
+
+
+## Starting credits and weapon (new players, and everyone on restart).
+func _give_starting_kit(player: Player) -> void:
+	player.get_wallet().set_credits(settings.starting_credits)
+	player.get_loadout().reset()
+
+
+func _pay_wave_bonus() -> void:
+	var bonus: int = settings.wave_clear_bonus + settings.wave_clear_bonus_per_wave * _flow.wave
+	for player in level.players():
+		if player.is_alive:
+			player.get_wallet().add(bonus)
+
+
+func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:
+	var killer: Player = level.player(killer_peer_id)
+	var chaser := enemy as ChaserEnemy
+	if killer != null and chaser != null:
+		killer.get_wallet().add(chaser.enemy_data.bounty)
+
+
+## This peer's shop asked to buy: the host applies it, a client asks the host.
+func _on_shop_purchase_requested(kind: int, index: int) -> void:
+	if multiplayer.is_server():
+		_buy(multiplayer.get_unique_id(), kind, index)
+	else:
+		NetworkManager.channel.send_request(REQUEST_BUY, PackedByteArray([kind, index]))
+
+
+func _on_request(peer_id: int, topic: int, data: PackedByteArray) -> void:
+	if topic == REQUEST_BUY and data.size() == 2:
+		_buy(peer_id, data[0], data[1])
+
+
+## Host: the rules decide; only then are credits taken and the item applied.
+func _buy(peer_id: int, kind: int, index: int) -> void:
+	var buyer: Player = level.player(peer_id)
+	if buyer == null:
+		return
+	var loadout: PlayerLoadout = buyer.get_loadout()
+	var wallet: WalletComponent = buyer.get_wallet()
+	var reason: String = _purchase_problem(loadout, wallet, kind, index)
+	if not reason.is_empty():
+		NetLog.write("purchase by %d refused: %s" % [peer_id, reason])
+		return
+	wallet.spend(ShopRules.price(loadout.catalog, kind, index, loadout.level(index)))
+	if kind == ShopRules.KIND_UPGRADE:
+		loadout.add_level(index)
+	else:
+		loadout.equip_weapon(index)
+
+
+func _purchase_problem(
+	loadout: PlayerLoadout, wallet: WalletComponent, kind: int, index: int
+) -> String:
+	var catalog: ShopCatalog = loadout.catalog
+	if kind == ShopRules.KIND_UPGRADE:
+		return ShopRules.check_upgrade(
+			shop_open(), catalog, index, loadout.level(index), wallet.credits
+		)
+	if kind == ShopRules.KIND_WEAPON:
+		return ShopRules.check_weapon(
+			shop_open(), catalog, index, loadout.weapon_index, wallet.credits
+		)
+	return "Unknown purchase."
 
 
 func _on_peer_left(peer_id: int) -> void:
@@ -114,4 +213,5 @@ func _refresh_state(player_count: int, living: int, ready: int) -> void:
 	state.player_count = player_count
 	state.living_count = living
 	state.ready_count = ready
+	state.modifier_mask = _modifier_mask if _flow.phase == GameMode.Phase.ACTIVE else 0
 	publish_state()
