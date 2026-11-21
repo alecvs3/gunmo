@@ -40,23 +40,23 @@ func test_index_is_clamped() -> void:
 	assert_false(catalog.is_weapon_index(catalog.weapons.size()))
 
 
-func test_loadout_equips_with_full_magazine_and_color() -> void:
+func test_loadout_equips_with_full_magazine_and_pose() -> void:
 	var weapon := WeaponComponent.new()
 	weapon.weapon_data = catalog.weapon(0)
-	var barrel := Polygon2D.new()
+	var look := PlayerLook.new()
 	var health := HealthComponent.new()
 	var loadout := PlayerLoadout.new()
 	loadout.weapon = weapon
 	loadout.health = health
-	loadout.barrel = barrel
-	for node: Node in [weapon, health, barrel, loadout]:
+	loadout.look = look
+	for node: Node in [weapon, health, look, loadout]:
 		add_child_autofree(node)
 	weapon.ammo = 1
 	loadout.equip_weapon(2)
 	assert_eq(weapon.weapon_data.display_name, catalog.weapon(2).display_name)
 	assert_ne(weapon.weapon_data, catalog.weapon(2), "an upgraded copy, never the shared file")
 	assert_eq(weapon.ammo, catalog.weapon(2).magazine_size)
-	assert_eq(barrel.color, catalog.weapon(2).color)
+	assert_eq(look.pose, catalog.weapon(2).pose)
 	loadout.load_state(2, loadout.levels)
 	assert_eq(weapon.ammo, catalog.weapon(2).magazine_size, "same weapon: no change")
 	loadout.reset()

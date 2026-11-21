@@ -48,7 +48,7 @@ var _move_velocity: Vector2 = Vector2.ZERO
 var _commands := CommandQueue.new()
 
 @onready var _pivot: Node2D = $Visual/Pivot
-@onready var _muzzle: Marker2D = $Visual/Pivot/Muzzle
+@onready var _look: PlayerLook = $Visual/Pivot/Look
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hitbox: HitboxComponent = $HitboxComponent
 @onready var _weapon: WeaponComponent = $WeaponComponent
@@ -85,7 +85,7 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
-	$Visual/Body.color = Color.from_hsv(fmod(absi(peer_id) * 0.618034, 1.0), 0.55, 0.95)
+	_look.character = player_data.look_for(peer_id)
 	_hitbox.owner_id = peer_id
 	($NetEntity as NetEntity).owner_peer = peer_id
 	_hitbox.team = HitboxComponent.team_for(team_id)
@@ -275,10 +275,11 @@ func _ready_as_host() -> void:
 
 
 ## One shot from the weapon: a bullet per pellet, each with its own seeded spread. Bullets leave
-## the muzzle of the simulated body (not the eased visuals), so the host and the owner compute
-## the same origins and directions.
+## the drawn barrel of the held weapon, placed on the simulated body (not the eased visuals), so
+## the host and the owner compute the same origins and directions.
 func _fire(command: InputCommand) -> void:
-	var origin: Vector2 = global_position + _muzzle.position.rotated(command.aim)
+	var muzzle: Vector2 = _look.muzzle_for(_weapon.weapon_data.pose)
+	var origin: Vector2 = global_position + muzzle.rotated(command.aim)
 	for pellet in _weapon.weapon_data.pellets:
 		_emit_shot(_make_shot(command, origin, Shot.make_id(command.sequence, pellet)))
 

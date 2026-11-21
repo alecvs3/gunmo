@@ -231,3 +231,34 @@ budgets (first CI run on the PR).
 - The stress test uses one real client; snapshot encoding cost grows with the number of
   clients (each gets its own packets). To measure with more clients in #43.
 - The host's tick cost rose a little with 60 snapshots/s (more encoding); #43 looks at it.
+
+## Placeholder art: Kenney top-down shooter ✅ (in review, issue #62)
+
+Branch `placeholder-art`. Mostly looks; the gameplay changes are where shots start, the aim
+angle, and the player's collision sizes. Network messages are unchanged.
+
+| What | How | Where |
+|---|---|---|
+| Players | One character sprite under the aim pivot (it turns with the aim) replaces the octagon and barrel. Each peer gets a character from its peer id (Man Blue, Man Brown, Survivor, Soldier); bots get Robot or Hitman. Every peer picks the same one, so nothing is sent. | `player/player_look.gd`, `player/character_look.gd`, `player/looks/*.tres`, `PlayerData.player_looks` / `bot_looks` |
+| Weapon poses | `WeaponData.pose` (gun / machine / silencer) replaces the barrel color: pistol gun, SMG and rifle machine, shotgun silencer | `weapons/weapon_data.gd`, `weapons/data/*.tres` |
+| Enemies | Zombie sprite, tinted by `EnemyData.color` and the wave modifiers, drawn at `EnemyData.visual_scale` (brute 1.25), turns to face where it moves on every peer | `enemies/chaser.*`, `enemies/data/*.tres` |
+| Arena | Floor and walls use repeating 64 px tiles | `levels/test_arena.tscn` |
+| Shots leave the barrel | Each look stores where its drawn barrel ends per pose (`gun_muzzle`, `machine_muzzle`, `silencer_muzzle`, about 10 px to the gun side). The host and the owner start shots there, from the held weapon's pose. The owner's aim turns the character slightly so the barrel line, not the head, passes through the mouse | `player/character_look.gd`, `player/looks/*.tres`, `player/player.gd`, `player/player_input_source.gd` |
+| Player collision | Body circle 16 → 18 px radius (walls), hit circle 18 → 21 px (about the shoulder width of the sprites) | `player/player.tscn` |
+
+Assets: `assets/kenney_top_down_shooter/` (only the PNGs used, CC0, see its `License.txt`).
+
+**Verified:** 273 GUT tests (new `tests/player/test_player_look.gd`); lint/format clean; smoke
+scenarios A–G pass (a first run had scenario G's lagged smoothing at 107 ms against its 100 ms
+budget; the rerun passed, and this change doesn't touch networking).
+**Not yet verified:** how it looks in a window and with two instances.
+
+### Known limitations
+
+- The hit circle is round while the sprite is about 30 × 43 px, so it covers a little empty space
+  in front of and behind the character. A capsule that turns with the aim would need the lag
+  compensator to remember rotation too.
+- Bots aim at targets from their body's center, so their shots pass about 10 px beside the target.
+- Hugging a wall can put the barrel tip past the wall's edge (as with the old 30 px muzzle).
+- Characters are picked from the peer id, so two players can get the same one.
+- Bullets are still shapes; menus and HUD are unchanged.

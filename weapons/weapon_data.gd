@@ -2,9 +2,12 @@ class_name WeaponData
 extends Resource
 ## Tuning for one weapon. Real values live in weapons/data/*.tres.
 
+enum Pose { GUN, MACHINE, SILENCER }
+
 @export var display_name: String = ""
-## Barrel color, so other players can tell which weapon you carry.
-@export var color: Color = Color(0.12, 0.12, 0.14, 1)
+## How the character holds it (one picture per pose in each CharacterLook), so other players
+## can tell which weapon you carry.
+@export var pose: Pose = Pose.GUN
 ## Shop price in credits (0 = free).
 @export_range(0, 100000) var price: int = 0
 ## Bullets per shot (shotgun pellets); each gets its own random spread.

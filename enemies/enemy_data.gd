@@ -4,7 +4,10 @@ extends Resource
 ## (enemies/chaser.tscn) plays any of them.
 
 @export var display_name: String = ""
+## Tint on the sprite (white = the picture's own colors).
 @export var color: Color = Color.WHITE
+## Drawn size (1 = the picture's size); looks only, the hitbox stays the same.
+@export_range(0.1, 4.0) var visual_scale: float = 1.0
 @export_range(1, 100000) var max_health: int = 1
 ## Pixels per second.
 @export_range(0.0, 2000.0) var move_speed: float = 1.0

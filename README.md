@@ -88,3 +88,7 @@ logged as `[net hh:mm:ss] ...` lines in the Output panel and in `user://logs/god
 - Ownership: Alex — player, weapons, upgrades, gun game ladder. Yusuf — enemies, waves, bot AI,
   HUD and menus. Both — `autoloads/`, `shared/`, `modes/` base, `main.tscn`, `project.godot`.
 - Avoid editing the same `.tscn` at the same time; say so on the issue first. Scene files merge badly.
+
+## Credits
+
+- Placeholder art: [Top-down Shooter](https://kenney.nl) by Kenney (CC0), in `assets/kenney_top_down_shooter/`.

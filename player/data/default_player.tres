@@ -1,6 +1,13 @@
-[gd_resource type="Resource" script_class="PlayerData" format=3]
+[gd_resource type="Resource" script_class="PlayerData" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://player/player_data.gd" id="1_pdata"]
+[ext_resource type="Resource" path="res://player/looks/man_blue.tres" id="2_man_blue"]
+[ext_resource type="Resource" path="res://player/looks/man_brown.tres" id="3_man_brown"]
+[ext_resource type="Resource" path="res://player/looks/survivor.tres" id="4_survivor"]
+[ext_resource type="Resource" path="res://player/looks/soldier.tres" id="5_soldier"]
+[ext_resource type="Resource" path="res://player/looks/robot.tres" id="6_robot"]
+[ext_resource type="Resource" path="res://player/looks/hitman.tres" id="7_hitman"]
+[ext_resource type="Script" path="res://player/character_look.gd" id="8_look"]
 
 [resource]
 script = ExtResource("1_pdata")
@@ -11,6 +18,8 @@ acceleration_time = 0.12
 deceleration_time = 0.08
 camera_follow_time = 0.0
 spectate_follow_time = 0.15
+player_looks = Array[ExtResource("8_look")]([ExtResource("2_man_blue"), ExtResource("3_man_brown"), ExtResource("4_survivor"),ExtResource("5_soldier")])
+bot_looks = Array[ExtResource("8_look")]([ExtResource("6_robot"), ExtResource("7_hitman")])
 knockback_friction = 2400.0
 knockback_bounce = 0.3
 knockback_taken = 1.0
