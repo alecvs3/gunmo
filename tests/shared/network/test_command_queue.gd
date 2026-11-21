@@ -8,6 +8,7 @@ func before_each() -> void:
 	queue.budget_cap = 4
 	queue.max_per_tick = 2
 	queue.max_pending = 16
+	queue.max_buffer = 0
 
 
 func _commands(first: int, last: int) -> Array[InputCommand]:

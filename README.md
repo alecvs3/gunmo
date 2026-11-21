@@ -19,13 +19,21 @@ this for you. Otherwise:
 
 ## Checks before opening a PR
 
+**One command for everything:** `.\tools\check.ps1` (import, tests, lint, format; about 15 s) or
+`.\tools\check.ps1 -Smoke` (also the multiplayer smoke test, a few more minutes). It prints only
+what failed and why. `-Fix` formats first; `-Only tests|lint|format|smoke` runs one step.
+It finds Godot from `-Godot`, the `GODOT` environment variable, PATH, or `%LOCALAPPDATA%\Programs\Godot`,
+`C:\Tools\Godot`, `~\Godot`, `~\Downloads`.
+
+The individual steps, if you need them:
+
 | What | How |
 |---|---|
 | Tests | In the editor: bottom panel **GUT** → Run All. Or headless: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit` |
 | Lint | `gdlint .` |
 | Format | `gdformat --check .` (fix with `gdformat .`) |
 | Multiplayer | Debug → Customize Run Instances → 2 instances, press Play, Host in one window, Join in the other |
-| Multiplayer smoke test | `.\tests\net\run_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Runs five scenarios: A lag and a wrong build, B dedicated server, C the wave loop, D the shop, E Gun Game with bots. Every role must print PASS |
+| Multiplayer smoke test | `.\tests\net\run_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Runs six scenarios: A lag and a wrong build, B dedicated server, C the wave loop, D the shop, E Gun Game with bots, F stress test with a performance budget (its numbers are printed). Every role must print PASS |
 
 **Skip the menu while testing:** in Debug → Customize Run Instances, enable 2 instances and set the
 launch arguments of instance 1 to `-- --host` and instance 2 to `-- --join 127.0.0.1`.

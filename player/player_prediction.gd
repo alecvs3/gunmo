@@ -5,21 +5,20 @@ extends Node
 ## latest few to the host. When the host's state for this player arrives, it rewinds to it,
 ## replays every command the host hasn't simulated yet, and eases any small difference out of
 ## the visuals over a few frames, so corrections are invisible. Big ones (teleports) snap.
+## OwnPlayerDrawing draws the visuals visual_error away from the body.
 
 @export var input_source: PlayerInputSource
-## Drawn offset from the simulated position while a correction is eased out.
-@export var visual: Node2D
 
 var history := PredictionHistory.new()
+## How far from the simulated position to draw while a correction is eased out.
+var visual_error: Vector2 = Vector2.ZERO
 
 var _pending_state: PlayerNetState = null
-var _visual_error: Vector2 = Vector2.ZERO
 
 
 func _process(delta: float) -> void:
 	var decay: float = NetworkManager.config.prediction_error_decay
-	_visual_error *= exp(-decay * delta)
-	visual.position = _visual_error
+	visual_error *= exp(-decay * delta)
 
 
 ## The newest authoritative state wins; it is applied at the start of the next tick.
@@ -50,7 +49,7 @@ func _reconcile(player: Player, state: PlayerNetState) -> void:
 	var error: Vector2 = predicted - player.position
 	NetworkManager.stats.prediction_error = error.length()
 	if teleported or error.length() > NetworkManager.config.prediction_snap_distance:
-		_visual_error = Vector2.ZERO
+		visual_error = Vector2.ZERO
 		player.reset_physics_interpolation()
 	else:
-		_visual_error += error
+		visual_error += error

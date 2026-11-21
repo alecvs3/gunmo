@@ -37,7 +37,7 @@ tests/       automated tests, mirroring the folders above
 2. **Every gameplay feature must work in multiplayer from the start.** Test it with 2 instances running (Debug → Customize Run Instances). There is no "add networking later".
 3. **Bots and enemies run only on the host** and are replicated like any other networked entity.
 4. **Use components rather than deep inheritance.** Players, bots and enemies are built from the same `HealthComponent`, `HitboxComponent` and `WeaponComponent`.
-5. **Systems talk through `EventBus` signals** (`enemy_killed`, `wave_started`, `player_died`, ...). No `get_node()` paths that reach into another scene.
+5. **Systems talk through `EventBus` signals** (`enemy_killed`, `wave_started`, `player_killed`, ...). No `get_node()` paths that reach into another scene.
 6. **Tuning numbers live in Resources (`.tres`), never in code:** `WeaponData`, `UpgradeData`, `EnemyData`, `WaveConfig`, `BotProfile`, `MatchSettings`.
 7. **Mode logic stays inside `modes/`.** Shared systems never check which mode is running.
 8. **Only the three autoloads listed above.** Ask before adding another.
@@ -67,12 +67,8 @@ tests/       automated tests, mirroring the folders above
 - **Shared (both review):** `autoloads/`, `shared/`, `modes/` base class, `main.tscn`, `project.godot`
 
 ## Commands
-- Run tests (GUT): `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`
-- Lint: `gdlint .`
-- Format check: `gdformat --check .`
-- Multiplayer smoke test: `.	ests
-et
-un_smoke.ps1 -Godot <console exe>` (run it for any networking change)
+- **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step.
+- Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 
 ## Glossary
 - **Tier:** one gun on the gun game ladder.

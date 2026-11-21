@@ -54,6 +54,10 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 
+func _exit_tree() -> void:
+	NetLog.close()
+
+
 ## port 0 means config.default_port. A dedicated host runs the game without a player of its own.
 func host(port: int = 0, dedicated: bool = false) -> Error:
 	if state != State.OFFLINE:
@@ -155,6 +159,7 @@ func _create_children() -> void:
 	ping = PingTracker.new()
 	ping.name = "PingTracker"
 	ping.config = config
+	ping.stats = stats
 	add_child(ping)
 	clock = _add_service(NetClock.new(), "NetClock")
 	clock.config = config

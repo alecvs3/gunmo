@@ -3,9 +3,10 @@ extends Node
 ## Host only: the "player" behind a bot. Added to a bot's Player by Level.spawn_bot; every
 ## physics tick the Player asks it for an InputCommand and simulates that like any human's
 ## input, so bots move, aim, fire and get replicated exactly like players (rule 3).
-## It gathers what the bot can see (players of other teams within its awareness range with a
-## clear line of sight), lets BotBrain decide, and adds the profile's human flaws: reaction
-## time, aim error and limited turn speed. Out of sight it walks the navigation mesh toward
+## It gathers what the bot can see (anything hittable on another team, so other players in
+## Gun Game and enemies in Waves, within its awareness range with a clear line of sight),
+## lets BotBrain decide, and adds the profile's human flaws: reaction time, aim error and
+## limited turn speed. Out of sight it walks the navigation mesh toward
 ## where it last saw someone, or roams between the level's respawn points.
 
 ## How close to a path point counts as reached.
@@ -50,7 +51,7 @@ func next_command() -> InputCommand:
 		command.aim = _aim
 		return command
 	_tick_timers()
-	var target: Player = _pick_target()
+	var target: HitboxComponent = _pick_target()
 	if target != null:
 		_fight(target, command)
 	else:
@@ -73,18 +74,18 @@ func _tick_timers() -> void:
 	_repath_ticks -= 1
 
 
-func _pick_target() -> Player:
+## Anything hittable on another team: players of other teams (Gun Game) or enemies (Waves).
+func _pick_target() -> HitboxComponent:
 	var candidates: Array[Dictionary] = []
 	var by_id: Dictionary = {}
-	for node in get_tree().get_nodes_in_group(Groups.LIVING_PLAYERS):
-		var other := node as Player
-		if other == null or other == _player or other.team_id == _player.team_id:
+	var own_team: StringName = HitboxComponent.team_for(_player.team_id)
+	for hitbox in NetworkManager.lag_compensator.hitboxes():
+		if hitbox.team == own_team or not hitbox.is_hittable():
 			continue
-		var visible_now: bool = _can_see(other.global_position)
-		candidates.append(
-			{"id": other.peer_id, "position": other.global_position, "visible": visible_now}
-		)
-		by_id[other.peer_id] = other
+		var id: int = hitbox.get_instance_id()
+		var at: Vector2 = hitbox.center()
+		candidates.append({"id": id, "position": at, "visible": _can_see(at)})
+		by_id[id] = hitbox
 	var chosen: int = BotBrain.choose_target(
 		_player.global_position, candidates, profile.awareness_range, _target_id
 	)
@@ -97,14 +98,15 @@ func _pick_target() -> Player:
 	return by_id[chosen]
 
 
-func _fight(target: Player, command: InputCommand) -> void:
-	var to_target: Vector2 = target.global_position - _player.global_position
-	_last_seen = target.global_position
+func _fight(target: HitboxComponent, command: InputCommand) -> void:
+	var target_position: Vector2 = target.center()
+	var to_target: Vector2 = target_position - _player.global_position
+	_last_seen = target_position
 	var desired: float = to_target.angle() + _aim_error
 	_aim = BotBrain.turn_towards(_aim, desired, _turn_step())
 	command.move = BotBrain.move_direction(
 		_player.global_position,
-		target.global_position,
+		target_position,
 		profile.preferred_distance,
 		profile.strafe,
 		_strafe_sign

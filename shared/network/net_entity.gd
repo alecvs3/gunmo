@@ -16,6 +16,9 @@ extends Node
 var net_id: int = 0
 ## Clients: false when the parent applies states itself instead of being interpolated.
 var interpolate: bool = true
+## Host: the peer that controls this entity (its player); it gets the full state, everyone
+## else the public form. 0 = nobody (enemies, the match).
+var owner_peer: int = 0
 
 var buffer := StateBuffer.new()
 var _has_state: bool = false

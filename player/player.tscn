@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=21 format=3]
 
 [ext_resource type="Script" path="res://player/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://player/data/default_player.tres" id="2_pdata"]
@@ -15,6 +15,8 @@
 [ext_resource type="Script" path="res://player/player_loadout.gd" id="13_loadout"]
 [ext_resource type="Script" path="res://shared/components/wallet_component.gd" id="14_wallet"]
 [ext_resource type="Script" path="res://shared/components/score_component.gd" id="15_score"]
+[ext_resource type="Script" path="res://shared/components/display_delay.gd" id="20_delay"]
+[ext_resource type="Script" path="res://player/own_player_drawing.gd" id="21_drawing"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 16.0
@@ -117,10 +119,21 @@ barrel = NodePath("../Visual/Pivot/Barrel")
 script = ExtResource("8_input")
 pivot = NodePath("../Visual/Pivot")
 
-[node name="PlayerPrediction" type="Node" parent="." node_paths=PackedStringArray("input_source", "visual")]
+[node name="PlayerPrediction" type="Node" parent="." node_paths=PackedStringArray("input_source")]
 script = ExtResource("9_prediction")
 input_source = NodePath("../PlayerInputSource")
+
+[node name="OwnPlayerDrawing" type="Node" parent="." node_paths=PackedStringArray("body", "visual", "prediction")]
+script = ExtResource("21_drawing")
+body = NodePath("..")
 visual = NodePath("../Visual")
+prediction = NodePath("../PlayerPrediction")
+
+[node name="DisplayDelay" type="Node" parent="." node_paths=PackedStringArray("body", "visual", "pivot")]
+script = ExtResource("20_delay")
+body = NodePath("..")
+visual = NodePath("../Visual")
+pivot = NodePath("../Visual/Pivot")
 
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("10_netentity")

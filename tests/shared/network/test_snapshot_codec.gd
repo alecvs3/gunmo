@@ -55,19 +55,19 @@ func test_unknown_kind_and_bad_size_are_skipped() -> void:
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u32(7)
 	buffer.put_u16(3)
-	buffer.put_u32(1)
+	buffer.put_u16(1)
 	buffer.put_u8(99)
-	buffer.put_u16(2)
+	buffer.put_u8(2)
 	buffer.put_data(PackedByteArray([0, 0]))
-	buffer.put_u32(2)
+	buffer.put_u16(2)
 	buffer.put_u8(NetKinds.ENEMY)
-	buffer.put_u16(3)
+	buffer.put_u8(3)
 	buffer.put_data(PackedByteArray([0, 0, 0]))
 	var good := StreamPeerBuffer.new()
 	(_enemy(3, 1.0).state as EnemyNetState).encode(good)
-	buffer.put_u32(3)
+	buffer.put_u16(3)
 	buffer.put_u8(NetKinds.ENEMY)
-	buffer.put_u16(good.data_array.size())
+	buffer.put_u8(good.data_array.size())
 	buffer.put_data(good.data_array)
 	var decoded: Array = SnapshotCodec.decode(buffer.data_array)["entries"]
 	assert_eq(decoded.size(), 1)
@@ -80,3 +80,36 @@ func test_truncated_packet_is_safe() -> void:
 	var cut: PackedByteArray = packet.slice(0, packet.size() - 4)
 	assert_eq((SnapshotCodec.decode(cut)["entries"] as Array).size(), 1)
 	assert_eq(SnapshotCodec.decode(PackedByteArray([1, 2])), {})
+
+
+func test_public_form_is_flagged_and_short() -> void:
+	var entry: SnapshotCodec.Entry = _player(4)
+	entry.public = true
+	var packet: PackedByteArray = (
+		SnapshotCodec.encode(3, [entry] as Array[SnapshotCodec.Entry], 1100)[0]
+	)
+	var full_packet: PackedByteArray = (
+		SnapshotCodec.encode(3, [_player(4)] as Array[SnapshotCodec.Entry], 1100)[0]
+	)
+	assert_eq(full_packet.size() - packet.size(), PlayerNetState.SIZE - PlayerNetState.PUBLIC_SIZE)
+	var decoded: SnapshotCodec.Entry = SnapshotCodec.decode(packet)["entries"][0]
+	assert_true(decoded.public)
+	assert_eq(decoded.kind, NetKinds.PLAYER, "the flag is not part of the kind")
+	assert_eq((decoded.state as PlayerNetState).position, Vector2(10, 20))
+	assert_eq((decoded.state as PlayerNetState).last_command, -1, "private fields stay home")
+
+
+func test_each_peer_gets_its_own_player_in_full_and_others_short() -> void:
+	var mine: SnapshotCodec.Entry = _player(1)
+	var mine_short: SnapshotCodec.Entry = _player(1)
+	mine_short.public = true
+	var enemy: SnapshotCodec.Entry = _enemy(2, 3.0)
+	var captured: Array[Dictionary] = [
+		{"owner": 5, "full": mine, "public": mine_short},
+		{"owner": 0, "full": enemy, "public": null},
+	]
+	var for_owner: Array[SnapshotCodec.Entry] = Replicator._entries_for(5, captured)
+	var for_other: Array[SnapshotCodec.Entry] = Replicator._entries_for(9, captured)
+	assert_false(for_owner[0].public)
+	assert_true(for_other[0].public)
+	assert_eq(for_other[1], enemy, "no public form: everyone gets the full state")

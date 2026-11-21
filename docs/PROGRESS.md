@@ -157,7 +157,7 @@ earned, and wave modifiers reach the client. Shop, HUD credits and modifier bann
 - The shop panel has room for about 7 upgrades at 648 px height; more will need a scroll area.
 - No hit marker yet (`ProjectileSystem.hit_confirmed` is there for it).
 
-## Milestone 4 — Gun Game and bots ✅ (in review, issues #33–#37)
+## Milestone 4 — Gun Game and bots ✅ (merged, issues #33–#37)
 
 Branch `milestone-4`, one commit per issue.
 
@@ -186,3 +186,48 @@ feel), bot difficulty, two PCs.
   again" restarts it.
 - Bot difficulty, ladder length and kills per gun are first guesses (`bots/profiles/*.tres`,
   `modes/data/gun_game_match.tres`).
+
+## Foundations, part 1: tooling, safety nets, stress test, latency ✅ (in review)
+
+Branch `foundations`. The rest of the Foundations plan (#43 performance fixes, #44 refactors,
+#46 rejoin, #47 soak/fuzz/rate limit, #48 release builds, #49 settings menu, #50 folder guides)
+is still open.
+
+| Issue | Feature | Status | Where |
+|---|---|---|---|
+| #39 | One command for every check: `.\tools\check.ps1` (`-Smoke`, `-Fix`, `-Only`); CI runs it too | Done | `tools/check.ps1` |
+| #40 | Safety-net tests: every NetState field survives encode/decode/copy (and the public form), every data file is valid, every mode/level is spawnable, every EventBus signal is used | Done, tested | `tests/shared/network/test_net_state_fields.gd`, `tests/test_project_consistency.gd` |
+| #41 | Shared Claude Code hook formats every edited `.gd` file | Done | `.claude/settings.json`, `tools/hooks/format_gd.py` |
+| #42 | Stress scenario F: 8 players (6 bots) vs 40 enemies, host tick time and bandwidth budget | Done | `tests/net/stress.gd` |
+| #45 | Smaller snapshots: 4-byte entity header, other players in a 29-byte public form (your own in full), quarter-pixel enemy positions; now sent 60 times a second | Done, tested | `shared/network/snapshot_codec.gd`, `replicator.gd`, `states/` |
+| #51 | Connection diagnostics in F3, hiccup logging, per-session net logs in `user://logs/net/` | Done | `jitter_meter.gd`, `net_log.gd`, `ui/net_overlay.gd` |
+| #52 | Adaptive smoothing (latency + jitter-based buffer) on clients; the host draws others 2 ticks back and aims at that moment | Done, tested | `net_clock.gd`, `shared/components/display_delay.gd` |
+| #53 | Input buffer on the host: 0 unless a player's inputs stall, at most 2 ticks | Done, tested | `command_queue.gd` |
+| #54 | Your own player drawn one tick of motion ahead | Done, tested | `player/own_player_drawing.gd` |
+| #55 | Latency budget + checks (settings test, smoke scenario G) | Done | `shared/network/latency_budget.tres`, `tests/net/latency.gd` |
+
+**Measured** (Alex's PC, headless):
+
+| | Before | Now |
+|---|---|---|
+| Others drawn behind you, clean | 100 ms (fixed) | 41 ms (35 ms smoothing), 0 hitches |
+| Others under 80 ms ± 10 ms lag, 2% loss | 100 ms fixed: only ~20 ms of real buffer, so it ran dry several times a second | 146 ms (80 latency + 60 smoothing), 0 hitches |
+| The host's view of other players | live: stops and jumps when inputs bunch up | 33 ms behind, smooth |
+| Your own input → movement | 1 tick | 1 tick, and drawn a tick of motion ahead |
+| Snapshots | 30/s, ~50 KB/s per player | 60/s, ~51 KB/s per player |
+| Host tick (stress) | 2.9–3.4 ms avg | 3.5–6 ms avg, p95 4.3–8 ms (budget 10) |
+
+All seven smoke scenarios pass; 267 GUT tests.
+**Not verified:** playing in a window with Yusuf (the stutter fix is aimed at what you saw, but
+untested between your two PCs), how the draw-ahead feels, CI machine timings against the
+budgets (first CI run on the PR).
+
+### Known limitations
+
+- The old fixed 100 ms delay left clients with higher ping (Yusuf on Tailscale) barely any
+  buffer, which likely added to the stutter. Fixed: the delay now includes the latency.
+- Headless test runs pace frames every 7–16 ms, so the host may hold back 1 tick of a clean
+  connection's inputs there; windowed play at high refresh rates should need less.
+- The stress test uses one real client; snapshot encoding cost grows with the number of
+  clients (each gets its own packets). To measure with more clients in #43.
+- The host's tick cost rose a little with 60 snapshots/s (more encoding); #43 looks at it.
