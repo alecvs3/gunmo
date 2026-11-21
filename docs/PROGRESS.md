@@ -379,7 +379,30 @@ reading everything first.
 import, 295 tests, lint and format passed, and the shop listed it. That branch was not kept.
 Claude Code loads a folder's `CLAUDE.md` when it works in that folder.
 
-## Faster checks ✅ (in review, issue #71)
+## Faster checks ✅ (merged, issue #71)
 
 The smoke scenarios A-E (behaviour only) run at the same time, each on its own port; F (stress), G (latency) and H (fairness) measure timing and still run alone afterwards. Stress measures 12 s (was 20), fairness plays 20 s (was 30). `.\tools\check.ps1 -Smoke` went from about 4.5 minutes to about 2 minutes on Alex's PC; `-Scenarios A,E` runs only some (`run_smoke.ps1 -Only`).
 The latency scenario allows one isolated ran-dry hitch per 6 s phase (a single one already reads as 10/min); the per-minute budget applies above that.
+
+## Adaptive screen sizes ✅ (in review, issue #73)
+
+Branch `adaptive-screen`. Movement, shooting, aim, hits, bots and the netcode already ran on
+ticks in world units; this makes the *view* and the *menus* fit any window, and locks that in.
+
+| What | Where |
+|---|---|
+| **Fair view box:** every window shape sees the same 1152x648 world box (data: `PlayerData.view_size`). The camera zooms to fit it; a wider or taller window gets dark bars over the extra world, while the HUD and menus use the whole window | `player/fair_view.gd`, `player/player_camera.gd`, `ui/view_mask.gd` |
+| Resizable window, starts at 1600x900, never smaller than 960x540; size and place remembered and kept on a screen that still exists | `shared/window_rules.gd`, `autoloads/game_settings.gd`, `project.godot` |
+| Borderless fullscreen (F11, Alt+Enter) or exclusive fullscreen (`fullscreen_exclusive` in `settings.cfg`; no menu option yet, #49) | `autoloads/game_settings.gd` |
+| UI size: Small / Normal / Large / Huge in the main menu and the Esc menu. Only menus and HUD change size | `ui/ui_scale_option.gd` |
+| The shop runs from the top of the screen to the bottom and its list scrolls (it overflowed at Huge) | `ui/shop_panel.tscn` |
+| Every panel laid out at 6 canvas sizes (16:9, 21:9, 4:3, 16:10, small and huge UI); fails on anything off screen or overlapping | `tests/ui/test_ui_layout.gd` |
+| Gameplay code may not read the window, viewport size or frame rate | `tests/test_no_window_dependence.gd` |
+
+**Checked:** 337 GUT tests, lint, format and all 18 smoke roles; a windowed run at 2560x1080
+starts and hosts without errors.
+**Not verified by eye:** how the bars, menus and UI sizes look on real monitors.
+
+### Known limitations
+- Exclusive fullscreen has no menu option yet (it waits for the settings menu, #49).
+- The view box is fixed at 16:9; on 21:9 the sides are dark bars by design (fair in Gun Game).

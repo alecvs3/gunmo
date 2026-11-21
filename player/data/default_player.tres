@@ -18,6 +18,7 @@ acceleration_time = 0.12
 deceleration_time = 0.08
 camera_follow_time = 0.0
 spectate_follow_time = 0.15
+view_size = Vector2(1152, 648)
 player_looks = Array[ExtResource("8_look")]([ExtResource("2_man_blue"), ExtResource("3_man_brown"), ExtResource("4_survivor"),ExtResource("5_soldier")])
 bot_looks = Array[ExtResource("8_look")]([ExtResource("6_robot"), ExtResource("7_hitman")])
 knockback_friction = 2400.0
