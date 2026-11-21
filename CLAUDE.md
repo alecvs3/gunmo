@@ -67,12 +67,8 @@ tests/       automated tests, mirroring the folders above
 - **Shared (both review):** `autoloads/`, `shared/`, `modes/` base class, `main.tscn`, `project.godot`
 
 ## Commands
-- Run tests (GUT): `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`
-- Lint: `gdlint .`
-- Format check: `gdformat --check .`
-- Multiplayer smoke test: `.	ests
-et
-un_smoke.ps1 -Godot <console exe>` (run it for any networking change)
+- **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step.
+- Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 
 ## Glossary
 - **Tier:** one gun on the gun game ladder.

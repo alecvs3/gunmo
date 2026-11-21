@@ -19,6 +19,14 @@ this for you. Otherwise:
 
 ## Checks before opening a PR
 
+**One command for everything:** `.\tools\check.ps1` (import, tests, lint, format; about 15 s) or
+`.\tools\check.ps1 -Smoke` (also the multiplayer smoke test, a few more minutes). It prints only
+what failed and why. `-Fix` formats first; `-Only tests|lint|format|smoke` runs one step.
+It finds Godot from `-Godot`, the `GODOT` environment variable, PATH, or `%LOCALAPPDATA%\Programs\Godot`,
+`C:\Tools\Godot`, `~\Godot`, `~\Downloads`.
+
+The individual steps, if you need them:
+
 | What | How |
 |---|---|
 | Tests | In the editor: bottom panel **GUT** → Run All. Or headless: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit` |

@@ -24,14 +24,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Lint and format check
-        run: |
-          python -m pip install "gdtoolkit==4.*"
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          gdlint .
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          gdformat --check .
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install gdtoolkit
+        run: python -m pip install "gdtoolkit==4.*"
 
       - name: Download Godot ${{ env.GODOT_VERSION }}
         run: |
@@ -40,22 +34,10 @@ jobs:
           Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
           "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
 
-      # Godot 4.7.2's import occasionally crashes while it builds its cache (a known engine
-      # issue on our side too); it is retried, and a crash on every attempt fails the job.
-      - name: Import project
-        run: |
-          & $env:GODOT --headless --path . --import
-          for ($attempt = 1; $attempt -le 3; $attempt++) {
-            & $env:GODOT --headless --path . --import
-            if ($LASTEXITCODE -eq 0) { exit 0 }
-            Write-Host "Import attempt $attempt crashed (exit $LASTEXITCODE); retrying."
-          }
-          exit 1
-
-      - name: Unit tests (GUT)
-        run: |
-          & $env:GODOT --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # The same script developers run locally: import (retried, Godot 4.7.2's import sometimes
+      # crashes while it builds its cache), GUT, gdlint and gdformat --check.
+      - name: Import, tests, lint, format
+        run: .\tools\check.ps1 -LogDir "$env:RUNNER_TEMP\check_logs"
 
       - name: Multiplayer smoke test
         run: .\tests\net\run_smoke.ps1 -LogDir "$env:RUNNER_TEMP\smoke_logs"
@@ -64,6 +46,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-logs
-          path: ${{ runner.temp }}\smoke_logs
+          name: check-logs
+          path: |
+            ${{ runner.temp }}\smoke_logs
+            ${{ runner.temp }}\check_logs
           if-no-files-found: ignore
