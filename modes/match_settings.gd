@@ -25,3 +25,15 @@ extends Resource
 @export_range(0, 100000) var wave_clear_bonus_per_wave: int = 0
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
+
+@export_group("Gun Game")
+## The guns in order, first to last. Each must be in the shop catalog (peers name guns by
+## catalog index); a gun may appear more than once.
+@export var ladder: Array[WeaponData] = []
+## Kills with a gun to move on to the next one.
+@export_range(1, 50) var kills_per_tier: int = 1
+## Kills with the last gun to win.
+@export_range(1, 50) var final_tier_kills: int = 1
+@export_range(0.0, 30.0) var respawn_seconds: float = 0.0
+## After respawning a player can't be hurt for this long.
+@export_range(0.0, 10.0) var spawn_protection_seconds: float = 0.0

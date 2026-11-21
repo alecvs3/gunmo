@@ -20,13 +20,14 @@ source_geometry_mode = 1
 source_geometry_group_name = &"navigation_obstacles"
 agent_radius = 20.0
 
-[node name="TestArena" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points", "navigation_region")]
+[node name="TestArena" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points", "navigation_region", "respawn_points")]
 script = ExtResource("1_arena")
 players_root = NodePath("Players")
 enemies_root = NodePath("Enemies")
 player_spawn_points = NodePath("PlayerSpawnPoints")
 enemy_spawn_points = NodePath("EnemySpawnPoints")
 navigation_region = NodePath("NavigationRegion")
+respawn_points = NodePath("RespawnPoints")
 
 [node name="Floor" type="Polygon2D" parent="."]
 color = Color(0.22, 0.24, 0.26, 1)
@@ -99,6 +100,35 @@ position = Vector2(850, 600)
 
 [node name="D" type="Marker2D" parent="PlayerSpawnPoints"]
 position = Vector2(1150, 600)
+
+[node name="RespawnPoints" type="Node2D" parent="."]
+
+[node name="NorthWest" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(200, 200)
+
+[node name="North" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1000, 150)
+
+[node name="NorthEast" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1800, 200)
+
+[node name="West" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(300, 600)
+
+[node name="Centre" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1000, 600)
+
+[node name="East" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1700, 600)
+
+[node name="SouthWest" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(200, 1000)
+
+[node name="South" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1000, 1050)
+
+[node name="SouthEast" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1800, 1000)
 
 [node name="EnemySpawnPoints" type="Node2D" parent="."]
 

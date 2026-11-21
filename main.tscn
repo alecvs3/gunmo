@@ -21,7 +21,7 @@ spawn_limit = 1
 [node name="ModeContainer" type="Node" parent="."]
 
 [node name="ModeSpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("res://modes/wave_mode.tscn")
+_spawnable_scenes = PackedStringArray("res://modes/wave_mode.tscn", "res://modes/gun_game/gun_game_mode.tscn")
 spawn_path = NodePath("../ModeContainer")
 spawn_limit = 1
 

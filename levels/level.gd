@@ -10,6 +10,9 @@ const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 @export var enemies_root: Node2D
 @export var player_spawn_points: Node2D
 @export var enemy_spawn_points: Node2D
+## Spread around the whole map; free-for-all respawns pick the one farthest from everyone.
+## Falls back to the player spawn points when empty.
+@export var respawn_points: Node2D
 ## Where enemies can walk. Baked on the host when the level starts, from the static colliders
 ## in the "navigation_obstacles" group (walls, pillars); clients don't need it.
 @export var navigation_region: NavigationRegion2D
@@ -52,6 +55,32 @@ func players() -> Array[Player]:
 func player_spawn_position(index: int) -> Vector2:
 	var points: Array[Node] = player_spawn_points.get_children()
 	return (points[index % points.size()] as Node2D).position
+
+
+## The respawn point whose nearest other player is farthest away.
+func farthest_respawn_point(others: Array[Vector2]) -> Vector2:
+	var root: Node2D = respawn_points if respawn_points != null else player_spawn_points
+	if root.get_child_count() == 0:
+		root = player_spawn_points
+	var candidates: Array[Vector2] = []
+	for point: Node2D in root.get_children():
+		candidates.append(point.position)
+	return farthest_from(candidates, others)
+
+
+## Of `candidates`, the one with the largest distance to its nearest point in `others`
+## (the first candidate when there is nobody to avoid).
+static func farthest_from(candidates: Array[Vector2], others: Array[Vector2]) -> Vector2:
+	var best: Vector2 = candidates[0]
+	var best_distance: float = -1.0
+	for candidate in candidates:
+		var nearest: float = INF
+		for other in others:
+			nearest = minf(nearest, candidate.distance_squared_to(other))
+		if nearest > best_distance:
+			best = candidate
+			best_distance = nearest
+	return best
 
 
 func enemy_spawn_positions() -> Array[Vector2]:

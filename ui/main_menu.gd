@@ -8,6 +8,7 @@ const DEFAULT_ADDRESS: String = "127.0.0.1"
 ## What the host can pick. `bots`: the mode fills empty slots with bots.
 const MODES: Array[Dictionary] = [
 	{"name": "Waves (co-op)", "match": "res://modes/data/default_match.tres", "bots": false},
+	{"name": "Gun Game", "match": "res://modes/data/gun_game_match.tres", "bots": true},
 ]
 
 @onready var _ip_edit: LineEdit = %IpEdit
