@@ -47,5 +47,10 @@ func reset() -> void:
 		current_health = max_health
 
 
+## Clients: show the host's value from a snapshot. Never used to decide anything.
+func apply_replicated(value: int) -> void:
+	current_health = clampi(value, 0, max_health)
+
+
 func _can_modify() -> bool:
 	return multiplayer.is_server()

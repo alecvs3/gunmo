@@ -20,7 +20,10 @@ func _ready() -> void:
 	EventBus.player_died.connect(_on_player_died)
 
 
+## A dedicated server (peer 1) has no player of its own.
 func _spawn_player(peer_id: int) -> void:
+	if peer_id == 1 and NetworkManager.is_dedicated:
+		return
 	var player: Player = PLAYER_SCENE.instantiate()
 	player.name = str(peer_id)
 	var points: Array[Node] = _spawn_points.get_children()

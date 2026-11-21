@@ -14,7 +14,7 @@ Branch `m1-core`. Neither game mode exists yet; this is a test arena.
 | WeaponData + pistol, PlayerData, EnemyData | Done | `weapons/`, `player/`, `enemies/` |
 | Main menu: Host, Join (IP + port), Quit | Done | `ui/main_menu.tscn` |
 | Networked player: WASD, mouse aim, hold to fire, R to reload | Done | `player/` |
-| Bullets spawned by the host, replicated by spawn data only | Done, tested | `weapons/bullet.gd`, `weapons/projectile_spawner.gd` |
+| Bullets spawned by the host | Done; replaced by predicted shooting (netcode) | `weapons/` |
 | Test enemy: chases nearest living player, contact damage, host-only AI | Done | `enemies/test_enemy.gd` |
 | Test arena: floor, walls, 2 pillars, spawn points | Done | `levels/test_arena.tscn` |
 | Debug enemy spawner (every 3 s, max 15) | Done | `levels/debug_enemy_spawner.gd` |
@@ -36,7 +36,7 @@ Branch `net-hardening`, stacked on `m1-core`.
 | Clear end reasons: host closed, connection lost, kicked, refused | Done | `autoloads/network_manager.gd` |
 | Host can kick a peer with a reason (`NetworkManager.kick`) | Done (no UI yet) | `autoloads/network_manager.gd` |
 | Ping counter top right, F3 details (all pings, loss, bandwidth, build id) | Done | `shared/network/ping_tracker.gd`, `ui/net_overlay.*` |
-| Smoothing for remote players and enemies | Done, tested | `shared/components/net_smoother.gd` |
+| Smoothing for remote players and enemies | Done; replaced by snapshot interpolation (netcode) | — |
 | Esc menu: Resume / Leave match (host: end match for everyone) | Done | `ui/game_menu.*` |
 | Dev launch args `-- --host [port]`, `-- --join ip[:port]` | Done, tested | `shared/network/launch_args.gd`, `main.gd` |
 | Host validates client input (non-finite values ignored) | Done | `player/player.gd` |
@@ -48,26 +48,48 @@ Branch `net-hardening`, stacked on `m1-core`.
 joining nobody fails after 8 s with a clear message; launch args host/join with no errors.
 **Not yet verified:** the overlay and Esc menu visually, play between two computers.
 
-### Known limitations
-
-- No client-side prediction yet (#7): clients feel a small input delay, and their own player
-  can still stutter slightly because it follows the host's updates directly.
-- Enemies move straight at players and can snag on pillars (no pathfinding).
-- Players don't collide with each other. No friendly fire.
-- No HUD yet (health, ammo, wave).
 
 ## Movement feel ✅ (merged, issue #6)
 
 | Feature | Status | Where |
 |---|---|---|
 | Physics interpolation on: no more blur/ghosting on 120-180 Hz screens | Done | `project.godot` |
-| Teleports (respawn, big network corrections) skip interpolation | Done | `player/player.gd`, `shared/components/net_smoother.gd` |
+| Teleports (respawn, big network corrections) skip interpolation | Done | `player/`, `shared/network/` |
 | Camera updates on physics ticks so it stays in step with the player | Done | `player/player.tscn` |
 | Acceleration 0.12 s, deceleration 0.08 s, top speed 300 -> 220 px/s | Done, tested | `player/player_motor.gd`, `player/data/default_player.tres` |
-| Client's own player glides (rate 30) instead of jumping to each update: less stutter until #7 | Done, tested | `shared/components/net_smoother.gd` |
+| Client's own player glides instead of jumping to each update | Done; replaced by prediction (netcode) | — |
 
 **Not yet verified:** that the blur is gone and the movement feels right (needs a real window).
-Still to come: client prediction (#7), knockback (#8).
+
+## Netcode foundation ✅ (in review, issues #10 #11 #7 #12 #13 #14 #8)
+
+Branch `netcode-foundation`. How it works and how to extend it: [NETCODE.md](NETCODE.md).
+
+| Step | Feature | Status | Where |
+|---|---|---|---|
+| 1 (#10) | Instant aim: the gun follows the mouse every frame; aim angle sent in commands | Done | `player/player_input_source.gd` |
+| 2 (#11) | Tick clock, numbered input commands with redundancy, host command budget (no speed hacks), NetChannel + network simulator (`--net-sim`) | Done, tested | `shared/network/` |
+| 3 (#7) | Own-player prediction + reconciliation (rewind, replay, eased correction) | Done, tested | `player/player_prediction.gd`, `player/player.gd` |
+| 4 (#12) | Snapshot interpolation; batched, MTU-split entity snapshots at 30 Hz | Done, tested | `shared/network/replicator.gd`, `snapshot_codec.gd`, `state_buffer.gd`, `net_entity.gd` |
+| 5 (#13) | Predicted shooting: instant bullets/ammo, deterministic spread, host-confirmed; event-based ProjectileSystem | Done, tested | `weapons/` |
+| 6 (#14) | Lag compensation (rewind ≤ 250 ms), swept hit tests (no tunnelling), teams | Done, tested | `shared/network/lag_compensator.gd`, `hit_geometry.gd` |
+| 7 (#8) | Knockback: enemy contact, bullet hits, small wall bounce; predicted for the owner | Done, tested | `shared/components/knockback_component.gd` |
+| extra | Dedicated server mode (`--dedicated`), F3 netcode stats | Done | `main.gd`, `ui/net_overlay.gd` |
+
+**Verified:** 136 GUT tests; lint/format clean; smoke test (listen host + client with 80 ms
+simulated lag + wrong-build client; dedicated server + shooter + observer) passed 5 of 5 runs:
+own movement responds within 3 ticks under lag, position matches the host exactly after stopping,
+~50% of shots at moving enemies confirmed as hits, remote players and bullets seen.
+**Not yet verified:** windowed play (feel of aim, movement, corrections, knockback), two PCs.
+
+### Known limitations
+
+- Enemies move straight at players and can snag on pillars (no pathfinding).
+- Players don't collide with each other. No friendly fire in co-op (by team).
+- No HUD yet (health, ammo, wave).
+- The host sees remote players move in small steps when their commands arrive unevenly.
+- GUT prints Godot leak warnings at exit on this branch (the game itself shuts down cleanly);
+  traced to engine/GUT shutdown order with the Replicator node, not to a runtime leak.
 
 ## Milestone 2 — wave loop (planned)
 

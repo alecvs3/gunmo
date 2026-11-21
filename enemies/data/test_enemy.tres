@@ -8,3 +8,7 @@ max_health = 60
 move_speed = 140.0
 contact_damage = 10
 contact_interval = 0.5
+contact_knockback = 350.0
+knockback_friction = 2000.0
+knockback_bounce = 0.3
+knockback_taken = 1.0
