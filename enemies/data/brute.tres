@@ -19,3 +19,4 @@ cost = 4.0
 first_wave = 5
 spawn_weight = 1.0
 bounty = 40
+max_slow = 0.35

@@ -27,3 +27,6 @@ extends Resource
 @export_range(0.0, 64.0) var bullet_radius: float = 4.0
 ## Push given to whatever the bullet hits (px/s along the bullet's path).
 @export_range(0.0, 3000.0) var knockback: float = 0.0
+## Burn, chill, shock, shred or blast built into the weapon (none = plain bullets). Perks add
+## to these.
+@export var effects: HitEffects

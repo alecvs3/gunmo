@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+[ext_resource type="Script" path="res://weapons/hit_effects.gd" id="2_effects"]
+
+[sub_resource type="Resource" id="Resource_effects"]
+script = ExtResource("2_effects")
+shock_chains = 3
+shock_share = 0.6
+shock_range = 170.0
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "Arc Caster"
+price = 450
+pellets = 1
+pierce = 0
+damage = 26
+fire_rate = 2.5
+bullet_speed = 1100.0
+bullet_lifetime = 0.7
+spread = 2.0
+magazine_size = 10
+reload_time = 1.6
+bullet_radius = 4.0
+knockback = 60.0
+effects = SubResource("Resource_effects")

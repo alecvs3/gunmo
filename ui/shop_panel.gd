@@ -4,6 +4,7 @@ extends PanelContainer
 ## B hides or shows it.
 ## Buttons only *ask* to buy (EventBus.shop_purchase_requested); the host checks and applies.
 ## Credits, levels and the equipped weapon come from your own player's replicated state.
+## Perks (upgrades with HitEffects) get their own list, with how many slots are used.
 
 var _catalog: ShopCatalog = ShopCatalog.load_default()
 var _phase: int = -1
@@ -15,6 +16,8 @@ var _upgrade_buttons: Array[Button] = []
 @onready var _credits_label: Label = %ShopCredits
 @onready var _weapons_box: VBoxContainer = %Weapons
 @onready var _upgrades_box: VBoxContainer = %Upgrades
+@onready var _perks_box: VBoxContainer = %Perks
+@onready var _perks_title: Label = %PerksTitle
 
 
 static func weapon_label(weapon: WeaponData, equipped: bool) -> String:
@@ -23,6 +26,10 @@ static func weapon_label(weapon: WeaponData, equipped: bool) -> String:
 	if weapon.price == 0:
 		return "%s · free" % weapon.display_name
 	return "%s · %d" % [weapon.display_name, weapon.price]
+
+
+static func perks_title(owned: int, slots: int) -> String:
+	return "Perks: your build (%d of %d chosen)" % [owned, slots]
 
 
 static func upgrade_label(upgrade: UpgradeData, level: int) -> String:
@@ -55,8 +62,9 @@ func _build_buttons() -> void:
 	for i in _catalog.weapons.size():
 		_weapon_buttons.append(_add_button(_weapons_box, ShopRules.KIND_WEAPON, i, ""))
 	for i in mini(_catalog.upgrades.size(), ShopCatalog.MAX_UPGRADES):
-		var tip: String = _catalog.upgrades[i].description
-		_upgrade_buttons.append(_add_button(_upgrades_box, ShopRules.KIND_UPGRADE, i, tip))
+		var upgrade: UpgradeData = _catalog.upgrades[i]
+		var box: VBoxContainer = _perks_box if upgrade.is_perk() else _upgrades_box
+		_upgrade_buttons.append(_add_button(box, ShopRules.KIND_UPGRADE, i, upgrade.description))
 
 
 func _add_button(box: VBoxContainer, kind: int, index: int, tip: String) -> Button:
@@ -93,8 +101,14 @@ func _refresh(player: Player) -> void:
 			true, _catalog, i, loadout.weapon_index, credits
 		)
 		_weapon_buttons[i].disabled = not problem.is_empty()
+	var perks: int = PlayerStats.perks_owned(_catalog, loadout.levels)
+	_perks_title.text = perks_title(perks, _catalog.max_perks)
 	for i in _upgrade_buttons.size():
 		var level: int = loadout.level(i)
 		_upgrade_buttons[i].text = upgrade_label(_catalog.upgrades[i], level)
-		var problem: String = ShopRules.check_upgrade(true, _catalog, i, level, credits)
+		var problem: String = ShopRules.check_upgrade(true, _catalog, i, level, credits, perks)
 		_upgrade_buttons[i].disabled = not problem.is_empty()
+		var tip: String = _catalog.upgrades[i].description
+		if not problem.is_empty() and problem != "Not enough credits.":
+			tip += "\n" + problem
+		_upgrade_buttons[i].tooltip_text = tip

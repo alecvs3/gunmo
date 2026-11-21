@@ -4,7 +4,7 @@ extends RefCounted
 ## Pure logic with no networking, so it can be unit-tested; JoinGate does the sending.
 
 ## Bump when the hello/reply format or any network format (snapshots, commands, events) changes.
-const PROTOCOL: int = 7
+const PROTOCOL: int = 8
 ## bytes_to_var needs at least a 4-byte type header.
 const MIN_PAYLOAD_SIZE: int = 4
 const MAX_NAME_LENGTH: int = 16
