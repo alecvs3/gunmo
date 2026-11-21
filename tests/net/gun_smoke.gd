@@ -1,11 +1,13 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of Gun Game with a host, a client and two bots, using the quick match
-## (tests/net/data/quick_gun_game.tres: 3 guns, 2 kills each, 1 on the last, fill to 4).
+## (tests/net/data/quick_gun_game.tres: SMG, Rocket Launcher, SMG; 2 kills each, 1 on the
+## last, fill to 4).
 ##   1. both sides see 4 players: the two humans by the names they chose, and 2 bots
 ##   2. the humans hold fire for a while: the bots must find and kill someone on their own
 ##   3. then everyone fights until someone finishes the ladder: both sides see VICTORY with
 ##      the same winner, who is on the last gun; somebody climbed a tier on the way
-##      and the results screen names the winner next to a scoreboard of all 4 players
+##      and the results screen names the winner next to a scoreboard of all 4 players;
+##      the client saw rockets explode (the host's blasts reach it)
 ##   4. the host restarts: both sides see the match running again with every tier back at 0
 ## Usage: -s res://tests/net/gun_smoke.gd -- <gunhost|gunclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
@@ -20,6 +22,7 @@ const HOLD_FIRE_SECONDS: float = 25.0
 var _state: RefCounted = null
 var _winner_id: int = 0
 var _highest_tier: int = 0
+var _blasts_seen: int = 0
 
 
 func _initialize() -> void:
@@ -65,12 +68,21 @@ func _run_client() -> void:
 	_check(net.join("127.0.0.1", _port) == OK, "join() failed")
 	await _wait_until(func() -> bool: return _own_player() != null and _players().size() == 4, 15.0)
 	_check_roster(HOST_NAME)
+	var projectiles: Node = _own_player().get_parent().get_parent().get_node("Projectiles")
+	projectiles.child_entered_tree.connect(_on_projectile_added)
 	await _hold_fire(HOLD_FIRE_SECONDS)
 	await _fight_until_winner(75.0)
-	_info("winner id %d" % _winner_id)
+	_info("winner id %d, %d rocket blasts seen" % [_winner_id, _blasts_seen])
+	_check(_blasts_seen > 0, "no rocket blast reached the client")
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 10.0)
 	await _check_restarted()
 	await _wait_until(func() -> bool: return not net.is_online(), 15.0)
+
+
+func _on_projectile_added(node: Node) -> void:
+	var script: Script = node.get_script()
+	if script != null and script.resource_path == "res://weapons/explosion_flash.gd":
+		_blasts_seen += 1
 
 
 ## 4 players: us, the other human by name, and 2 bots with bot names.

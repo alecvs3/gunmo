@@ -177,9 +177,8 @@ func _purchase_problem(
 ) -> String:
 	var catalog: ShopCatalog = loadout.catalog
 	if kind == ShopRules.KIND_UPGRADE:
-		var perks: int = PlayerStats.perks_owned(catalog, loadout.levels)
 		return ShopRules.check_upgrade(
-			shop_open(), catalog, index, loadout.level(index), wallet.credits, perks
+			shop_open(), catalog, index, loadout.level(index), wallet.credits
 		)
 	if kind == ShopRules.KIND_WEAPON:
 		return ShopRules.check_weapon(

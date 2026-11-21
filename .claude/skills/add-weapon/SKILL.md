@@ -12,15 +12,17 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
    SILENCER: how the character holds it), `price`, `pellets`, `pierce`, `damage`, `fire_rate`,
    `bullet_speed`, `bullet_lifetime`, `spread`, `magazine_size`, `reload_time`, `bullet_radius`,
    `knockback`. No numbers in code (rule 6).
-   - Built-in burn, chill, shock, shred or blast: set `effects` to a `HitEffects` sub-resource
-     (see `weapons/data/torch.tres`, `weapons/data/cryo_carbine.tres`). Perks add to it later.
 2. **Add it to the shop catalog:** append it to `weapons` in `upgrades/data/shop_catalog.tres`.
    Every peer names weapons by **catalog index**, so append and never reorder. Index 0 must stay
    the free starting pistol. The shop lists it automatically (`ui/shop_panel.gd`), and the build
    fingerprint covers the new file, so nothing else needs registering.
 3. **Gun Game:** to use it on the ladder, add it to `ladder` in `modes/data/gun_game_match.tres`.
    It must also be in the catalog (step 2).
-4. **Needs a new mechanic** (burst, charge, explosion...)?
+   - **Explodes?** Set `blast_radius` and `blast_damage` (see `weapons/data/rocket_launcher.tres`).
+   - **Looks different?** `projectile` (BULLET or ROCKET) picks what flies, and `held_model` is
+     a scene drawn at the muzzle (`weapons/models/rocket_launcher_tube.tscn`). A new projectile
+     look = a new scene plus an entry in `PROJECTILE_SCENES` (`weapons/projectile_system.gd`).
+4. **Needs a new mechanic** (burst, charge...)?
    - Add an `@export` field to `WeaponData` and use it in `shared/components/weapon_component.gd`
      or `weapons/bullet.gd`.
    - Keep `Player.simulate()` deterministic: randomness comes from `WeaponComponent.shot_seed`.

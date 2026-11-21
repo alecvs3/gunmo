@@ -17,20 +17,15 @@ reloading are `shared/components/weapon_component.gd`.
    the victim (`EVENT_HURT`). When the bullet ends, everyone is told where and when
    (`EVENT_ENDED`).
 
-## Hit effects and perks
-- `hit_effects.gd` (`HitEffects`): burn, chill, shock, shred and blast numbers, one bit each.
-  A weapon can have some built in (`WeaponData.effects`, a sub-resource in its `.tres`). Perks
-  (`UpgradeData.effects`) add more, once per level (`PlayerStats.effective_effects`).
-- `impact_effects.gd` (host): what they do when a bullet lands or stops. It returns `Flash`
-  records, and `ProjectileSystem` shows them to everyone (`effect_flash.gd`).
-- Burn, chill and shred last on the target: `shared/components/status_effects_component.gd`
-  (host timers). The status bits travel in the enemy snapshot and are drawn by
-  `shared/components/status_marks.gd`.
-- A shot carries `effect_mask` to every peer, so bullets look the same everywhere.
-- **A new effect kind** = a new bit and fields in `HitEffects` (including how two combine in
-  `plus()`), what it does in `ImpactEffects` or `StatusEffectsComponent`, tests in
-  `tests/weapons/test_hit_effects.gd` / `tests/weapons/test_impact_effects.gd`, and a
-  `Handshake.PROTOCOL` bump if a mask or snapshot changes.
+## Rockets and explosions
+- `WeaponData.projectile` picks the scene every peer draws (`bullet.tscn` or `rocket.tscn`,
+  `PROJECTILE_SCENES` in `projectile_system.gd`); the value travels with the shot.
+- `WeaponData.held_model` is a scene drawn over the character's hands with its front end at
+  the muzzle (`models/rocket_launcher_tube.tscn`), set by `player/player_look.gd`.
+- `blast_radius` + `blast_damage`: where the shot lands (a hit, a wall or the end of its range)
+  the host runs `explosion.gd` (everyone else in the radius takes the blast and is pushed
+  away; never the shooter or teammates) and tells every peer (`EVENT_BLAST`), who draws
+  `explosion_flash.tscn`.
 
 ## Rules that aren't obvious
 - **Only AUTHORITATIVE bullets deal damage.**
@@ -44,6 +39,5 @@ reloading are `shared/components/weapon_component.gd`.
 `add-weapon` (in `.claude/skills/`).
 
 ## Tests
-`tests/weapons/` (bullets, shots, the weapon set, hit and impact effects, fair dodging),
-`tests/shared/components/test_weapon_component.gd`, `tests/shared/components/test_status_effects.gd`,
-`tests/upgrades/test_perks.gd`, and smoke scenarios A, D (perks set enemies on fire), E and H.
+`tests/weapons/` (bullets, shots, the weapon set, fair dodging),
+`tests/shared/components/test_weapon_component.gd`, and smoke scenarios A, D, E and H.

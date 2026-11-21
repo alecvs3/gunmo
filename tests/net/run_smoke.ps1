@@ -2,7 +2,7 @@
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
-#   D  shop: purchases checked by the host, shotgun pellets, perks, credits, wave modifiers
+#   D  shop: purchases checked by the host, shotgun pellets, credits, wave modifiers
 #   E  Gun Game: host + client + 2 bots; names, bot kills, a winner both sides agree on, restart
 #   F  stress: 8 players (6 bots) vs 40 enemies; host tick time and bandwidth within budget
 #   G  latency: own-input response, smoothing delay and hitches clean and under simulated lag,
@@ -47,7 +47,7 @@ $scenarios = @(
     @{ Id = "C"; Title = "wave loop (ready-up, victory, restart, defeat)"; Alone = $false
        Script = "res://tests/net/wave_smoke.gd"; Metrics = ""
        Roles = @((Role "wavehost"), (Role "waveclient")) },
-    @{ Id = "D"; Title = "shop, credits, weapons, perks, wave modifiers"; Alone = $false
+    @{ Id = "D"; Title = "shop, credits, weapons, wave modifiers"; Alone = $false
        Script = "res://tests/net/shop_smoke.gd"; Metrics = ""
        Roles = @((Role "shophost"), (Role "shopclient")) },
     @{ Id = "E"; Title = "Gun Game with bots (names, ladder, winner, restart)"; Alone = $false

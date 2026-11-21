@@ -63,17 +63,6 @@ autowrap_mode = 3
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="PerksTitle" type="Label" parent="Box/Scroll/Lists"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
-text = "Perks"
-autowrap_mode = 3
-
-[node name="Perks" type="VBoxContainer" parent="Box/Scroll/Lists"]
-unique_name_in_owner = true
-layout_mode = 2
-
 [node name="UpgradesTitle" type="Label" parent="Box/Scroll/Lists"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)

@@ -20,7 +20,6 @@ var data_path: String = ""
 ## The wave's modifiers (ModifierCatalog bitmask); set before spawning, synced once.
 var modifier_mask: int = 0
 
-var _status: StatusEffectsComponent
 var _contact_cooldown_left: float = 0.0
 var _repath_left: float = 0.0
 var _speed: float = 0.0
@@ -43,7 +42,6 @@ func _ready() -> void:
 	_knockback.configure(
 		enemy_data.knockback_friction, enemy_data.knockback_bounce, enemy_data.knockback_taken
 	)
-	_add_status_effects()
 	if not multiplayer.is_server():
 		set_physics_process(false)
 		_contact_area.monitoring = false
@@ -72,7 +70,6 @@ func capture_net_state() -> NetState:
 	var state := EnemyNetState.new()
 	state.position = position
 	state.health = _health.current_health
-	state.status = _status.flags
 	return state
 
 
@@ -80,7 +77,6 @@ func apply_net_state(state: NetState) -> void:
 	var enemy_state := state as EnemyNetState
 	position = enemy_state.position
 	_health.apply_replicated(enemy_state.health)
-	_status.show_flags(enemy_state.status)
 	visible = true
 
 
@@ -89,7 +85,6 @@ func _move(delta: float) -> void:
 	var chase: Vector2 = Vector2.ZERO
 	if target != null:
 		chase = _direction_towards(target.global_position, delta) * _speed
-		chase *= _status.speed_multiplier()
 	velocity = chase + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -156,33 +151,14 @@ func _apply_modifiers(combined: WaveModifier) -> void:
 
 
 ## Host: heal a share of max health per second (whole points; the rest carries over).
-## Burning stops it.
 func _regenerate(delta: float) -> void:
 	if _regen_per_second <= 0.0 or _health.current_health >= _health.max_health:
-		return
-	if _status.is_burning():
 		return
 	_regen_carry += _regen_per_second * _health.max_health * delta
 	var whole: int = floori(_regen_carry)
 	if whole > 0:
 		_regen_carry -= whole
 		_health.heal(whole)
-
-
-## Burn, chill and shred (HitEffects): the component behind the hitbox, and rings drawn on the
-## body so they follow the drawn (smoothed) position. Every peer adds them; only the host's
-## timers run.
-func _add_status_effects() -> void:
-	_status = StatusEffectsComponent.new()
-	_status.name = "StatusEffects"
-	_status.health = _health
-	_status.max_slow = enemy_data.max_slow
-	add_child(_status)
-	($HitboxComponent as HitboxComponent).status = _status
-	var marks := StatusMarks.new()
-	marks.name = "StatusMarks"
-	marks.status = _status
-	$Body.add_child(marks)
 
 
 ## Clients: the host told us which type this is; only enemy data files are accepted.

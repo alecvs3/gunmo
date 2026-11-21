@@ -105,3 +105,19 @@ func test_barrel_line_passes_through_the_mouse() -> void:
 		var direction: Vector2 = Vector2.from_angle(aim)
 		var miss: float = absf(direction.cross(target - origin))
 		assert_almost_eq(miss, 0.0, 0.001, "aim line misses %s by %f" % [target, miss])
+
+
+func test_held_model_sits_at_the_muzzle_and_is_replaced() -> void:
+	var look := PlayerLook.new()
+	add_child_autofree(look)
+	var character: CharacterLook = _look("a")
+	character.machine_muzzle = Vector2(40, 10)
+	look.character = character
+	look.pose = WeaponData.Pose.MACHINE
+	look.held_model = load("res://weapons/models/rocket_launcher_tube.tscn")
+	assert_eq(look.get_child_count(), 1)
+	var model := look.get_child(0) as Node2D
+	assert_eq(model.position, Vector2(40, 10), "the tube's front end is where rockets leave")
+	look.held_model = null
+	await get_tree().process_frame
+	assert_eq(look.get_child_count(), 0, "a plain gun shows no model")

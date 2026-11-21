@@ -1,11 +1,9 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the shop, credits, weapons and wave modifiers with a host and a
 ## client, using the quick match (1000 starting credits, a modifier from wave 1).
-## The client buys the shotgun, a damage level and two perks (the host must apply them all),
-## tries purchases the host must refuse (including a third perk: only two perk slots), then
-## both clear the waves: the client's shotgun fires 6 pellets per trigger pull, its hits are
-## confirmed, it earns credits, the wave's modifiers reach it, and its incendiary perk sets
-## enemies on fire (seen in the enemy snapshots).
+## The client buys the shotgun and a damage level (the host must apply both), tries purchases
+## the host must refuse, then both clear the waves: the client's shotgun fires 6 pellets per
+## trigger pull, its hits are confirmed, it earns credits, and the wave's modifiers reach it.
 ## Usage: -s res://tests/net/shop_smoke.gd -- <shophost|shopclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
@@ -13,10 +11,6 @@ const WATCHDOG_SECONDS: float = 110.0
 const MATCH_PATH: String = "res://tests/net/data/quick_match.tres"
 const SHOTGUN: int = 2
 const DAMAGE: int = 0
-const INCENDIARY: int = 7
-const CRYO: int = 8
-const ARC: int = 9
-const BURN_FLAG: int = 1
 const KIND_UPGRADE: int = 0
 const KIND_WEAPON: int = 1
 
@@ -25,7 +19,6 @@ var _predicted: int = 0
 var _confirmed: int = 0
 var _saw_modifiers: bool = false
 var _saw_tinted_enemy: bool = false
-var _saw_burning_enemy: bool = false
 
 
 func _initialize() -> void:
@@ -69,7 +62,6 @@ func _run_client() -> void:
 	await _wait_until(func() -> bool: return _own() != null and _state != null, 15.0)
 	await _buy_and_check()
 	await _refused_purchase_check("buying the gun already equipped", KIND_WEAPON, SHOTGUN)
-	await _refused_purchase_check("a third perk", KIND_UPGRADE, ARC)
 	var hits := root.get_node("Main/LevelContainer/TestArena/ProjectileSystem")
 	hits.hit_confirmed.connect(func(_key: String, _at: Vector2) -> void: _confirmed += 1)
 	_mode().call("set_local_ready", true)
@@ -88,22 +80,16 @@ func _run_client() -> void:
 	_check(_credits() > credits_before, "kills earned no credits")
 	_check(_saw_modifiers, "the wave's modifiers never reached the client")
 	_check(_saw_tinted_enemy, "no enemy carried the wave's modifiers")
-	_check(_saw_burning_enemy, "the incendiary perk never set an enemy on fire")
 
 
 func _buy_and_check() -> void:
 	var bus: Node = root.get_node("EventBus")
 	bus.shop_purchase_requested.emit(KIND_WEAPON, SHOTGUN)
 	bus.shop_purchase_requested.emit(KIND_UPGRADE, DAMAGE)
-	bus.shop_purchase_requested.emit(KIND_UPGRADE, INCENDIARY)
-	bus.shop_purchase_requested.emit(KIND_UPGRADE, CRYO)
-	var applied := func() -> bool: return _credits() == 300 and _own_loadout() == [SHOTGUN, 1]
+	var applied := func() -> bool: return _credits() == 600 and _own_loadout() == [SHOTGUN, 1]
 	await _wait_until(applied, 10.0)
 	_info("after buying: credits %d, loadout %s" % [_credits(), _own_loadout()])
-	_check(
-		applied.call(),
-		"purchases not applied (1000 - 300 shotgun - 100 damage - 150 - 150 perks = 300)",
-	)
+	_check(applied.call(), "purchases not applied (1000 - 300 shotgun - 100 damage = 600)")
 	var magazine: int = _own().get_node("WeaponComponent").weapon_data.magazine_size
 	_check(magazine == 6, "shotgun magazine expected, got %d" % magazine)
 
@@ -125,7 +111,6 @@ func _fight_until_over() -> void:
 			command.aim = (target.global_position - _own().global_position).angle()
 			command.buttons = _fire_button
 			_saw_tinted_enemy = _saw_tinted_enemy or target.get("modifier_mask") != 0
-		_saw_burning_enemy = _saw_burning_enemy or _any_enemy_burning()
 		_own().get_node("PlayerInputSource").scripted = command
 		await create_timer(0.1).timeout
 		time_left -= 0.1
@@ -193,11 +178,3 @@ func _nearest_enemy() -> Node2D:
 		if enemy.visible and closer:
 			nearest = enemy
 	return nearest
-
-
-func _any_enemy_burning() -> bool:
-	for enemy: Node in root.get_node("Main/LevelContainer/TestArena/Enemies").get_children():
-		var status: Node = enemy.get_node_or_null("StatusEffects")
-		if status != null and int(status.get("flags")) & BURN_FLAG:
-			return true
-	return false

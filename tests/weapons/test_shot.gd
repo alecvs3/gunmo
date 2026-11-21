@@ -37,7 +37,7 @@ func test_encode_decode_round_trip() -> void:
 	shot.fire_tick = 1000.0
 	shot.view_tick = 993.5
 	shot.pierce = 2
-	shot.effect_mask = HitEffects.BURN | HitEffects.BLAST
+	shot.projectile = WeaponData.Projectile.ROCKET
 	var buffer := StreamPeerBuffer.new()
 	shot.encode(buffer)
 	var decoded: Shot = Shot.decode(NetCodec.buffer_from(buffer.data_array))
@@ -49,7 +49,7 @@ func test_encode_decode_round_trip() -> void:
 	assert_eq(decoded.fire_tick, 1000.0)
 	assert_eq(decoded.view_tick, 993.5)
 	assert_eq(decoded.pierce, 2)
-	assert_eq(decoded.effect_mask, HitEffects.BURN | HitEffects.BLAST)
+	assert_eq(decoded.projectile, WeaponData.Projectile.ROCKET)
 
 
 func test_pellet_ids_are_unique_per_command() -> void:
@@ -67,13 +67,3 @@ func test_bot_shooter_ids_are_signed() -> void:
 	var buffer := StreamPeerBuffer.new()
 	shot.encode(buffer)
 	assert_eq(Shot.decode(NetCodec.buffer_from(buffer.data_array)).key(), "-4:7")
-
-
-func test_from_weapon_carries_effects_and_their_mask() -> void:
-	assert_eq(Shot.from_weapon(data, Vector2.ZERO, Vector2.RIGHT).effect_mask, 0)
-	data.effects = HitEffects.new()
-	data.effects.chill_slow = 0.2
-	data.effects.chill_seconds = 1.0
-	var shot: Shot = Shot.from_weapon(data, Vector2.ZERO, Vector2.RIGHT)
-	assert_eq(shot.effects, data.effects)
-	assert_eq(shot.effect_mask, HitEffects.CHILL)

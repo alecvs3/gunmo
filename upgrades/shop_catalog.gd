@@ -12,8 +12,6 @@ const MAX_UPGRADES: int = 16
 @export var weapons: Array[WeaponData] = []
 ## At most MAX_UPGRADES.
 @export var upgrades: Array[UpgradeData] = []
-## How many different perks one player may own.
-@export_range(0, 16) var max_perks: int = 2
 
 
 static func load_default() -> ShopCatalog:

@@ -3,6 +3,8 @@ extends Resource
 ## Tuning for one weapon. Real values live in weapons/data/*.tres.
 
 enum Pose { GUN, MACHINE, SILENCER }
+## What flies out of it, so every peer draws the same thing (the value travels with each shot).
+enum Projectile { BULLET, ROCKET }
 
 @export var display_name: String = ""
 ## How the character holds it (one picture per pose in each CharacterLook), so other players
@@ -30,6 +32,19 @@ enum Pose { GUN, MACHINE, SILENCER }
 @export_range(0.0, 64.0) var bullet_radius: float = 4.0
 ## Push given to whatever the bullet hits (px/s along the bullet's path).
 @export_range(0.0, 3000.0) var knockback: float = 0.0
-## Burn, chill, shock, shred or blast built into the weapon (none = plain bullets). Perks add
-## to these.
-@export var effects: HitEffects
+
+@export_group("Looks")
+## Drawn over the character's hands, its front end at the muzzle (e.g. a launcher tube). None =
+## the character picture's own gun.
+@export var held_model: PackedScene
+@export var projectile: Projectile = Projectile.BULLET
+
+@export_group("Explosion")
+## Where the shot lands (a hit, a wall or the end of its range), everyone else within this
+## radius (px) takes blast_damage and is pushed away. 0 = no explosion.
+@export_range(0.0, 1000.0) var blast_radius: float = 0.0
+@export_range(0, 1000) var blast_damage: int = 0
+
+
+func explodes() -> bool:
+	return blast_radius > 0.0 and blast_damage > 0

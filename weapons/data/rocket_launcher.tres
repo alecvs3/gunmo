@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+[ext_resource type="PackedScene" path="res://weapons/models/rocket_launcher_tube.tscn" id="2_tube"]
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "Rocket Launcher"
+pose = 1
+price = 450
+pellets = 1
+pierce = 0
+damage = 60
+fire_rate = 0.8
+bullet_speed = 600.0
+bullet_lifetime = 1.0
+spread = 1.0
+magazine_size = 3
+reload_time = 2.2
+bullet_radius = 7.0
+knockback = 300.0
+held_model = ExtResource("2_tube")
+projectile = 1
+blast_radius = 90.0
+blast_damage = 40

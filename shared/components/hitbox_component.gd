@@ -9,9 +9,6 @@ extends Area2D
 @export var knockback: KnockbackComponent
 ## Shots from the same team pass through (players don't hurt each other in co-op).
 @export var team: StringName = &""
-## Optional: burn, chill and shred land here, and shred makes hits land harder. Without one,
-## hits only do damage.
-@export var status: StatusEffectsComponent
 ## The player this hitbox belongs to (0 = not a player). Its own shots never hit it, even
 ## when there are no teams (free-for-all).
 var owner_id: int = 0
@@ -39,16 +36,9 @@ func _exit_tree() -> void:
 ## Host only (HealthComponent ignores it elsewhere).
 func hit(damage: int, source_id: int, push: Vector2 = Vector2.ZERO) -> void:
 	if health != null:
-		var scaled: int = damage if status == null else roundi(damage * status.damage_multiplier())
-		health.take_damage(scaled, source_id)
+		health.take_damage(damage, source_id)
 	if knockback != null and multiplayer.is_server():
 		knockback.apply(push)
-
-
-## Host only: timed effects from a hit (ignored without a StatusEffectsComponent).
-func apply_effects(effects: HitEffects, source_id: int) -> void:
-	if status != null and multiplayer.is_server():
-		status.apply(effects, source_id)
 
 
 ## False while its owner is dead or gone.
