@@ -61,3 +61,22 @@ func test_loadout_equips_with_full_magazine_and_pose() -> void:
 	assert_eq(weapon.ammo, catalog.weapon(2).magazine_size, "same weapon: no change")
 	loadout.reset()
 	assert_eq(loadout.weapon_index, 0)
+
+
+func test_rocket_launcher_is_a_slow_exploding_rocket() -> void:
+	var rocket: WeaponData = _named("Rocket Launcher")
+	var pistol: WeaponData = _named("Pistol")
+	assert_not_null(rocket)
+	assert_true(rocket.explodes())
+	assert_false(pistol.explodes(), "plain guns don't explode")
+	assert_eq(rocket.projectile, WeaponData.Projectile.ROCKET)
+	assert_not_null(rocket.held_model, "drawn as a tube")
+	assert_lt(rocket.bullet_speed, pistol.bullet_speed, "rockets are slow")
+	assert_gt(rocket.bullet_radius, pistol.bullet_radius, "rockets are big")
+	assert_gt(rocket.price, 0)
+
+
+func test_rocket_launcher_is_on_the_gun_game_ladder() -> void:
+	var settings: MatchSettings = load("res://modes/data/gun_game_match.tres")
+	assert_has(settings.ladder, _named("Rocket Launcher"))
+	assert_eq(settings.ladder.back().display_name, "Pistol", "the ladder still ends on the pistol")

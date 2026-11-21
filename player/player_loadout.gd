@@ -7,7 +7,7 @@ extends Node
 
 @export var weapon: WeaponComponent
 @export var health: HealthComponent
-## Shows the weapon's pose, so everyone can see what you carry.
+## Shows the weapon's pose and held model, so everyone can see what you carry.
 @export var look: PlayerLook
 
 var catalog: ShopCatalog = ShopCatalog.load_default()
@@ -88,6 +88,7 @@ func _apply(new_weapon: bool) -> void:
 	else:
 		weapon.set_stats(stats)
 	look.pose = stats.pose
+	look.held_model = stats.held_model
 	if _base_player != null:
 		effective_player = PlayerStats.effective_player(_base_player, catalog, levels)
 		health.max_health = effective_player.max_health

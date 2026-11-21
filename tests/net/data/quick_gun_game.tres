@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="MatchSettings" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="MatchSettings" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://modes/match_settings.gd" id="1_match"]
 [ext_resource type="PackedScene" path="res://modes/gun_game/gun_game_mode.tscn" id="2_mode"]
 [ext_resource type="Resource" path="res://weapons/data/smg.tres" id="3_smg"]
 [ext_resource type="Resource" path="res://weapons/data/rifle.tres" id="4_rifle"]
+[ext_resource type="Resource" path="res://weapons/data/rocket_launcher.tres" id="8_rocket"]
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="5_wdata"]
 [ext_resource type="Script" path="res://bots/bot_profile.gd" id="6_profile"]
 [ext_resource type="Resource" path="res://bots/profiles/hard.tres" id="7_hard"]
@@ -12,7 +13,7 @@
 script = ExtResource("1_match")
 mode_scene = ExtResource("2_mode")
 bot_fill_to = 4
-ladder = Array[ExtResource("5_wdata")]([ExtResource("3_smg"), ExtResource("4_rifle"), ExtResource("3_smg")])
+ladder = Array[ExtResource("5_wdata")]([ExtResource("3_smg"), ExtResource("8_rocket"), ExtResource("3_smg")])
 kills_per_tier = 2
 final_tier_kills = 1
 respawn_seconds = 0.5

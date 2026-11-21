@@ -29,29 +29,7 @@ static func effective_weapon(
 	weapon.magazine_size = maxi(roundi(magazine), 1)
 	weapon.reload_time = base.reload_time / multiplier(catalog, levels, stat.RELOAD_SPEED)
 	weapon.knockback = base.knockback * multiplier(catalog, levels, stat.KNOCKBACK)
-	weapon.effects = effective_effects(base, catalog, levels)
 	return weapon
-
-
-## The weapon's own HitEffects plus every perk level (a new object; never the shared files).
-static func effective_effects(
-	base: WeaponData, catalog: ShopCatalog, levels: PackedByteArray
-) -> HitEffects:
-	var total: HitEffects = HitEffects.new().plus(base.effects)
-	for i in mini(catalog.upgrades.size(), levels.size()):
-		var upgrade: UpgradeData = catalog.upgrades[i]
-		if upgrade.is_perk() and levels[i] > 0:
-			total = total.plus(upgrade.effects, levels[i])
-	return total
-
-
-## How many different perks these levels own.
-static func perks_owned(catalog: ShopCatalog, levels: PackedByteArray) -> int:
-	var count: int = 0
-	for i in mini(catalog.upgrades.size(), levels.size()):
-		if catalog.upgrades[i].is_perk() and levels[i] > 0:
-			count += 1
-	return count
 
 
 static func effective_player(
