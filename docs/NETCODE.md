@@ -10,7 +10,7 @@ Short version: **the host decides, the owner predicts, everyone else interpolate
 | Your aim (the gun follows the mouse every frame) | Where every player really is |
 | Your movement (predicted, corrected if wrong) | Whether a shot was allowed (fire rate, ammo) |
 | Your bullets, ammo count, reload timer | Every hit, all damage, deaths, kills, knockback |
-| Smooth display of everyone else (100 ms in the past) | Enemy AI, spawns, waves, upgrades, the ladder |
+| Smooth display of everyone else (your latency + a small adaptive buffer in the past) | Enemy AI, spawns, waves, upgrades, the ladder |
 
 Clients only ever send **inputs** ("move this way, aim here, fire"), never results ("I hit him").
 When a client's prediction and the host disagree, the host wins and the client corrects itself
@@ -20,9 +20,9 @@ without a visible jump.
 
 | Piece | File | Job |
 |---|---|---|
-| `NetClock` | `shared/network/net_clock.gd` | Shared time in ticks (60/s). The host counts; clients estimate the host's tick from snapshots and draw others `interpolation_delay` behind it (the *render tick*). |
-| `NetChannel` | `shared/network/net_channel.gd` | All gameplay traffic: **commands** (client → host, every tick), **snapshots** (host → clients, 30/s), **events** (host → clients, reliable, by topic). Runs everything through the **network simulator**. |
-| `Replicator` | `shared/network/replicator.gd` | Host: every 2 ticks packs every `NetEntity`'s state into compact snapshot packets (split to fit the MTU). Clients: unpack and hand states to entities. |
+| `NetClock` | `shared/network/net_clock.gd` | Shared time in ticks (60/s). The host counts; clients estimate the host's tick from snapshots and draw others behind it (the *render tick*) by their one-way latency plus a smoothing buffer that follows the measured snapshot jitter (see Latency below). |
+| `NetChannel` | `shared/network/net_channel.gd` | All gameplay traffic: **commands** (client → host, every tick), **snapshots** (host → clients, 60/s), **events** (host → clients, reliable, by topic). Runs everything through the **network simulator**. |
+| `Replicator` | `shared/network/replicator.gd` | Host: every tick packs every `NetEntity`'s state into compact snapshot packets (split to fit the MTU), per client: its own player in full, everything else in the short public form. Clients: unpack and hand states to entities. |
 | `LagCompensator` | `shared/network/lag_compensator.gd` | Host keeps ~250 ms of every hitbox's positions, so a shot is tested against where targets were **when the shooter saw them**. |
 | `JoinGate`, `PingTracker` | `shared/network/` | Join check (build/version/full lobby), ping/loss/bandwidth. |
 
@@ -34,8 +34,9 @@ Continuous state never uses `MultiplayerSynchronizer`; it goes through snapshots
 1. **Owner client** (`PlayerPrediction`): makes an `InputCommand` (numbered), simulates the player
    with it **immediately**, stores it, and sends the last 4 commands (repeats survive packet loss).
 2. **Host** (`Player` + `CommandQueue`): simulates each player with its owner's commands, at most
-   one per tick on average (no speed hacks; late packets can catch up a little).
-3. **Host**, end of the tick (`Replicator`, every 2 ticks): snapshot of every entity, including
+   one per tick on average (no speed hacks; late packets can catch up a little). Only if a
+   player's inputs keep stalling does the queue hold one or two in reserve (see Latency).
+3. **Host**, end of the tick (`Replicator`, every tick): snapshot of every entity, including
    for each player "the last command I simulated".
 4. **Owner client**, on that snapshot: rewinds its player to the host's state, replays every
    command the host hasn't simulated yet, and eases any small difference out of the visuals.
@@ -60,6 +61,33 @@ frame (always `NetClock.tick_delta()`).
   shooter they see, and end it exactly where and when the host said.
 - `ProjectileSystem.hit_confirmed` fires on the shooter's PC when the host confirms a hit
   (use it for hit markers).
+
+## Latency: as little delay as possible, smoothing only where it's needed
+
+The goals live in `shared/network/latency_budget.tres`; `test_latency_budget.gd` checks the
+settings and smoke scenario G (`tests/net/latency.gd`) measures them. Every stage:
+
+| Stage | How | Typical |
+|---|---|---|
+| Your aim | The gun follows the mouse every rendered frame | 1 frame |
+| Your movement and shots | Predicted on your PC; `OwnPlayerDrawing` draws you one tick of motion ahead of the physics-interpolated body (`PlayerData.draw_ahead`) | 1 tick to respond |
+| Display | Adaptive V-Sync, 2 swapchain images, agile input flushing (checked by a test) | 1–2 frames |
+| Others on a client | One-way latency + a buffer of one snapshot interval + 1.25 × measured snapshot jitter + 8 ms (35–250 ms). The buffer grows fast when snapshots get uneven or drawing runs dry, shrinks slowly | latency + 35 ms clean |
+| Others on the host | `DisplayDelay` draws everyone but the host's own player `host_view_delay_ticks` (2) back, so bunched-up inputs don't show; the host's shots are checked at that same moment | 33 ms |
+| Inputs reaching the host | `CommandQueue` holds nothing back unless that player's inputs actually stall; then 1, at most 2 ticks, given back after 5 calm seconds | 0–1 tick |
+
+Snapshots go out every tick (60/s). A client gets its own player in full (91 bytes: prediction
+needs every detail) and other players in a 29-byte public form; enemies send quarter-pixel
+positions (6 bytes); each entity has a 4-byte header (u16 id, kind with a public-form flag,
+u8 size). That keeps 60/s at the bandwidth 30/s used to need (about 50 KB/s per player in the
+stress test).
+
+**Diagnostics:** F3 shows snapshot jitter, missed snapshots, how often smoothing ran dry, the
+delay split into latency + smoothing, and for every player how their inputs reach the host
+(jitter, held-back ticks, late ticks per second; the host shares these with everyone).
+Hiccups (no snapshot for 250 ms, a player's inputs stalling for 100 ms, the input buffer
+changing) are logged; windowed runs write each session's log to `user://logs/net/` (the last
+30 are kept), so last night's stutter can still be looked up.
 
 ## How to add things
 

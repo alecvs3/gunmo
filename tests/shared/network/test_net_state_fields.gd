@@ -8,6 +8,17 @@ extends GutTest
 
 ## Fields that are deliberately not sent (none yet). "Class.field".
 const LOCAL_ONLY: Array[String] = []
+## Fields the public form (for peers who only watch the entity) leaves out on purpose.
+const NOT_PUBLIC: Array[String] = [
+	"PlayerNetState.move_velocity",
+	"PlayerNetState.knockback",
+	"PlayerNetState.ammo",
+	"PlayerNetState.cooldown_left",
+	"PlayerNetState.reload_left",
+	"PlayerNetState.last_command",
+	"PlayerNetState.credits",
+	"PlayerNetState.upgrade_levels",
+]
 const KINDS: Array[int] = [NetKinds.PLAYER, NetKinds.ENEMY, NetKinds.MATCH]
 
 var _rng := RandomNumberGenerator.new()
@@ -88,3 +99,19 @@ func _value_unlike(current: Variant) -> Variant:
 
 func _class_name(state: NetState) -> String:
 	return (state.get_script() as Script).get_global_name()
+
+
+func test_public_form_keeps_every_field_others_need() -> void:
+	for kind in KINDS:
+		var state: NetState = NetKinds.make_state(kind)
+		var fields: Array[String] = _fill(state)
+		var buffer := StreamPeerBuffer.new()
+		state.encode_public(buffer)
+		var label: String = _class_name(state)
+		assert_eq(buffer.data_array.size(), state.public_byte_size(), "%s: public size" % label)
+		var back: NetState = NetKinds.make_state(kind)
+		back.decode_public(NetCodec.buffer_from(buffer.data_array))
+		for field in fields:
+			if "%s.%s" % [label, field] in NOT_PUBLIC:
+				continue
+			assert_eq(back.get(field), state.get(field), "%s.%s public form" % [label, field])

@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://enemies/chaser.gd" id="1_enemy"]
 [ext_resource type="Resource" path="res://enemies/data/grunt.tres" id="2_edata"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" path="res://shared/components/hitbox_component.gd" id="4_hitbox"]
 [ext_resource type="Script" path="res://shared/components/knockback_component.gd" id="5_knockback"]
 [ext_resource type="Script" path="res://shared/network/net_entity.gd" id="6_netentity"]
+[ext_resource type="Script" path="res://shared/components/display_delay.gd" id="20_delay"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(28, 28)
@@ -70,6 +71,11 @@ shape = SubResource("RectangleShape2D_contact")
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
 path_desired_distance = 8.0
 target_desired_distance = 8.0
+
+[node name="DisplayDelay" type="Node" parent="." node_paths=PackedStringArray("body", "visual")]
+script = ExtResource("20_delay")
+body = NodePath("..")
+visual = NodePath("../Body")
 
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("6_netentity")

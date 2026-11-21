@@ -6,6 +6,7 @@
 script = ExtResource("1_pdata")
 max_health = 100
 move_speed = 220.0
+draw_ahead = true
 acceleration_time = 0.12
 deceleration_time = 0.08
 camera_follow_time = 0.0

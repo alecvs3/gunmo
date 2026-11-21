@@ -1,10 +1,12 @@
-# Runs the headless multiplayer smoke test in six scenarios:
+# Runs the headless multiplayer smoke test in seven scenarios:
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
 #   D  shop: purchases checked by the host, shotgun pellets, credits from kills, wave modifiers
 #   E  Gun Game: host + client + 2 bots; names, bot kills, a winner both sides agree on, restart
 #   F  stress: 8 players (6 bots) vs 40 enemies; host tick time and bandwidth within budget
+#   G  latency: own-input response, smoothing delay and hitches clean and under simulated lag,
+#      host input buffer; checked against shared/network/latency_budget.tres
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 # or set the GODOT environment variable once and run it without -Godot.
@@ -114,5 +116,18 @@ foreach ($role in @("stresshost", "stressclient")) {
     }
 }
 
-if ($passA -and $passB -and $passC -and $passD -and $passE -and $passF) { exit 0 }
+Write-Host "Scenario G: latency budget (clean and with 80 ms simulated lag)"
+$g = @()
+$g += Start-Role "latencyhost" ($Port + 6) "" "res://tests/net/latency.gd"
+Start-Sleep -Seconds 1
+$g += Start-Role "latencyclient" ($Port + 6) "" "res://tests/net/latency.gd"
+Wait-Roles $g
+$passG = Test-Roles @("latencyhost", "latencyclient")
+foreach ($role in @("latencyhost", "latencyclient")) {
+    Select-String -Path (Join-Path $logDir "$role.log") -Pattern "LATENCY METRIC (\S+) (\S+)" | ForEach-Object {
+        Write-Host ("  {0,-38} {1}" -f $_.Matches[0].Groups[1].Value, $_.Matches[0].Groups[2].Value)
+    }
+}
+
+if ($passA -and $passB -and $passC -and $passD -and $passE -and $passF -and $passG) { exit 0 }
 exit 1

@@ -1,6 +1,8 @@
 class_name NetOverlay
 extends Control
-## Top-right connection info while online: ping (or "Host") always, details on F3.
+## Top-right connection info while online: ping (or "Host") always, details on F3:
+## bandwidth, snapshot jitter, missed snapshots and the smoothing delay, and for every player
+## their ping and how their inputs reach the host (jitter, held-back ticks, late ticks/s).
 
 const QUALITY_COLORS: Dictionary = {
 	PingTracker.Quality.GOOD: Color(0.45, 0.9, 0.45),
@@ -57,29 +59,60 @@ func _details_text(tracker: PingTracker) -> String:
 	lines.append("Loss %.1f%% · up %.1f KB/s · down %.1f KB/s" % [loss_percent, up_kb, down_kb])
 	lines.append_array(_netcode_lines())
 	for peer_id: int in tracker.peer_pings:
-		var suffix: String = " (host)" if peer_id == 1 else ""
-		suffix += " (you)" if peer_id == own_id else ""
-		lines.append("Peer %d: %d ms%s" % [peer_id, tracker.peer_pings[peer_id], suffix])
+		lines.append(peer_line(peer_id, tracker.peer_pings[peer_id], own_id))
 	return "\n".join(lines)
+
+
+## "Peer 5: 42 ms · input jitter 3.1 ms, held 1, late 0/s (you)"
+static func peer_line(peer_id: int, ping_ms: int, own_id: int) -> String:
+	var text: String = "Peer %d: %d ms" % [peer_id, ping_ms]
+	var input: NetStats.PeerInput = NetworkManager.stats.peer_inputs.get(peer_id)
+	if input != null:
+		text += (
+			" · input jitter %.1f ms, held %d, late %d/s"
+			% [input.jitter_ms, input.buffer_ticks, input.late_per_second]
+		)
+	text += " (host)" if peer_id == 1 else ""
+	return text + (" (you)" if peer_id == own_id else "")
 
 
 func _netcode_lines() -> PackedStringArray:
 	var lines := PackedStringArray()
 	var stats: NetStats = NetworkManager.stats
 	var clock: NetClock = NetworkManager.clock
+	var smoothing_ms: float = clock.smoothing_delay() * 1000.0
 	if NetworkManager.is_host():
 		var kb: float = stats.snapshot_bytes / 1024.0
 		lines.append(
 			"Tick %d · snapshot %d entities, %.1f KB" % [clock.tick, stats.snapshot_entities, kb]
 		)
+		lines.append("Others drawn %.0f ms behind (host view delay)" % smoothing_ms)
 	else:
-		var behind_ms: float = (
-			(clock.server_tick_now() - clock.render_tick()) * 1000.0 / NetClock.tick_rate()
+		(
+			lines
+			. append(
+				(
+					"Server tick ≈ %.0f · others drawn %.0f ms behind (%.0f latency + %.0f smoothing)"
+					% [
+						clock.server_tick_now(),
+						smoothing_ms,
+						clock.one_way_latency() * 1000.0,
+						clock.buffer_delay() * 1000.0,
+					]
+				)
+			)
 		)
-		lines.append(
-			(
-				"Server tick ≈ %.0f · others drawn %.0f ms behind"
-				% [clock.server_tick_now(), behind_ms]
+		(
+			lines
+			. append(
+				(
+					"Snapshot jitter %.1f ms · %d missed · smoothing ran dry %d×"
+					% [
+						clock.snapshot_jitter.jitter_seconds() * 1000.0,
+						stats.snapshots_missed,
+						clock.ran_dry_count,
+					]
+				)
 			)
 		)
 		lines.append(

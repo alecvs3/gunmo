@@ -8,14 +8,20 @@ const FLAG_ALIVE: int = 1
 const FLAG_PROTECTED: int = 2
 ## 3 vectors (24) + f64 aim + u16 health + u16 ammo + 2 x f64 timers + u8 flags + u8 teleports
 ## + u32 last command + u8 weapon index + u32 credits + 16 upgrade levels + i32 team
-## + 2 x u16 kills/deaths + 2 x u8 tier/tier kills.
-const SIZE: int = 89
+## + 2 x u16 kills/deaths + 2 x u8 tier/tier kills + u16 max health.
+const SIZE: int = 91
+## The public form, for everyone but the player's owner: f32 position + f32 aim + u16 health
+## + u16 max health + u8 flags + u8 teleports + u8 weapon + i32 team + 2 x u16 + 2 x u8 score.
+## Not sent to others: velocities, ammo, weapon timers, last command, credits, upgrades.
+const PUBLIC_SIZE: int = 29
 
 var position: Vector2 = Vector2.ZERO
 var move_velocity: Vector2 = Vector2.ZERO
 var knockback: Vector2 = Vector2.ZERO
 var aim: float = 0.0
 var health: int = 0
+## Max health with upgrades (others can't work it out: they don't get the upgrade levels).
+var max_health: int = 0
 var ammo: int = 0
 var cooldown_left: float = 0.0
 var reload_left: float = 0.0
@@ -65,6 +71,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u16(clampi(deaths, 0, 65535))
 	buffer.put_u8(clampi(tier, 0, 255))
 	buffer.put_u8(clampi(tier_kills, 0, 255))
+	buffer.put_u16(clampi(max_health, 0, 65535))
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -89,10 +96,47 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	deaths = buffer.get_u16()
 	tier = buffer.get_u8()
 	tier_kills = buffer.get_u8()
+	max_health = buffer.get_u16()
 
 
 func byte_size() -> int:
 	return SIZE
+
+
+func encode_public(buffer: StreamPeerBuffer) -> void:
+	NetCodec.put_vector2(buffer, position)
+	buffer.put_float(aim)
+	buffer.put_u16(clampi(health, 0, 65535))
+	buffer.put_u16(clampi(max_health, 0, 65535))
+	buffer.put_u8((FLAG_ALIVE if alive else 0) | (FLAG_PROTECTED if protected else 0))
+	buffer.put_u8(teleport_count & 0xFF)
+	buffer.put_u8(clampi(weapon_index, 0, 255))
+	buffer.put_32(team_id)
+	buffer.put_u16(clampi(kills, 0, 65535))
+	buffer.put_u16(clampi(deaths, 0, 65535))
+	buffer.put_u8(clampi(tier, 0, 255))
+	buffer.put_u8(clampi(tier_kills, 0, 255))
+
+
+func decode_public(buffer: StreamPeerBuffer) -> void:
+	position = NetCodec.get_vector2(buffer)
+	aim = buffer.get_float()
+	health = buffer.get_u16()
+	max_health = buffer.get_u16()
+	var flags: int = buffer.get_u8()
+	alive = flags & FLAG_ALIVE != 0
+	protected = flags & FLAG_PROTECTED != 0
+	teleport_count = buffer.get_u8()
+	weapon_index = buffer.get_u8()
+	team_id = buffer.get_32()
+	kills = buffer.get_u16()
+	deaths = buffer.get_u16()
+	tier = buffer.get_u8()
+	tier_kills = buffer.get_u8()
+
+
+func public_byte_size() -> int:
+	return PUBLIC_SIZE
 
 
 ## Position and aim blend; everything else comes from the nearer state. Across a teleport
@@ -114,6 +158,7 @@ func copy() -> PlayerNetState:
 	duplicate.knockback = knockback
 	duplicate.aim = aim
 	duplicate.health = health
+	duplicate.max_health = max_health
 	duplicate.ammo = ammo
 	duplicate.cooldown_left = cooldown_left
 	duplicate.reload_left = reload_left

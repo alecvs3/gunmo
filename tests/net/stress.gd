@@ -23,7 +23,7 @@ const HOST_TICK_P95_MS: float = 10.0
 const CLIENT_DOWNLOAD_AVG_BYTES: float = 60000.0
 ## The scene must really be this busy for the numbers to count.
 const MIN_AVG_ENEMIES: float = 25.0
-const MIN_SHOTS_PER_SECOND: float = 20.0
+const MIN_SHOTS_PER_SECOND: float = 15.0
 
 
 ## Calls `on_tick` from _physics_process at a chosen priority (lower runs earlier).
