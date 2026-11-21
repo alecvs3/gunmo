@@ -61,7 +61,7 @@ joining nobody fails after 8 s with a clear message; launch args host/join with 
 
 **Not yet verified:** that the blur is gone and the movement feels right (needs a real window).
 
-## Netcode foundation ✅ (in review, issues #10 #11 #7 #12 #13 #14 #8)
+## Netcode foundation ✅ (merged, issues #10 #11 #7 #12 #13 #14 #8)
 
 Branch `netcode-foundation`. How it works and how to extend it: [NETCODE.md](NETCODE.md).
 
@@ -90,6 +90,20 @@ own movement responds within 3 ticks under lag, position matches the host exactl
 - The host sees remote players move in small steps when their commands arrive unevenly.
 - GUT prints Godot leak warnings at exit on this branch (the game itself shuts down cleanly);
   traced to engine/GUT shutdown order with the Replicator node, not to a runtime leak.
+
+## Display smoothness ✅ (in review, issue #16)
+
+| Feature | Status | Where |
+|---|---|---|
+| Camera moves every rendered frame, following the player's drawn position (no 60 Hz steps) | Done, measured | `player/player_camera.gd` |
+| Adaptive V-Sync by default (no tearing while the game keeps up, never waits when it falls behind) | Done | `project.godot` |
+| Less input delay: 2 swapchain images, agile input flushing, physics jitter fix off | Done | `project.godot` |
+| GPU, API, V-Sync mode and refresh rate logged at start and shown in F3, warning on an integrated GPU | Done | `autoloads/game_settings.gd`, `ui/net_overlay.gd` |
+| Frame-pacing measurement in a real window | Done | `tests/visual/frame_pacing.gd` |
+
+**Measured** (RTX 4060, 180 Hz, 4 runs): the screen scrolls on every frame (0% frozen frames,
+before: 67%), frame-to-frame unevenness 7–13% (≈0.1 px), player perfectly still on screen.
+**Not yet verified:** how it feels to play; other monitors and PCs (Yusuf's).
 
 ## Milestone 2 — wave loop (planned)
 

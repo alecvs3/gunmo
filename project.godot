@@ -26,6 +26,7 @@ GameSettings="*res://autoloads/game_settings.gd"
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/vsync/vsync_mode=2
 
 [editor_plugins]
 
@@ -69,6 +70,10 @@ toggle_net_overlay={
 ]
 }
 
+[input_devices]
+
+buffering/agile_event_flushing=true
+
 [layer_names]
 
 2d_physics/layer_1="world"
@@ -80,9 +85,11 @@ toggle_net_overlay={
 
 [physics]
 
+common/physics_jitter_fix=0.0
 common/physics_interpolation=true
 3d/physics_engine="Jolt Physics"
 
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+rendering_device/vsync/swapchain_image_count=2

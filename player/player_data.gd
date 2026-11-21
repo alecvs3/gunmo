@@ -10,6 +10,9 @@ extends Resource
 ## Seconds from top speed to a stop after letting go (0 = instant).
 @export_range(0.0, 2.0) var deceleration_time: float = 0.0
 
+## Seconds the camera takes to catch up with the player. 0 = locked on (no camera lag).
+@export_range(0.0, 1.0) var camera_follow_time: float = 0.0
+
 @export_group("Knockback")
 ## How fast a push dies down (px/s lost per second). 2400 stops a 350 px/s push in ~0.15 s.
 @export_range(0.0, 20000.0) var knockback_friction: float = 2400.0

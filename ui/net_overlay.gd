@@ -50,6 +50,7 @@ func _details_text(tracker: PingTracker) -> String:
 	var own_id: int = multiplayer.get_unique_id()
 	var lines := PackedStringArray()
 	lines.append("Peer %d · build %s" % [own_id, NetworkManager.gate.hello["build"]])
+	lines.append("%d FPS · %s" % [Engine.get_frames_per_second(), GameSettings.display_summary()])
 	var loss_percent: float = tracker.packet_loss * 100.0
 	var up_kb: float = tracker.sent_bytes_per_sec / 1024.0
 	var down_kb: float = tracker.received_bytes_per_sec / 1024.0
