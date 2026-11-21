@@ -24,6 +24,10 @@ var pierce: int = 0
 var fire_tick: float = 0.0
 ## Tick the shooter was looking at when firing (the host rewinds targets to it).
 var view_tick: float = 0.0
+## What the bullet does besides damage (the host's and the owner's copies; null = nothing).
+var effects: HitEffects = null
+## Which effects it carries (HitEffects bits); sent to everyone, so bullets look the same.
+var effect_mask: int = 0
 
 
 static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: Vector2) -> Shot:
@@ -36,6 +40,8 @@ static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: 
 	shot.damage = data.damage
 	shot.knockback = data.knockback
 	shot.pierce = data.pierce
+	shot.effects = data.effects
+	shot.effect_mask = data.effects.mask() if data.effects != null else 0
 	return shot
 
 
@@ -70,6 +76,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(clampi(pierce, 0, 255))
 	buffer.put_double(fire_tick)
 	buffer.put_double(view_tick)
+	buffer.put_u8(effect_mask & 0xFF)
 
 
 static func decode(buffer: StreamPeerBuffer) -> Shot:
@@ -87,4 +94,5 @@ static func decode(buffer: StreamPeerBuffer) -> Shot:
 	shot.pierce = buffer.get_u8()
 	shot.fire_tick = buffer.get_double()
 	shot.view_tick = buffer.get_double()
+	shot.effect_mask = buffer.get_u8()
 	return shot
