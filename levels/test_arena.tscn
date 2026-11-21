@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://levels/test_arena.gd" id="1_arena"]
+[ext_resource type="Script" path="res://levels/level.gd" id="1_arena"]
 [ext_resource type="Script" path="res://weapons/projectile_system.gd" id="2_proj"]
 [ext_resource type="Script" path="res://levels/debug_enemy_spawner.gd" id="3_debug"]
 
@@ -13,8 +13,12 @@ size = Vector2(40, 1200)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
 size = Vector2(120, 120)
 
-[node name="TestArena" type="Node2D"]
+[node name="TestArena" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points")]
 script = ExtResource("1_arena")
+players_root = NodePath("Players")
+enemies_root = NodePath("Enemies")
+player_spawn_points = NodePath("PlayerSpawnPoints")
+enemy_spawn_points = NodePath("EnemySpawnPoints")
 
 [node name="Floor" type="Polygon2D" parent="."]
 color = Color(0.22, 0.24, 0.26, 1)

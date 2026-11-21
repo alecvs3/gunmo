@@ -1,0 +1,122 @@
+class_name GameMode
+extends Node
+## Base for every game mode (Waves now, Gun Game later). One mode node lives under
+## Main/ModeContainer on every peer:
+##   host     runs the rules, spawns players into the level, keeps `state` up to date
+##   clients  receive `state` (newest only, through NetEntity) and send requests to the host
+## Everything else (HUD, results screen) listens to EventBus.match_state_changed and never
+## asks which mode is running (rule 7).
+
+enum Phase { LOBBY, BREAK, ACTIVE, VICTORY, DEFEAT }
+
+## NetChannel request topics (client -> host).
+const REQUEST_READY: int = 1
+
+var settings: MatchSettings
+var level: Level
+## Host: the live state. Clients: the newest state from the host.
+var state := MatchNetState.new()
+## This peer pressed ready in the current lobby or break.
+var local_ready: bool = false
+
+var _published := MatchNetState.new()
+
+
+## Host only, before the mode enters the tree.
+func setup(map: Level, match_settings: MatchSettings) -> void:
+	level = map
+	settings = match_settings
+
+
+func _ready() -> void:
+	if not multiplayer.is_server():
+		($NetEntity as NetEntity).use_latest_states()
+		return
+	NetworkManager.peer_joined.connect(_on_peer_joined)
+	NetworkManager.peer_left.connect(_on_peer_left)
+	NetworkManager.channel.request_received.connect(_on_request_received)
+	EventBus.match_restart_requested.connect(restart)
+	_start()
+	for peer_id in NetworkManager.peers:
+		_on_peer_joined(peer_id)
+	publish_state()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ready") and can_ready_up():
+		set_local_ready(not local_ready)
+		get_viewport().set_input_as_handled()
+
+
+func can_ready_up() -> bool:
+	return state.phase == Phase.LOBBY or state.phase == Phase.BREAK
+
+
+## Ready up (or take it back). The host applies it; a client asks the host.
+func set_local_ready(is_ready: bool) -> void:
+	local_ready = is_ready
+	EventBus.local_ready_changed.emit(local_ready)
+	if multiplayer.is_server():
+		_on_ready_changed(multiplayer.get_unique_id(), is_ready)
+	else:
+		var data := PackedByteArray([1 if is_ready else 0])
+		NetworkManager.channel.send_request(REQUEST_READY, data)
+
+
+func capture_net_state() -> NetState:
+	return state.copy()
+
+
+func receive_authoritative_state(_tick: int, new_state: NetState) -> void:
+	_accept_state(new_state as MatchNetState)
+
+
+## Host: call after changing `state`; local listeners hear about it when something changed.
+func publish_state() -> void:
+	if not state.equals(_published):
+		_accept_state(state)
+
+
+## Host: starts the match from scratch. Subclasses override.
+func restart() -> void:
+	pass
+
+
+## Host: the mode's first moment (before players are spawned). Subclasses override.
+func _start() -> void:
+	pass
+
+
+## Host: a player readied up or took it back. Subclasses override.
+func _on_ready_changed(_peer_id: int, _is_ready: bool) -> void:
+	pass
+
+
+## Host: a peer arrived. By default it gets a player (a dedicated server gets none).
+func _on_peer_joined(peer_id: int) -> void:
+	if peer_id == 1 and NetworkManager.is_dedicated:
+		return
+	level.spawn_player(peer_id)
+
+
+func _on_peer_left(peer_id: int) -> void:
+	level.remove_player(peer_id)
+
+
+## Requests come from clients: they are only honoured when the rules allow them.
+func _on_request_received(peer_id: int, topic: int, data: PackedByteArray) -> void:
+	if topic != REQUEST_READY or data.size() != 1 or level.player(peer_id) == null:
+		return
+	if can_ready_up():
+		_on_ready_changed(peer_id, data[0] == 1)
+
+
+## A new phase or wave clears this peer's ready flag.
+func _accept_state(new_state: MatchNetState) -> void:
+	var moved_on: bool = new_state.phase != _published.phase or new_state.wave != _published.wave
+	_published = new_state.copy()
+	state = new_state
+	if moved_on and local_ready:
+		local_ready = false
+		EventBus.local_ready_changed.emit(false)
+	EventBus.match_state_changed.emit(state)

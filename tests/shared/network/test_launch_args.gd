@@ -70,3 +70,11 @@ func test_bad_net_sim_is_ignored() -> void:
 		var result: Dictionary = LaunchArgs.parse(PackedStringArray(["--net-sim", bad]), 7777)
 		assert_eq(result["net_sim"], [], bad)
 	assert_eq(LaunchArgs.parse(PackedStringArray(["--net-sim"]), 7777)["net_sim"], [])
+
+
+func test_match_settings_path() -> void:
+	var args := PackedStringArray(["--host", "--match", "res://tests/net/data/quick_match.tres"])
+	var result: Dictionary = LaunchArgs.parse(args, 7777)
+	assert_eq(result["action"], LaunchArgs.HOST)
+	assert_eq(result["match"], "res://tests/net/data/quick_match.tres")
+	assert_eq(LaunchArgs.parse(PackedStringArray(["--host"]), 7777)["match"], "")

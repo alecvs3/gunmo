@@ -5,6 +5,7 @@ extends RefCounted
 ##   -- --join <address>[:port]       join a game (skips the menu)
 ##   -- --dedicated [port]            run a host with no player of its own (a server)
 ##   -- --net-sim <ms>,<jitter>,<%>   fake latency, jitter and loss on this instance
+##   -- --match <res://file.tres>      host with these MatchSettings (not the default)
 
 const NONE: String = ""
 const HOST: String = "host"
@@ -12,11 +13,16 @@ const JOIN: String = "join"
 const DEDICATED: String = "dedicated"
 
 
-## Returns {"action", "address", "port", "net_sim"}. net_sim is [] or [latency, jitter, loss]
-## with loss as a 0..1 share.
+## Returns {"action", "address", "port", "net_sim", "match"}. net_sim is [] or
+## [latency, jitter, loss] with loss as a 0..1 share; match is "" or a resource path.
 static func parse(args: PackedStringArray, default_port: int) -> Dictionary:
-	var result: Dictionary = {"action": NONE, "address": "", "port": default_port, "net_sim": []}
+	var result: Dictionary = {
+		"action": NONE, "address": "", "port": default_port, "net_sim": [], "match": ""
+	}
 	result["net_sim"] = _parse_net_sim(args)
+	var match_index: int = args.find("--match")
+	if match_index != -1 and match_index + 1 < args.size():
+		result["match"] = args[match_index + 1]
 	for action: String in [HOST, DEDICATED]:
 		var index: int = args.find("--" + action)
 		if index != -1:

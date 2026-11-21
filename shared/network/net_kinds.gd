@@ -7,6 +7,7 @@ extends RefCounted
 const NONE: int = 0
 const PLAYER: int = 1
 const ENEMY: int = 2
+const MATCH: int = 3
 
 
 static func make_state(kind: int) -> NetState:
@@ -15,4 +16,6 @@ static func make_state(kind: int) -> NetState:
 			return PlayerNetState.new()
 		ENEMY:
 			return EnemyNetState.new()
+		MATCH:
+			return MatchNetState.new()
 	return null

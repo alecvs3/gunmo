@@ -4,6 +4,7 @@ extends Node
 ##   commands  client -> host, every tick, unreliable (each packet repeats recent commands)
 ##   snapshots host -> client, every snapshot tick, unreliable (newer ones replace older)
 ##   events    host -> client, reliable, tagged with a topic (e.g. bullets fired / ended)
+##   requests  client -> host, reliable, tagged with a topic (e.g. ready up); the host checks them
 ## Everything passes through the NetSimulator, so fake lag affects all of it the same way.
 
 ## Host: a client sent input commands.
@@ -12,8 +13,10 @@ signal commands_received(peer_id: int, data: PackedByteArray)
 signal snapshot_received(data: PackedByteArray)
 ## Client: a reliable event arrived.
 signal event_received(topic: int, data: PackedByteArray)
+## Host: a client asked for something. Never trust it: check it against the rules first.
+signal request_received(peer_id: int, topic: int, data: PackedByteArray)
 
-enum Kind { COMMANDS, SNAPSHOT, EVENT }
+enum Kind { COMMANDS, SNAPSHOT, EVENT, REQUEST }
 
 var simulator := NetSimulator.new()
 
@@ -38,6 +41,10 @@ func send_event(peer_id: int, topic: int, data: PackedByteArray) -> void:
 	_send({"kind": Kind.EVENT, "peer": peer_id, "topic": topic, "data": data})
 
 
+func send_request(topic: int, data: PackedByteArray) -> void:
+	_send({"kind": Kind.REQUEST, "peer": 1, "topic": topic, "data": data})
+
+
 func reset() -> void:
 	simulator.clear()
 
@@ -45,7 +52,7 @@ func reset() -> void:
 func _send(packet: Dictionary) -> void:
 	packet["outgoing"] = true
 	if simulator.is_active():
-		simulator.push(Time.get_ticks_msec(), packet, packet["kind"] != Kind.EVENT)
+		simulator.push(Time.get_ticks_msec(), packet, _droppable(packet))
 	else:
 		_send_now(packet)
 
@@ -64,12 +71,14 @@ func _send_now(packet: Dictionary) -> void:
 			_rpc_snapshot.rpc_id(peer_id, packet["data"])
 		Kind.EVENT:
 			_rpc_event.rpc_id(peer_id, packet["topic"], packet["data"])
+		Kind.REQUEST:
+			_rpc_request.rpc_id(peer_id, packet["topic"], packet["data"])
 
 
 func _receive(packet: Dictionary) -> void:
 	packet["outgoing"] = false
 	if simulator.is_active():
-		simulator.push(Time.get_ticks_msec(), packet, packet["kind"] != Kind.EVENT)
+		simulator.push(Time.get_ticks_msec(), packet, _droppable(packet))
 	else:
 		_deliver(packet)
 
@@ -82,6 +91,8 @@ func _deliver(packet: Dictionary) -> void:
 			snapshot_received.emit(packet["data"])
 		Kind.EVENT:
 			event_received.emit(packet["topic"], packet["data"])
+		Kind.REQUEST:
+			request_received.emit(packet["peer"], packet["topic"], packet["data"])
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered", 1)
@@ -99,3 +110,15 @@ func _rpc_snapshot(data: PackedByteArray) -> void:
 @rpc("authority", "call_remote", "reliable", 2)
 func _rpc_event(topic: int, data: PackedByteArray) -> void:
 	_receive({"kind": Kind.EVENT, "peer": 1, "topic": topic, "data": data})
+
+
+@rpc("any_peer", "call_remote", "reliable", 2)
+func _rpc_request(topic: int, data: PackedByteArray) -> void:
+	if multiplayer.is_server():
+		var sender: int = multiplayer.get_remote_sender_id()
+		_receive({"kind": Kind.REQUEST, "peer": sender, "topic": topic, "data": data})
+
+
+## Unreliable traffic may be dropped by the simulator; events and requests never are.
+static func _droppable(packet: Dictionary) -> bool:
+	return packet["kind"] == Kind.COMMANDS or packet["kind"] == Kind.SNAPSHOT

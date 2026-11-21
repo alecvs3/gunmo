@@ -51,7 +51,7 @@ func _ready() -> void:
 	_input_source.set_process(is_owner)
 	_prediction.set_process(is_owner and not multiplayer.is_server())
 	if is_owner and not multiplayer.is_server():
-		($NetEntity as NetEntity).use_prediction()
+		($NetEntity as NetEntity).use_latest_states()
 	set_physics_process(multiplayer.is_server() or is_owner)
 	if multiplayer.is_server():
 		_ready_as_host()
