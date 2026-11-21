@@ -9,6 +9,8 @@ extends Node
 ## piercing bullet flies through, and the player who was hit is told where it came from
 ## (EVENT_HURT, for the hit-direction marker).
 ## Announcements are reliable NetChannel events, so no bullet is ever missed or left flying.
+## The host also resolves the bullets' HitEffects (ImpactEffects) and shows every peer the
+## arcs and blasts (EVENT_FLASH).
 
 ## Client: one of our own shots hit something (the host's verdict); for hit markers.
 signal hit_confirmed(shot_key: String, at: Vector2)
@@ -20,6 +22,7 @@ const EVENT_FIRED: int = 1
 const EVENT_ENDED: int = 2
 const EVENT_HIT: int = 3
 const EVENT_HURT: int = 4
+const EVENT_FLASH: int = 5
 
 @export var projectiles_root: Node2D
 
@@ -53,6 +56,8 @@ func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
 	bullet.setup(shot, mode)
 	bullet.finished.connect(_on_bullet_finished)
 	bullet.hit_landed.connect(_on_bullet_hit)
+	if mode == Bullet.Mode.AUTHORITATIVE:
+		bullet.hit_landed.connect(_on_impact)
 	_bullets[shot.key()] = bullet
 	projectiles_root.add_child(bullet)
 
@@ -63,6 +68,8 @@ func _on_bullet_finished(
 	_bullets.erase(bullet.shot.key())
 	if bullet.mode != Bullet.Mode.AUTHORITATIVE:
 		return
+	if not hit_something:
+		_show_flashes(ImpactEffects.on_stop(bullet.shot, end_point, _hitboxes()))
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u8(EVENT_ENDED)
 	buffer.put_32(bullet.shot.shooter_id)
@@ -89,6 +96,36 @@ func _on_bullet_hit(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> voi
 	buffer.put_u32(bullet.shot.shot_id)
 	NetCodec.put_vector2(buffer, at)
 	NetworkManager.channel.send_event(shooter_id, TOPIC, buffer.data_array)
+
+
+## Host: the bullet's effects on what it hit and around it.
+func _on_impact(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> void:
+	_show_flashes(ImpactEffects.on_hit(bullet.shot, hitbox, at, _hitboxes()))
+
+
+func _hitboxes() -> Array[HitboxComponent]:
+	return NetworkManager.lag_compensator.hitboxes()
+
+
+## Host: draw the arcs and blasts here and on every client.
+func _show_flashes(flashes: Array[ImpactEffects.Flash]) -> void:
+	for flash in flashes:
+		_spawn_flash(flash.kind, flash.from, flash.to)
+		var buffer := StreamPeerBuffer.new()
+		buffer.put_u8(EVENT_FLASH)
+		buffer.put_u8(flash.kind)
+		NetCodec.put_vector2(buffer, flash.from)
+		NetCodec.put_vector2(buffer, flash.to)
+		for peer_id in multiplayer.get_peers():
+			NetworkManager.channel.send_event(peer_id, TOPIC, buffer.data_array)
+
+
+func _spawn_flash(kind: int, from: Vector2, to: Vector2) -> void:
+	if not (from.is_finite() and to.is_finite()):
+		return
+	var flash := EffectFlash.new()
+	flash.setup(kind, from, to)
+	projectiles_root.add_child(flash)
 
 
 ## `from_direction` points from the victim toward where the bullet came from.
@@ -118,6 +155,10 @@ func _on_event_received(topic: int, data: PackedByteArray) -> void:
 			var from_direction: Vector2 = NetCodec.get_vector2(buffer)
 			if from_direction.is_finite():
 				EventBus.local_player_hurt.emit(from_direction.normalized())
+		EVENT_FLASH:
+			var kind: int = buffer.get_u8()
+			var from: Vector2 = NetCodec.get_vector2(buffer)
+			_spawn_flash(kind, from, NetCodec.get_vector2(buffer))
 
 
 func _on_shot_ended(buffer: StreamPeerBuffer) -> void:

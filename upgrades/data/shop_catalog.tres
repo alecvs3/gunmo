@@ -14,8 +14,20 @@
 [ext_resource type="Resource" path="res://upgrades/data/move_speed.tres" id="14_move_speed"]
 [ext_resource type="Resource" path="res://upgrades/data/max_health.tres" id="15_max_health"]
 [ext_resource type="Resource" path="res://upgrades/data/knockback.tres" id="16_knockback"]
+[ext_resource type="Resource" path="res://weapons/data/revolver.tres" id="17_revolver"]
+[ext_resource type="Resource" path="res://weapons/data/torch.tres" id="18_torch"]
+[ext_resource type="Resource" path="res://weapons/data/cryo_carbine.tres" id="19_cryo_carbine"]
+[ext_resource type="Resource" path="res://weapons/data/arc_caster.tres" id="20_arc_caster"]
+[ext_resource type="Resource" path="res://weapons/data/launcher.tres" id="21_launcher"]
+[ext_resource type="Resource" path="res://weapons/data/railgun.tres" id="22_railgun"]
+[ext_resource type="Resource" path="res://upgrades/data/perk_incendiary.tres" id="23_incendiary"]
+[ext_resource type="Resource" path="res://upgrades/data/perk_cryo.tres" id="24_cryo"]
+[ext_resource type="Resource" path="res://upgrades/data/perk_arc.tres" id="25_arc"]
+[ext_resource type="Resource" path="res://upgrades/data/perk_shredder.tres" id="26_shredder"]
+[ext_resource type="Resource" path="res://upgrades/data/perk_explosive.tres" id="27_explosive"]
 
 [resource]
 script = ExtResource("6_catalog")
-weapons = Array[ExtResource("1_wdata")]([ExtResource("2_pistol"), ExtResource("3_smg"), ExtResource("4_shotgun"), ExtResource("5_rifle")])
-upgrades = Array[ExtResource("7_updata")]([ExtResource("10_damage"), ExtResource("11_fire_rate"), ExtResource("12_magazine"), ExtResource("13_reload_speed"), ExtResource("14_move_speed"), ExtResource("15_max_health"), ExtResource("16_knockback")])
+weapons = Array[ExtResource("1_wdata")]([ExtResource("2_pistol"), ExtResource("3_smg"), ExtResource("4_shotgun"), ExtResource("5_rifle"), ExtResource("17_revolver"), ExtResource("18_torch"), ExtResource("19_cryo_carbine"), ExtResource("20_arc_caster"), ExtResource("21_launcher"), ExtResource("22_railgun")])
+upgrades = Array[ExtResource("7_updata")]([ExtResource("10_damage"), ExtResource("11_fire_rate"), ExtResource("12_magazine"), ExtResource("13_reload_speed"), ExtResource("14_move_speed"), ExtResource("15_max_health"), ExtResource("16_knockback"), ExtResource("23_incendiary"), ExtResource("24_cryo"), ExtResource("25_arc"), ExtResource("26_shredder"), ExtResource("27_explosive")])
+max_perks = 2

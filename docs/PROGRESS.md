@@ -232,7 +232,7 @@ budgets (first CI run on the PR).
   clients (each gets its own packets). To measure with more clients in #43.
 - The host's tick cost rose a little with 60 snapshots/s (more encoding); #43 looks at it.
 
-## Placeholder art: Kenney top-down shooter ✅ (in review, issue #62)
+## Placeholder art: Kenney top-down shooter ✅ (merged, issue #62)
 
 Branch `placeholder-art`. Mostly looks; the gameplay changes are where shots start, the aim
 angle, and the player's collision sizes. Network messages are unchanged.
@@ -263,7 +263,7 @@ budget; the rerun passed, and this change doesn't touch networking).
 - Characters are picked from the peer id, so two players can get the same one.
 - Bullets are still shapes; menus and HUD are unchanged.
 
-## Latency tier 1: fair play at high ping ✅ (in review, issues #57–#61)
+## Latency tier 1: fair play at high ping ✅ (merged, issues #57–#61)
 
 Branch `latency-tier1`. Aimed at Yusuf's report (160 ms round trip): bots "shooting all over
 the place", and getting hit by bullets that missed on his screen.
@@ -297,7 +297,7 @@ client's screen. Protocol 7.
 - Light can't be beaten: Yusuf still sees others about his latency in the past. A server between
   your continents would split it evenly (needs the Linux build, #48).
 
-## Fullscreen (in review, issue #65)
+## Fullscreen ✅ (merged, issue #65)
 
 Branch `ui/fullscreen`. Display only: nothing is sent over the network.
 
@@ -314,3 +314,33 @@ lint/format clean.
 
 - No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
 - Fullscreen uses the screen the window is on; there is no monitor picker.
+
+## Builds: more guns, hit effects and perks (in review, issue #67)
+
+Goal: players can build different characters, and late waves get strategy from systems that
+combine (the CLAUDE.md goal) instead of from more health.
+
+| Feature | Status | Where |
+|---|---|---|
+| Hit effects as data (`HitEffects`): burn (damage over time), chill (slow), shock (arcs to nearby foes), shred (target takes more damage from everyone), blast (area damage, also where a bullet stops) | Done, tested | `weapons/hit_effects.gd` |
+| Host applies them on every hit; arcs and blasts pass burn/chill/shred on but never chain further; everyone sees arcs and blasts (new `EVENT_FLASH`) | Done, tested | `weapons/impact_effects.gd`, `weapons/projectile_system.gd`, `weapons/effect_flash.gd` |
+| Status component on enemies: burn credited to the shooter (kill and bounty), chill capped per enemy (`EnemyData.max_slow`, brutes 0.35), shred also boosts burns; enemy snapshots carry the status flags (rings drawn on the enemy) | Done, tested | `shared/components/status_effects_component.gd`, `status_marks.gd`, `enemies/chaser.gd` |
+| Combos with wave modifiers: burning stops Regenerating, chill answers Fast, shred cuts through Armored, arcs/blasts answer big crowds | Done | as above |
+| 6 new guns: Revolver (pierce), Torch (burn), Cryo Carbine (chill), Arc Caster (shock), Launcher (blast), Railgun (pierce 6 + shred) | Done | `weapons/data/*.tres` |
+| 5 perks (shop upgrades with effects, 3 levels each): Incendiary, Cryo, Arc, Shredder, Explosive rounds. **Only 2 different perks per player** (`ShopCatalog.max_perks`), so the choice is your build; the host checks the slots | Done, tested | `upgrades/data/perk_*.tres`, `upgrades/shop_rules.gd` |
+| Shop: scrollable, perks in their own list with "x of 2 chosen" | Done, not checked in a window | `ui/shop_panel.*` |
+| Gun Game ladder: SMG → Revolver → Arc Caster → Rifle → Launcher → Shotgun → Railgun → Pistol, 2 kills per gun (2 on the last) | Done | `modes/data/gun_game_match.tres` |
+| Smoke scenario D: the client buys two perks, a third is refused, and it sees enemies burning | Done | `tests/net/shop_smoke.gd` |
+
+Protocol 8 (enemy snapshots +1 byte for status flags, bullets +1 byte for their effects).
+
+### Known limitations
+
+- Balance is a first guess (all numbers in `weapons/data/*.tres`, `upgrades/data/perk_*.tres`).
+- Players have no status component yet: in Gun Game burn, chill and shred do nothing to
+  players (arcs and blasts still hit them). Torch and Cryo Carbine are left off the ladder for
+  that reason. Chilling players would also need the slow in the owner's prediction.
+- Arcs and blasts use where foes are now (not lag-compensated) and go through walls.
+- Each Torch shot is 2 reliable bullet events, so a full lobby of Torches adds traffic (#43).
+- **Not verified:** playing it in a window (shop layout, effect rings, arcs, blasts), how the
+  guns feel, two PCs.

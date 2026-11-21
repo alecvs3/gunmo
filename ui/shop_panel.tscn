@@ -40,22 +40,43 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
 text = "0 credits"
 
-[node name="WeaponsTitle" type="Label" parent="Box"]
+[node name="Scroll" type="ScrollContainer" parent="Box"]
+custom_minimum_size = Vector2(0, 430)
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Lists" type="VBoxContainer" parent="Box/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="WeaponsTitle" type="Label" parent="Box/Scroll/Lists"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
 text = "Weapons (replace yours, upgrades carry over)"
 autowrap_mode = 3
 
-[node name="Weapons" type="VBoxContainer" parent="Box"]
+[node name="Weapons" type="VBoxContainer" parent="Box/Scroll/Lists"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="UpgradesTitle" type="Label" parent="Box"]
+[node name="PerksTitle" type="Label" parent="Box/Scroll/Lists"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
+text = "Perks"
+autowrap_mode = 3
+
+[node name="Perks" type="VBoxContainer" parent="Box/Scroll/Lists"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="UpgradesTitle" type="Label" parent="Box/Scroll/Lists"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
 text = "Upgrades"
 
-[node name="Upgrades" type="VBoxContainer" parent="Box"]
+[node name="Upgrades" type="VBoxContainer" parent="Box/Scroll/Lists"]
 unique_name_in_owner = true
 layout_mode = 2
 

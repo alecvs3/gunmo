@@ -7,9 +7,15 @@ const KIND_UPGRADE: int = 0
 const KIND_WEAPON: int = 1
 
 
-## "" if the next level may be bought, otherwise why not.
+## "" if the next level may be bought, otherwise why not. `perks_owned` is how many different
+## perks the buyer has (PlayerStats.perks_owned); a new perk needs a free slot.
 static func check_upgrade(
-	shop_open: bool, catalog: ShopCatalog, index: int, level: int, credits: int
+	shop_open: bool,
+	catalog: ShopCatalog,
+	index: int,
+	level: int,
+	credits: int,
+	perks_owned: int = 0,
 ) -> String:
 	if not shop_open:
 		return "The shop is only open between waves."
@@ -18,6 +24,8 @@ static func check_upgrade(
 	var upgrade: UpgradeData = catalog.upgrades[index]
 	if level >= upgrade.max_level:
 		return "Already at the highest level."
+	if upgrade.is_perk() and level == 0 and perks_owned >= catalog.max_perks:
+		return "No free perk slot (%d of %d used)." % [perks_owned, catalog.max_perks]
 	if credits < upgrade.cost(level):
 		return "Not enough credits."
 	return ""

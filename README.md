@@ -47,6 +47,8 @@ few seconds and reports whether the view moves evenly every frame.
 
 **Waves:** press **F** to ready up (the lobby and breaks end early when everyone is ready).
 Kills and cleared waves earn credits; the shop opens in the lobby and between waves (**B** hides it).
+Some guns and the **perks** add effects to your bullets (burn, chill, shock, shred, blast); you can
+own only two different perks, so pick a build that fits your gun and your teammates'.
 `-- --match res://tests/net/data/quick_match.tres` hosts a quick 2-wave match for testing.
 **Gun Game:** pick it in the menu before hosting, with how many players to fill up to with bots.
 Every kill counts toward your current gun; enough kills move you to the next one, and the first
