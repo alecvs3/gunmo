@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+
+[resource]
+script = ExtResource("1_edata")
+display_name = "Brute"
+color = Color(0.6, 0.3, 0.85, 1)
+max_health = 220
+move_speed = 85.0
+contact_damage = 20
+contact_interval = 0.8
+contact_knockback = 600.0
+knockback_friction = 1500.0
+knockback_bounce = 0.3
+knockback_taken = 0.3
+cost = 4.0
+first_wave = 5
+spawn_weight = 1.0

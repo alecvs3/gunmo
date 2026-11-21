@@ -65,7 +65,7 @@ frame (always `NetClock.tick_delta()`).
 
 **A new networked entity** (an enemy type, a pickup, a turret):
 1. Add a `NetEntity` node (set `kind`) and a `SpawnSync` `MultiplayerSynchronizer` that syncs
-   `NetEntity:net_id` at spawn only (copy it from `enemies/test_enemy.tscn`).
+   `NetEntity:net_id` at spawn only (copy it from `enemies/chaser.tscn`).
 2. If it needs fields the existing kinds don't have, add a `NetState` subclass in
    `shared/network/states/` and a kind in `NetKinds`.
 3. Give the root script `capture_net_state()` (host) and `apply_net_state(state)` (clients).

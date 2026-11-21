@@ -51,9 +51,9 @@ func test_same_team_is_not_hit() -> void:
 	assert_eq((friend["health"] as HealthComponent).current_health, 100)
 
 
-func test_pistol_kills_test_enemy_in_expected_shots() -> void:
+func test_pistol_kills_a_grunt_in_expected_shots() -> void:
 	var pistol: WeaponData = load("res://weapons/data/pistol.tres")
-	var enemy_data: EnemyData = load("res://enemies/data/test_enemy.tres")
+	var enemy_data: EnemyData = load("res://enemies/data/grunt.tres")
 	var shots_needed: int = ceili(float(enemy_data.max_health) / pistol.damage)
 	var target: Dictionary = _make_target(Vector2(40, 0), enemy_data.max_health)
 	var health: HealthComponent = target["health"]

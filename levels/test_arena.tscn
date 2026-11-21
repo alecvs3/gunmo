@@ -1,8 +1,7 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://levels/level.gd" id="1_arena"]
 [ext_resource type="Script" path="res://weapons/projectile_system.gd" id="2_proj"]
-[ext_resource type="Script" path="res://levels/debug_enemy_spawner.gd" id="3_debug"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal"]
 size = Vector2(2080, 40)
@@ -114,14 +113,9 @@ _spawnable_scenes = PackedStringArray("res://player/player.tscn")
 spawn_path = NodePath("../Players")
 
 [node name="EnemySpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("res://enemies/test_enemy.tscn")
+_spawnable_scenes = PackedStringArray("res://enemies/chaser.tscn")
 spawn_path = NodePath("../Enemies")
 
 [node name="ProjectileSystem" type="Node" parent="." node_paths=PackedStringArray("projectiles_root")]
 script = ExtResource("2_proj")
 projectiles_root = NodePath("../Projectiles")
-
-[node name="DebugEnemySpawner" type="Node" parent="." node_paths=PackedStringArray("enemies_root", "spawn_points")]
-script = ExtResource("3_debug")
-enemies_root = NodePath("../Enemies")
-spawn_points = NodePath("../EnemySpawnPoints")
