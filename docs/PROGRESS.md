@@ -84,14 +84,12 @@ own movement responds within 3 ticks under lag, position matches the host exactl
 
 ### Known limitations
 
-- Enemies move straight at players and can snag on pillars (no pathfinding).
 - Players don't collide with each other. No friendly fire in co-op (by team).
-- No HUD yet (health, ammo, wave).
 - The host sees remote players move in small steps when their commands arrive unevenly.
 - GUT prints Godot leak warnings at exit on this branch (the game itself shuts down cleanly);
   traced to engine/GUT shutdown order with the Replicator node, not to a runtime leak.
 
-## Display smoothness ✅ (in review, issue #16)
+## Display smoothness ✅ (merged, issue #16)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -105,9 +103,31 @@ own movement responds within 3 ticks under lag, position matches the host exactl
 before: 67%), frame-to-frame unevenness 7–13% (≈0.1 px), player perfectly still on screen.
 **Not yet verified:** how it feels to play; other monitors and PCs (Yusuf's).
 
-## Milestone 2 — wave loop (planned)
+## Milestone 2 — wave loop ✅ (in review, issues #18–#24)
 
-Issues go on the Projects board: GameMode base, MatchSettings, enemy cost + WaveConfig,
-wave budget spawner, WaveMode state machine (25 waves), wave break with ready-up,
-wave-mode death rules, game over/victory, HUD (health/ammo/wave), reload state sync,
-enemy pathfinding, CI for tests + lint (the leave-match button is done).
+Branch `milestone-2`, one commit per issue.
+
+| Issue | Feature | Status | Where |
+|---|---|---|---|
+| #18 | GameMode base (replicated next to the level), Level spawn API, MatchSettings + `--match`, MatchState entity, client→host requests, F = ready | Done, tested | `modes/game_mode.gd`, `levels/level.gd`, `shared/network/states/match_net_state.gd` |
+| #19 | Grunt / runner / brute as data on one chaser scene; WaveSchedule (25 waves, budget curve); seeded budget planner; spawner away from players | Done, tested | `enemies/`, `modes/waves/` |
+| #20 | Wave loop: lobby → waves → breaks (skip when all ready) → victory after 25 / defeat when all down; host restart | Done, tested | `modes/waves/wave_flow.gd`, `modes/wave_mode.gd` |
+| #21 | Down players spectate a teammate (click to switch), revive at the break, late joiners spectate until the break | Done, tested | `player/player_spectate.gd`, `modes/wave_mode.gd` |
+| #22 | Enemy pathfinding around walls and pillars (navigation baked on the host) | Done, tested | `levels/test_arena.tscn`, `enemies/chaser.gd` |
+| #23 | HUD (health, ammo/reload, wave, enemies left, countdown, ready, banners) + results screen | Done, tested, checked in a window | `ui/hud.*`, `ui/results_screen.*` |
+| #24 | Wave smoke scenario + GitHub Actions CI (lint, format, GUT, smoke) on every PR | Done | `tests/net/wave_smoke.gd`, `.github/workflows/checks.yml` |
+
+**Verified:** 179 GUT tests; lint/format clean; all three smoke scenarios pass (a host and a
+client play a quick match through ready-up, two waves, victory, restart and defeat, and see the
+same phases); a real host runs waves; the HUD checked in screenshots; a fresh clone imports.
+**Not yet verified:** a full 25-wave match by people (balance), two PCs, the CI run itself
+(first run happens on the PR).
+
+### Known limitations
+
+- Balance is a first guess: tune `modes/waves/data/default_waves.tres` and `enemies/data/*.tres`.
+- Players have no names yet; the HUD says "spectating a teammate".
+- The command-line `--import` crashed three times on an already-imported working copy right
+  after scene files changed (a Godot 4.7.2 cache bug; the next run always works, a fresh clone
+  imports fine). If the editor crashes once after pulling, open it again.
+- Only one map and one weapon; upgrades between waves come in Milestone 3.

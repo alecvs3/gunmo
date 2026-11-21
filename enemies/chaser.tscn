@@ -1,7 +1,7 @@
 [gd_scene load_steps=11 format=3]
 
-[ext_resource type="Script" path="res://enemies/test_enemy.gd" id="1_enemy"]
-[ext_resource type="Resource" path="res://enemies/data/test_enemy.tres" id="2_edata"]
+[ext_resource type="Script" path="res://enemies/chaser.gd" id="1_enemy"]
+[ext_resource type="Resource" path="res://enemies/data/grunt.tres" id="2_edata"]
 [ext_resource type="Script" path="res://shared/components/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://shared/components/hitbox_component.gd" id="4_hitbox"]
 [ext_resource type="Script" path="res://shared/components/knockback_component.gd" id="5_knockback"]
@@ -20,8 +20,11 @@ size = Vector2(36, 36)
 properties/0/path = NodePath("NetEntity:net_id")
 properties/0/spawn = true
 properties/0/replication_mode = 0
+properties/1/path = NodePath(".:data_path")
+properties/1/spawn = true
+properties/1/replication_mode = 0
 
-[node name="TestEnemy" type="CharacterBody2D"]
+[node name="Chaser" type="CharacterBody2D"]
 collision_layer = 4
 collision_mask = 5
 motion_mode = 1
@@ -60,6 +63,10 @@ monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea"]
 shape = SubResource("RectangleShape2D_contact")
+
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 8.0
+target_desired_distance = 8.0
 
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("6_netentity")

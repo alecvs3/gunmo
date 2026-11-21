@@ -46,12 +46,16 @@ func _ready() -> void:
 	var camera: PlayerCamera = $PlayerCamera
 	camera.enabled = is_owner
 	camera.follow_time = player_data.camera_follow_time
+	camera.spectate_follow_time = player_data.spectate_follow_time
+	$PlayerSpectate.set_process(is_owner)
+	$PlayerSpectate.set_process_unhandled_input(is_owner)
+	add_to_group(Groups.PLAYERS)
 	camera.set_process(is_owner)
 	camera.set_physics_process(is_owner)
 	_input_source.set_process(is_owner)
 	_prediction.set_process(is_owner and not multiplayer.is_server())
 	if is_owner and not multiplayer.is_server():
-		($NetEntity as NetEntity).use_prediction()
+		($NetEntity as NetEntity).use_latest_states()
 	set_physics_process(multiplayer.is_server() or is_owner)
 	if multiplayer.is_server():
 		_ready_as_host()
@@ -84,6 +88,24 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 	var wants_fire: bool = command.has(InputCommand.FIRE)
 	if _weapon.step(delta, wants_fire, command.has(InputCommand.RELOAD)) and not replaying:
 		_fire(command)
+
+
+## What the HUD shows about this player: health, ammo, reload (0..1, 0 = not reloading).
+func hud_stats() -> Dictionary:
+	return {
+		"health": _health.current_health,
+		"max_health": _health.max_health,
+		"ammo": _weapon.ammo,
+		"magazine": _weapon.weapon_data.magazine_size,
+		"reload": _weapon.reload_progress(),
+	}
+
+
+## Host only: out of the fight without dying (a late joiner spectating until the break).
+func make_spectator() -> void:
+	_move_velocity = Vector2.ZERO
+	_knockback.velocity = Vector2.ZERO
+	_set_alive(false)
 
 
 ## Host only.

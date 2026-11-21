@@ -198,7 +198,7 @@ func _shoot_for(player: Node2D, seconds: float) -> void:
 ## Test setup: one enemy close to every player, so shooting doesn't depend on where the
 ## wandering AI happens to be.
 func _spawn_enemy_near_each_player() -> void:
-	var enemy_scene: PackedScene = load("res://enemies/test_enemy.tscn")
+	var enemy_scene: PackedScene = load("res://enemies/chaser.tscn")
 	for player: Node2D in _arena().get_node("Players").get_children():
 		var enemy: Node2D = enemy_scene.instantiate()
 		enemy.position = player.position + Vector2(220, 0)

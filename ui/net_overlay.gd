@@ -34,7 +34,7 @@ func _refresh() -> void:
 		return
 	var tracker: PingTracker = NetworkManager.ping
 	if NetworkManager.is_host():
-		_ping_label.text = "Host · %d players" % NetworkManager.peers.size()
+		_ping_label.text = _host_text(NetworkManager.peers.size())
 		_ping_label.modulate = HOST_COLOR
 	else:
 		var quality: PingTracker.Quality = PingTracker.quality(
@@ -95,3 +95,7 @@ func _netcode_lines() -> PackedStringArray:
 			"SIMULATED +%d ±%d ms, %.0f%% loss" % [simulator.latency_ms, simulator.jitter_ms, loss]
 		)
 	return lines
+
+
+static func _host_text(player_count: int) -> String:
+	return "Host · %d player%s" % [player_count, "" if player_count == 1 else "s"]

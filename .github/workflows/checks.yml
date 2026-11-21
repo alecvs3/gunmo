@@ -1,0 +1,65 @@
+# Runs on every pull request and every push to main: lint, format, unit tests (GUT) and the
+# multiplayer smoke test (three scenarios, headless). Uses the official Godot 4.7.2 release.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    env:
+      GODOT_VERSION: 4.7.2-stable
+    steps:
+      - name: Check out (with Git LFS files)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Lint and format check
+        run: |
+          python -m pip install "gdtoolkit==4.*"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          gdlint .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          gdformat --check .
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Download Godot ${{ env.GODOT_VERSION }}
+        run: |
+          $zip = "Godot_v$($env:GODOT_VERSION)_win64.exe.zip"
+          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$($env:GODOT_VERSION)/$zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
+          "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
+
+      # The very first import can crash in Godot 4.7.2 while it builds its cache; the second
+      # run is the one that must succeed.
+      - name: Import project
+        run: |
+          & $env:GODOT --headless --path . --import
+          & $env:GODOT --headless --path . --import
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Unit tests (GUT)
+        run: |
+          & $env:GODOT --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Multiplayer smoke test
+        run: .\tests\net\run_smoke.ps1 -LogDir "$env:RUNNER_TEMP\smoke_logs"
+
+      - name: Upload smoke logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-logs
+          path: ${{ runner.temp }}\smoke_logs
+          if-no-files-found: ignore

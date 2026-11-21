@@ -1,14 +1,16 @@
-# Runs the headless multiplayer smoke test in two scenarios:
+# Runs the headless multiplayer smoke test in three scenarios:
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
+#   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 # or set the GODOT environment variable once and run it without -Godot.
-# Exit code 0 = every role passed. Logs go to %TEMP%\gunmo_net_smoke.
+# Exit code 0 = every role passed. Logs go to %TEMP%\gunmo_net_smoke (or -LogDir).
 param(
     [string]$Godot = $env:GODOT,
     [int]$Port = 7790,
-    [int]$TimeoutSeconds = 90
+    [int]$TimeoutSeconds = 120,
+    [string]$LogDir = (Join-Path $env:TEMP "gunmo_net_smoke")
 )
 
 if (-not $Godot -or -not (Test-Path $Godot)) {
@@ -17,11 +19,11 @@ if (-not $Godot -or -not (Test-Path $Godot)) {
 }
 
 $projectRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$logDir = Join-Path $env:TEMP "gunmo_net_smoke"
+$logDir = $LogDir
 New-Item -ItemType Directory -Force $logDir | Out-Null
 
-function Start-Role([string]$Role, [int]$RolePort, [string]$Sim = "") {
-    $arguments = @("--headless", "--path", "`"$projectRoot`"", "-s", "res://tests/net/net_smoke.gd", "--", $Role, "$RolePort")
+function Start-Role([string]$Role, [int]$RolePort, [string]$Sim = "", [string]$Script = "res://tests/net/net_smoke.gd") {
+    $arguments = @("--headless", "--path", "`"$projectRoot`"", "-s", $Script, "--", $Role, "$RolePort")
     if ($Sim) { $arguments += $Sim }
     Start-Process -FilePath $Godot -ArgumentList $arguments -NoNewWindow -PassThru `
         -RedirectStandardOutput (Join-Path $logDir "$Role.log") `
@@ -66,5 +68,12 @@ $b += Start-Role "observer" ($Port + 1)
 Wait-Roles $b
 $passB = Test-Roles @("dedicated", "shooter", "observer")
 
-if ($passA -and $passB) { exit 0 }
+Write-Host "Scenario C: wave loop (ready-up, victory, restart, defeat)"
+$c = @()
+$c += Start-Role "wavehost" ($Port + 2) "" "res://tests/net/wave_smoke.gd"
+$c += Start-Role "waveclient" ($Port + 2) "" "res://tests/net/wave_smoke.gd"
+Wait-Roles $c
+$passC = Test-Roles @("wavehost", "waveclient")
+
+if ($passA -and $passB -and $passC) { exit 0 }
 exit 1

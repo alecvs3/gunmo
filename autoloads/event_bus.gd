@@ -16,3 +16,11 @@ signal shot_fired(shot: RefCounted)
 ## Owner client: our own player fired (a predicted Shot). The ProjectileSystem shows it at
 ## once; the host decides what it hits.
 signal shot_predicted(shot: RefCounted)
+## Every peer: the match state (a MatchNetState) changed. The HUD and results screen use it.
+signal match_state_changed(state: RefCounted)
+## This peer: we pressed or un-pressed ready.
+signal local_ready_changed(is_ready: bool)
+## This peer: while our player is down we watch this player (0 = nobody / back to ourselves).
+signal spectating_changed(peer_id: int)
+## Host UI: the host asked to play the match again (results screen).
+signal match_restart_requested

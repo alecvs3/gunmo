@@ -1,8 +1,7 @@
 [gd_scene load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://levels/test_arena.gd" id="1_arena"]
+[ext_resource type="Script" path="res://levels/level.gd" id="1_arena"]
 [ext_resource type="Script" path="res://weapons/projectile_system.gd" id="2_proj"]
-[ext_resource type="Script" path="res://levels/debug_enemy_spawner.gd" id="3_debug"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal"]
 size = Vector2(2080, 40)
@@ -13,14 +12,30 @@ size = Vector2(40, 1200)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_pillar"]
 size = Vector2(120, 120)
 
-[node name="TestArena" type="Node2D"]
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_arena"]
+outlines = Array[PackedVector2Array]([PackedVector2Array(0, 0, 2000, 0, 2000, 1200, 0, 1200)])
+parsed_geometry_type = 1
+parsed_collision_mask = 1
+source_geometry_mode = 1
+source_geometry_group_name = &"navigation_obstacles"
+agent_radius = 20.0
+
+[node name="TestArena" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points", "navigation_region")]
 script = ExtResource("1_arena")
+players_root = NodePath("Players")
+enemies_root = NodePath("Enemies")
+player_spawn_points = NodePath("PlayerSpawnPoints")
+enemy_spawn_points = NodePath("EnemySpawnPoints")
+navigation_region = NodePath("NavigationRegion")
 
 [node name="Floor" type="Polygon2D" parent="."]
 color = Color(0.22, 0.24, 0.26, 1)
 polygon = PackedVector2Array(0, 0, 2000, 0, 2000, 1200, 0, 1200)
 
-[node name="Walls" type="StaticBody2D" parent="."]
+[node name="NavigationRegion" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavigationPolygon_arena")
+
+[node name="Walls" type="StaticBody2D" parent="." groups=["navigation_obstacles"]]
 collision_mask = 0
 
 [node name="North" type="CollisionShape2D" parent="Walls"]
@@ -110,14 +125,9 @@ _spawnable_scenes = PackedStringArray("res://player/player.tscn")
 spawn_path = NodePath("../Players")
 
 [node name="EnemySpawner" type="MultiplayerSpawner" parent="."]
-_spawnable_scenes = PackedStringArray("res://enemies/test_enemy.tscn")
+_spawnable_scenes = PackedStringArray("res://enemies/chaser.tscn")
 spawn_path = NodePath("../Enemies")
 
 [node name="ProjectileSystem" type="Node" parent="." node_paths=PackedStringArray("projectiles_root")]
 script = ExtResource("2_proj")
 projectiles_root = NodePath("../Projectiles")
-
-[node name="DebugEnemySpawner" type="Node" parent="." node_paths=PackedStringArray("enemies_root", "spawn_points")]
-script = ExtResource("3_debug")
-enemies_root = NodePath("../Enemies")
-spawn_points = NodePath("../EnemySpawnPoints")

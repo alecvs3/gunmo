@@ -75,4 +75,30 @@ func test_enemy_state_round_trip_and_blend() -> void:
 func test_kinds_make_matching_states() -> void:
 	assert_true(NetKinds.make_state(NetKinds.PLAYER) is PlayerNetState)
 	assert_true(NetKinds.make_state(NetKinds.ENEMY) is EnemyNetState)
+	assert_true(NetKinds.make_state(NetKinds.MATCH) is MatchNetState)
 	assert_null(NetKinds.make_state(255))
+
+
+func test_match_state_round_trip_equals_and_copy() -> void:
+	var state := MatchNetState.new()
+	state.phase = GameMode.Phase.BREAK
+	state.wave = 12
+	state.total_waves = 25
+	state.phase_end_tick = 123456.0
+	state.enemies_left = 300
+	state.ready_count = 2
+	state.player_count = 3
+	state.living_count = 1
+	var back: MatchNetState = _round_trip(state, MatchNetState.new())
+	assert_true(back.equals(state))
+	assert_true(state.copy().equals(state))
+	back.ready_count = 3
+	assert_false(back.equals(state))
+
+
+func test_match_state_seconds_left() -> void:
+	var state := MatchNetState.new()
+	assert_eq(state.seconds_left(10.0), -1.0, "no timer")
+	state.phase_end_tick = 100.0 + NetClock.tick_rate() * 2.0
+	assert_almost_eq(state.seconds_left(100.0), 2.0, 0.0001)
+	assert_eq(state.seconds_left(1e9), 0.0, "never negative")

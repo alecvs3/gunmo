@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="MatchSettings" format=3]
+
+[ext_resource type="Script" path="res://modes/match_settings.gd" id="1_match"]
+[ext_resource type="Resource" path="res://tests/net/data/quick_waves.tres" id="2_waves"]
+
+[resource]
+script = ExtResource("1_match")
+first_break_seconds = 20.0
+break_seconds = 2.0
+revive_at_break = true
+late_joiners_spectate = true
+wave_schedule = ExtResource("2_waves")
