@@ -19,7 +19,21 @@ class Target:
 	var checked_tick: int = 0
 
 
+## A fair-dodging hit: on which hitbox, where, and on which tick of the target's timeline.
+class Hit:
+	var hitbox: HitboxComponent
+	var point: Vector2
+	var tick: int
+
+	func _init(hit_box: HitboxComponent, at: Vector2, on_tick: int) -> void:
+		hitbox = hit_box
+		point = at
+		tick = on_tick
+
+
 var _targets: Array[Target] = []
+## Reused for every tick tested (see PositionHistory.sample_into).
+var _place := PositionHistory.Place.new(Vector2.ZERO, false)
 
 
 ## The targets for a bot's `shot`: every remote human player on another team. Empty (and
@@ -34,7 +48,8 @@ static func for_shot(shot: Shot, tree: SceneTree) -> TimelineHits:
 			continue
 		if player.get_hitbox().team == shot.team:
 			continue
-		hits.add_target(player.get_hitbox(), player.timeline, player.timeline_tick, shot)
+		var timeline: PlayerTimeline = player.timeline
+		hits.add_target(player.get_hitbox(), timeline.history, timeline.newest_tick, shot)
 	return hits
 
 
@@ -63,19 +78,18 @@ func hitboxes() -> Array[HitboxComponent]:
 
 
 ## Checks every target for the ticks its inputs now cover, never past `end_tick` (the last
-## tick the bullet flies; at that tick it reaches `end_point`). Returns the hit as
-## {"hitbox": HitboxComponent, "point": Vector2, "tick": int}, or {}.
-func check(shot: Shot, end_tick: int, end_point: Vector2) -> Dictionary:
+## tick the bullet flies; at that tick it reaches `end_point`). Returns the hit, or null.
+func check(shot: Shot, end_tick: int, end_point: Vector2) -> Hit:
 	for target in _targets:
 		if not _alive(target):
 			continue
 		var upto: int = mini(int(target.newest_tick.call()), end_tick)
 		for tick in range(target.checked_tick + 1, upto + 1):
-			var hit: Dictionary = _test(shot, target, tick, end_tick, end_point)
-			if not hit.is_empty():
+			var hit: Hit = _test(shot, target, tick, end_tick, end_point)
+			if hit != null:
 				return hit
 		target.checked_tick = maxi(target.checked_tick, upto)
-	return {}
+	return null
 
 
 ## True once every target has been checked up to `end_tick`.
@@ -91,14 +105,13 @@ static func _alive(target: Target) -> bool:
 	return is_instance_valid(target.hitbox) and target.newest_tick.is_valid()
 
 
-func _test(shot: Shot, target: Target, tick: int, end_tick: int, end_point: Vector2) -> Dictionary:
+func _test(shot: Shot, target: Target, tick: int, end_tick: int, end_point: Vector2) -> Hit:
 	var age: float = tick - shot.fire_tick
 	var from: Vector2 = shot.point_at(age - 1.0)
 	var to: Vector2 = end_point if tick == end_tick else shot.point_at(age)
-	var place: Dictionary = target.timeline.sample(tick)
-	if place.is_empty() or not place["hittable"]:
-		return {}
-	var fraction: float = target.hitbox.sweep_fraction(from, to, place["position"], shot.radius)
+	if not target.timeline.sample_into(tick, _place) or not _place.hittable:
+		return null
+	var fraction: float = target.hitbox.sweep_fraction(from, to, _place.position, shot.radius)
 	if fraction < 0.0:
-		return {}
-	return {"hitbox": target.hitbox, "point": from.lerp(to, fraction), "tick": tick}
+		return null
+	return Hit.new(target.hitbox, from.lerp(to, fraction), tick)

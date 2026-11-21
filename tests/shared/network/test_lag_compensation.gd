@@ -12,26 +12,26 @@ func before_each() -> void:
 func test_history_blends_between_ticks() -> void:
 	history.record(10, Vector2(0, 0), true)
 	history.record(11, Vector2(10, 0), true)
-	var sample: Dictionary = history.sample(10.5)
-	assert_almost_eq((sample["position"] as Vector2).x, 5.0, 0.001)
-	assert_true(sample["hittable"])
+	var sample: PositionHistory.Place = history.sample(10.5)
+	assert_almost_eq(sample.position.x, 5.0, 0.001)
+	assert_true(sample.hittable)
 
 
 func test_history_holds_ends_and_forgets_old() -> void:
 	for tick in 12:
 		history.record(tick, Vector2(tick, 0), true)
-	assert_eq(history.sample(0.0)["position"], Vector2(4, 0), "only the newest 8 ticks kept")
-	assert_eq(history.sample(99.0)["position"], Vector2(11, 0))
+	assert_eq(history.sample(0.0).position, Vector2(4, 0), "only the newest 8 ticks kept")
+	assert_eq(history.sample(99.0).position, Vector2(11, 0))
 
 
 func test_history_not_hittable_if_either_side_was_dead() -> void:
 	history.record(1, Vector2.ZERO, true)
 	history.record(2, Vector2.ZERO, false)
-	assert_false(history.sample(1.5)["hittable"])
+	assert_false(history.sample(1.5).hittable)
 
 
 func test_empty_history() -> void:
-	assert_eq(history.sample(3.0), {})
+	assert_null(history.sample(3.0))
 
 
 func test_rewind_is_clamped_to_max_rewind_and_present() -> void:

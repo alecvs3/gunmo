@@ -15,36 +15,52 @@ var _refresh_left: float = 0.0
 @onready var _title: Label = %ScoreTitle
 
 
-## The facts one row shows about `player`.
-static func row_for(player: Player, own_id: int) -> Dictionary:
+## The facts one row shows about a player.
+class Row:
+	var id: int = 0
+	var name: String = ""
+	var kills: int = 0
+	var deaths: int = 0
+	var tier: int = 0
+	var tier_kills: int = 0
+	var bot: bool = false
+	## This peer's own player.
+	var local: bool = false
+
+	## Best first: true if this row ranks above `other`. Gun Game: highest gun, then kills on
+	## it, then kills. Waves: most kills. Then fewest deaths, then by name, so every peer shows
+	## the same order.
+	func ranks_above(other: Row, gun_game: bool) -> bool:
+		if gun_game and tier != other.tier:
+			return tier > other.tier
+		if gun_game and tier_kills != other.tier_kills:
+			return tier_kills > other.tier_kills
+		if kills != other.kills:
+			return kills > other.kills
+		if deaths != other.deaths:
+			return deaths < other.deaths
+		return name < other.name
+
+
+static func row_for(player: Player, own_id: int) -> Row:
 	var score: ScoreComponent = player.get_score()
-	return {
-		"id": player.peer_id,
-		"name": player.display_name,
-		"kills": score.kills,
-		"deaths": score.deaths,
-		"tier": score.tier,
-		"tier_kills": score.tier_kills,
-		"bot": player.is_bot,
-		"local": player.peer_id == own_id,
-	}
+	var row := Row.new()
+	row.id = player.peer_id
+	row.name = player.display_name
+	row.kills = score.kills
+	row.deaths = score.deaths
+	row.tier = score.tier
+	row.tier_kills = score.tier_kills
+	row.bot = player.is_bot
+	row.local = player.peer_id == own_id
+	return row
 
 
-## Best first. Gun Game: highest gun, then kills on it, then kills. Waves: most kills, then
-## fewest deaths. Ties go by name so every peer shows the same order.
-static func rank(rows: Array[Dictionary], mode_kind: int) -> Array[Dictionary]:
-	var ranked: Array[Dictionary] = rows.duplicate()
+## Best first (Row.ranks_above).
+static func rank(rows: Array[Row], mode_kind: int) -> Array[Row]:
+	var ranked: Array[Row] = rows.duplicate()
 	var gun_game: bool = mode_kind == MatchNetState.ModeKind.GUN_GAME
-	ranked.sort_custom(
-		func(a: Dictionary, b: Dictionary) -> bool:
-			var keys: Array = ["tier", "tier_kills", "kills"] if gun_game else ["kills"]
-			for key: String in keys:
-				if a[key] != b[key]:
-					return a[key] > b[key]
-			if a["deaths"] != b["deaths"]:
-				return a["deaths"] < b["deaths"]
-			return a["name"] < b["name"]
-	)
+	ranked.sort_custom(func(a: Row, b: Row) -> bool: return a.ranks_above(b, gun_game))
 	return ranked
 
 
@@ -54,17 +70,17 @@ static func headers(mode_kind: int) -> Array[String]:
 	return ["Player", "Kills", "Deaths"]
 
 
-static func cells(row: Dictionary, mode_kind: int) -> Array[String]:
-	var name_text: String = row["name"] + (" (bot)" if row["bot"] else "")
+static func cells(row: Row, mode_kind: int) -> Array[String]:
+	var name_text: String = row.name + (" (bot)" if row.bot else "")
 	if mode_kind == MatchNetState.ModeKind.GUN_GAME:
-		return [name_text, str(row["tier"] + 1), str(row["kills"]), str(row["deaths"])]
-	return [name_text, str(row["kills"]), str(row["deaths"])]
+		return [name_text, str(row.tier + 1), str(row.kills), str(row.deaths)]
+	return [name_text, str(row.kills), str(row.deaths)]
 
 
 ## Every player on this peer, ranked (the HUD's leader line uses it too).
-static func ranked_players(tree: SceneTree, mode_kind: int) -> Array[Dictionary]:
+static func ranked_players(tree: SceneTree, mode_kind: int) -> Array[Row]:
 	var own_id: int = tree.get_multiplayer().get_unique_id()
-	var rows: Array[Dictionary] = []
+	var rows: Array[Row] = []
 	for node in tree.get_nodes_in_group(Groups.PLAYERS):
 		var player := node as Player
 		if player != null and not player.is_queued_for_deletion():
@@ -102,9 +118,7 @@ func _rebuild() -> void:
 	for text in header_cells:
 		_add_cell(text, BOT_COLOR)
 	for row in ranked_players(get_tree(), _state.mode_kind):
-		var color: Color = (
-			LOCAL_COLOR if row["local"] else (BOT_COLOR if row["bot"] else Color.WHITE)
-		)
+		var color: Color = LOCAL_COLOR if row.local else (BOT_COLOR if row.bot else Color.WHITE)
 		for text in cells(row, _state.mode_kind):
 			_add_cell(text, color)
 

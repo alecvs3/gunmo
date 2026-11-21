@@ -77,7 +77,7 @@ func _tick_timers() -> void:
 
 ## Anything hittable on another team: players of other teams (Gun Game) or enemies (Waves).
 func _pick_target() -> HitboxComponent:
-	var candidates: Array[Dictionary] = []
+	var candidates: Array[BotBrain.Candidate] = []
 	var by_id: Dictionary = {}
 	var own_team: StringName = HitboxComponent.team_for(_player.team_id)
 	for hitbox in NetworkManager.lag_compensator.hitboxes():
@@ -85,7 +85,7 @@ func _pick_target() -> HitboxComponent:
 			continue
 		var id: int = hitbox.get_instance_id()
 		var at: Vector2 = hitbox.center()
-		candidates.append({"id": id, "position": at, "visible": _can_see(at)})
+		candidates.append(BotBrain.Candidate.new(id, at, _can_see(at)))
 		by_id[id] = hitbox
 	var chosen: int = BotBrain.choose_target(
 		_player.global_position, candidates, profile.awareness_range, _target_id

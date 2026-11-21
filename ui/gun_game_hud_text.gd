@@ -15,13 +15,13 @@ static func progress(state: MatchNetState, tier: int, tier_kills: int) -> String
 
 
 ## Who is ahead, from Scoreboard.rank()'s first row.
-static func leader_line(ranked: Array[Dictionary], own_id: int) -> String:
+static func leader_line(ranked: Array[Scoreboard.Row], own_id: int) -> String:
 	if ranked.is_empty():
 		return ""
-	var leader: Dictionary = ranked[0]
-	if leader["id"] == own_id:
+	var leader: Scoreboard.Row = ranked[0]
+	if leader.id == own_id:
 		return "You're in the lead"
-	return "Leader: %s · gun %d" % [leader["name"], leader["tier"] + 1]
+	return "Leader: %s · gun %d" % [leader.name, leader.tier + 1]
 
 
 static func winner_title(winner_name: String, is_you: bool) -> String:

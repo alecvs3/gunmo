@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the whole wave loop with a host and a client, using the quick
 ## 2-wave match (tests/net/data/quick_match.tres). Both sides:
 ##   1. ready up (the 20 s lobby must be skipped)       2. shoot through both waves: VICTORY
@@ -10,13 +10,6 @@ extends SceneTree
 const WATCHDOG_SECONDS: float = 110.0
 const MATCH_PATH: String = "res://tests/net/data/quick_match.tres"
 
-var _role: String = ""
-var _port: int = 7795
-var _failures := PackedStringArray()
-var _finished: bool = false
-var _phase: Dictionary = {}
-var _fire_button: int = 0
-var _input_command_script: GDScript
 var _seen: Array[String] = []
 var _state: RefCounted = null
 var _end_reason: String = ""
@@ -26,18 +19,10 @@ var _wave_one_msec: int = -1
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "wavehost"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("wavehost", 7795, WATCHDOG_SECONDS)
 
 
 func _run() -> void:
-	_phase = load("res://modes/game_mode.gd").get_script_constant_map()["Phase"]
-	_input_command_script = load("res://shared/network/input_command.gd")
-	_fire_button = _input_command_script.get_script_constant_map()["FIRE"]
 	root.get_node("EventBus").match_state_changed.connect(_on_state)
 	root.get_node("NetworkManager").session_ended.connect(
 		func(reason: String) -> void: _end_reason = reason
@@ -173,11 +158,6 @@ func _mode() -> Node:
 	return container.get_child(0) if container != null and container.get_child_count() > 0 else null
 
 
-func _own_player() -> Node2D:
-	var path: String = "Main/LevelContainer/TestArena/Players/%d" % root.multiplayer.get_unique_id()
-	return root.get_node_or_null(path) as Node2D
-
-
 func _nearest_enemy(from: Vector2) -> Node2D:
 	var enemies: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Enemies")
 	var nearest: Node2D = null
@@ -194,41 +174,3 @@ func _nearest_enemy(from: Vector2) -> Node2D:
 		if enemy.visible and closer:
 			nearest = enemy
 	return nearest
-
-
-func _script(player: Node2D, aim: float, buttons: int) -> void:
-	if player == null:
-		return
-	var command: RefCounted = _input_command_script.new()
-	command.aim = aim
-	command.buttons = buttons
-	player.get_node("PlayerInputSource").scripted = command
-
-
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
-func _info(text: String) -> void:
-	print("SMOKE INFO %s: %s" % [_role, text])
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)

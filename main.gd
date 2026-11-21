@@ -24,20 +24,20 @@ func _ready() -> void:
 
 
 func _apply_launch_args() -> void:
-	var launch: Dictionary = LaunchArgs.parse(
+	var launch: LaunchArgs.Options = LaunchArgs.parse(
 		OS.get_cmdline_user_args(), NetworkManager.config.default_port
 	)
-	_load_match_settings(launch["match"])
-	var net_sim: Array = launch["net_sim"]
+	_load_match_settings(launch.match_path)
+	var net_sim: Array = launch.net_sim
 	if not net_sim.is_empty():
 		NetworkManager.configure_simulator(net_sim[0], net_sim[1], net_sim[2])
-	match launch["action"]:
+	match launch.action:
 		LaunchArgs.HOST:
-			_menu.host_on(launch["port"])
+			_menu.host_on(launch.port)
 		LaunchArgs.JOIN:
-			_menu.join_at(launch["address"], launch["port"])
+			_menu.join_at(launch.address, launch.port)
 		LaunchArgs.DEDICATED:
-			if NetworkManager.host(launch["port"], true) != OK:
+			if NetworkManager.host(launch.port, true) != OK:
 				get_tree().quit(1)
 
 

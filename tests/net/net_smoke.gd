@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Headless multiplayer smoke test, started several times by run_smoke.ps1. Roles:
 ##   host       listen host: fires a few shots (for the client to see), checks the wrong-build
 ##              client was refused and that the client's hits killed enemies, ends
@@ -18,36 +18,23 @@ const WATCHDOG_SECONDS: float = 75.0
 const HOST_SECONDS: float = 16.0
 const ARENA_PATH: String = "Main/LevelContainer/TestArena"
 
-var _role: String = ""
-var _port: int = 7790
 var _sim: Array = []
-var _failures := PackedStringArray()
-var _finished: bool = false
 var _counts: Dictionary = {"remote_bullets": 0, "predicted": 0, "confirmed": 0, "kills": 0}
 var _refused: int = 0
 var _end_reason: String = ""
 var _join_fail_reason: String = ""
 var _net: Node
-var _input_command_script: GDScript
-var _fire_button: int = 0
 var _remote_bullet_mode: int = 0
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "host"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	if args.size() > 2:
-		_sim = Array(args[2].split(",")).map(func(part: String) -> float: return part.to_float())
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("host", 7790, WATCHDOG_SECONDS)
+	if _args.size() > 2:
+		_sim = Array(_args[2].split(",")).map(func(part: String) -> float: return part.to_float())
 
 
 func _run() -> void:
 	_net = root.get_node("NetworkManager")
-	_input_command_script = load("res://shared/network/input_command.gd")
-	_fire_button = _input_command_script.get_script_constant_map()["FIRE"]
 	var bullet_constants: Dictionary = load("res://weapons/bullet.gd").get_script_constant_map()
 	_remote_bullet_mode = bullet_constants["Mode"]["REMOTE"]
 	_net.session_ended.connect(func(reason: String) -> void: _end_reason = reason)
@@ -161,14 +148,14 @@ func _check_instant_movement() -> void:
 	var player: Node2D = _own_player()
 	await create_timer(0.5).timeout
 	var start: Vector2 = player.position
-	_script(player, Vector2.RIGHT, 0.0, 0)
+	_script(player, 0.0, 0, Vector2.RIGHT)
 	for i in 3:
 		await physics_frame
 	var moved: float = player.position.x - start.x
 	_info("moved %.1f px within 3 ticks of pressing right" % moved)
 	_check(moved > 1.0, "no movement within 3 ticks (%.2f px): not predicted" % moved)
 	await create_timer(1.0).timeout
-	_script(player, Vector2.ZERO, 0.0, 0)
+	_script(player, 0.0, 0)
 
 
 ## Reconciliation: once still, our predicted position must match the host's.
@@ -188,11 +175,11 @@ func _shoot_for(player: Node2D, seconds: float) -> void:
 		var target: Node2D = _nearest_enemy(player.global_position)
 		if target != null:
 			var aim: float = (target.global_position - player.global_position).angle()
-			_script(player, Vector2.ZERO, aim, _fire_button)
+			_script(player, aim, _fire_button)
 		else:
-			_script(player, Vector2.ZERO, 0.0, 0)
+			_script(player, 0.0, 0)
 		await create_timer(0.1).timeout
-	_script(player, Vector2.ZERO, 0.0, 0)
+	_script(player, 0.0, 0)
 
 
 ## Test setup: one enemy close to every player, so shooting doesn't depend on where the
@@ -207,9 +194,9 @@ func _spawn_enemy_near_each_player() -> void:
 
 ## Shoots in one fixed direction, at nothing in particular (so it can't steal kills).
 func _fire_straight(player: Node2D, seconds: float) -> void:
-	_script(player, Vector2.ZERO, PI * 0.5, _fire_button)
+	_script(player, PI * 0.5, _fire_button)
 	await create_timer(seconds).timeout
-	_script(player, Vector2.ZERO, 0.0, 0)
+	_script(player, 0.0, 0)
 
 
 func _expect_host_closed() -> void:
@@ -217,14 +204,6 @@ func _expect_host_closed() -> void:
 	_check(
 		_end_reason.contains("closed"), "expected the host-closed notice, got '%s'" % _end_reason
 	)
-
-
-func _script(player: Node2D, move: Vector2, aim: float, buttons: int) -> void:
-	var command: RefCounted = _input_command_script.new()
-	command.move = move
-	command.aim = aim
-	command.buttons = buttons
-	player.get_node("PlayerInputSource").scripted = command
 
 
 func _on_projectile_added(node: Node) -> void:
@@ -244,22 +223,8 @@ func _closer(from: Vector2, a: Node2D, b: Node2D) -> bool:
 	return from.distance_squared_to(a.global_position) < from.distance_squared_to(b.global_position)
 
 
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
 func _arena() -> Node:
 	return root.get_node_or_null(ARENA_PATH)
-
-
-func _own_player() -> Node2D:
-	var arena: Node = _arena()
-	if arena == null:
-		return null
-	return arena.get_node_or_null("Players/%d" % root.multiplayer.get_unique_id()) as Node2D
 
 
 func _other_player() -> Node2D:
@@ -272,24 +237,5 @@ func _other_player() -> Node2D:
 	return null
 
 
-func _info(text: String) -> void:
-	print("SMOKE INFO %s: %s" % [_role, text])
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
+func _before_finish() -> void:
 	_info("counts %s" % [_counts])
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)

@@ -9,8 +9,6 @@ extends CharacterBody2D
 
 ## How see-through a spawn-protected player is drawn.
 const PROTECTED_ALPHA: float = 0.45
-## Host: a remote player's inputs stalling this many ticks in a row is logged as a hiccup.
-const STALL_LOG_TICKS: int = 6
 
 @export var player_data: PlayerData
 
@@ -21,9 +19,8 @@ var display_name: String = ""
 var is_bot: bool = false
 ## Host: drives a bot instead of a human's input (set by Level.spawn_bot).
 var bot: BotController = null
-## Host, remote human players only: where their own inputs put them, by their own view of the
-## host's tick (InputCommand.client_tick). Bots' bullets are tested against it (TimelineHits).
-var timeline: PositionHistory = null
+## Host, remote human players only: where their own inputs put them (fair dodging).
+var timeline: PlayerTimeline = null
 ## 0 = the co-op team; any other number is a team of its own (see HitboxComponent.team_for).
 var team_id: int = 0:
 	set(value):
@@ -46,10 +43,22 @@ var teleport_count: int = 0
 ## The aim being simulated (the pivot's drawn rotation may lag behind it on the host).
 var aim: float = 0.0
 var last_command: int = -1
+## Simulated walking velocity (knockback comes on top). Part of the snapshot (PlayerNetSync).
+var move_velocity: Vector2 = Vector2.ZERO
 
-var _move_velocity: Vector2 = Vector2.ZERO
-var _timeline_tick: int = -1
 var _commands := CommandQueue.new()
+
+
+## What the HUD shows about a player (hud_stats).
+class HudStats:
+	var health: int = 0
+	var max_health: int = 0
+	var ammo: int = 0
+	var magazine: int = 0
+	## 0..1 while reloading, 0 when not.
+	var reload: float = 0.0
+	var credits: int = 0
+
 
 @onready var _pivot: Node2D = $Visual/Pivot
 @onready var _look: PlayerLook = $Visual/Pivot/Look
@@ -63,6 +72,7 @@ var _commands := CommandQueue.new()
 @onready var _input_source: PlayerInputSource = $PlayerInputSource
 @onready var _prediction: PlayerPrediction = $PlayerPrediction
 @onready var _display_delay: DisplayDelay = $DisplayDelay
+@onready var _net_sync: PlayerNetSync = $PlayerNetSync
 
 
 ## This peer's own player, if it has one (the HUD and shop read it).
@@ -132,9 +142,13 @@ func _physics_process(_delta: float) -> void:
 		_commands.push([_input_source.next_command()])
 	for command in _commands.take_for_tick():
 		simulate(command, false)
-		_record_timeline(command)
+		if timeline != null:
+			var hittable: bool = is_alive and _hitbox.monitorable
+			timeline.record(
+				command.client_tick, NetworkManager.clock.tick, _hitbox.center(), hittable
+			)
 	if bot == null and peer_id != multiplayer.get_unique_id():
-		_report_input()
+		NetworkManager.stats.report_inputs(peer_id, display_name, _commands)
 
 
 ## One tick of this player for one input command. Identical on the host and the predicting
@@ -148,8 +162,8 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 	aim = command.aim
 	_pivot.rotation = aim
 	var stats: PlayerData = _loadout.effective_player
-	_move_velocity = PlayerMotor.step(_move_velocity, command.move, delta, stats)
-	velocity = _move_velocity + _knockback.velocity
+	move_velocity = PlayerMotor.step(move_velocity, command.move, delta, stats)
+	velocity = move_velocity + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
 	_knockback.step(delta)
@@ -158,16 +172,16 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 		_fire(command)
 
 
-## What the HUD shows about this player: health, ammo, reload (0..1, 0 = not reloading).
-func hud_stats() -> Dictionary:
-	return {
-		"health": _health.current_health,
-		"max_health": _health.max_health,
-		"ammo": _weapon.ammo,
-		"magazine": _weapon.weapon_data.magazine_size,
-		"reload": _weapon.reload_progress(),
-		"credits": _wallet.credits,
-	}
+## What the HUD shows about this player.
+func hud_stats() -> HudStats:
+	var stats := HudStats.new()
+	stats.health = _health.current_health
+	stats.max_health = _health.max_health
+	stats.ammo = _weapon.ammo
+	stats.magazine = _weapon.weapon_data.magazine_size
+	stats.reload = _weapon.reload_progress()
+	stats.credits = _wallet.credits
+	return stats
 
 
 func get_wallet() -> WalletComponent:
@@ -186,22 +200,15 @@ func get_hitbox() -> HitboxComponent:
 	return _hitbox
 
 
-## Host: the newest tick on this player's own timeline (-1 = none yet).
-func timeline_tick() -> int:
-	return _timeline_tick
-
-
-## Host: how far this player's own screen is ahead of where the host has them now (seconds):
-## their latency plus input buffer. Bots lead them by it.
+## Host: how far this player's own screen is ahead of where the host has them now (seconds).
+## Bots lead them by it.
 func timeline_lead() -> float:
-	if timeline == null or _timeline_tick < 0:
-		return 0.0
-	return maxf(NetworkManager.clock.tick - _timeline_tick, 0.0) * NetClock.tick_delta()
+	return 0.0 if timeline == null else timeline.lead(NetworkManager.clock.tick)
 
 
 ## Host only: out of the fight without dying (a late joiner spectating until the break).
 func make_spectator() -> void:
-	_move_velocity = Vector2.ZERO
+	move_velocity = Vector2.ZERO
 	_knockback.velocity = Vector2.ZERO
 	_set_alive(false)
 
@@ -209,7 +216,7 @@ func make_spectator() -> void:
 ## Host only.
 func respawn(at: Vector2) -> void:
 	position = at
-	_move_velocity = Vector2.ZERO
+	move_velocity = Vector2.ZERO
 	_knockback.velocity = Vector2.ZERO
 	teleport_count = (teleport_count + 1) & 0xFF
 	reset_physics_interpolation()
@@ -218,46 +225,14 @@ func respawn(at: Vector2) -> void:
 	_set_alive(true)
 
 
+## NetEntity's calls; the snapshot itself is PlayerNetSync's job.
 func capture_net_state() -> NetState:
-	var state := PlayerNetState.new()
-	state.position = position
-	state.move_velocity = _move_velocity
-	state.knockback = _knockback.velocity
-	state.aim = aim
-	state.health = _health.current_health
-	state.max_health = _health.max_health
-	state.ammo = _weapon.ammo
-	state.cooldown_left = _weapon.cooldown_left
-	state.reload_left = _weapon.reload_left
-	state.alive = is_alive
-	state.protected = is_protected
-	state.team_id = team_id
-	state.kills = _score.kills
-	state.deaths = _score.deaths
-	state.tier = _score.tier
-	state.tier_kills = _score.tier_kills
-	state.teleport_count = teleport_count
-	state.last_command = last_command
-	state.weapon_index = _loadout.weapon_index
-	state.upgrade_levels = _loadout.levels.duplicate()
-	state.credits = _wallet.credits
-	return state
+	return _net_sync.capture()
 
 
 ## Other clients: show this (interpolated) state.
 func apply_net_state(state: NetState) -> void:
-	var player_state := state as PlayerNetState
-	position = player_state.position
-	aim = player_state.aim
-	_pivot.rotation = aim
-	_loadout.load_state(player_state.weapon_index, player_state.upgrade_levels)
-	_health.max_health = maxi(player_state.max_health, 1)
-	_health.apply_replicated(player_state.health)
-	_wallet.apply_replicated(player_state.credits)
-	_weapon.ammo = player_state.ammo
-	teleport_count = player_state.teleport_count
-	is_alive = player_state.alive
-	_apply_shared_state(player_state)
+	_net_sync.show_state(state as PlayerNetState)
 
 
 ## Owner client: the host's verdict on where we are; prediction reconciles with it.
@@ -267,42 +242,7 @@ func receive_authoritative_state(_tick: int, state: NetState) -> void:
 
 ## Owner client: jump back to the host's state before replaying unconfirmed commands.
 func restore_from_state(state: PlayerNetState) -> void:
-	position = state.position
-	_move_velocity = state.move_velocity
-	_knockback.velocity = state.knockback
-	aim = state.aim
-	_loadout.load_state(state.weapon_index, state.upgrade_levels)
-	_wallet.apply_replicated(state.credits)
-	_weapon.restore(state.ammo, state.cooldown_left, state.reload_left)
-	_health.apply_replicated(state.health)
-	teleport_count = state.teleport_count
-	last_command = state.last_command
-	is_alive = state.alive
-	_apply_shared_state(state)
-
-
-## Clients: the parts of a snapshot every peer shows the same way.
-func _apply_shared_state(state: PlayerNetState) -> void:
-	is_protected = state.protected
-	if team_id != state.team_id:
-		team_id = state.team_id
-	_score.apply_replicated(state.kills, state.deaths, state.tier, state.tier_kills)
-
-
-## Host, remote humans: where this command put the player, at the command's own tick. The
-## stamp comes from the client, so it may only be up to max_rewind in the past and never in
-## the future or before the previous one (it can't be used to hide in time).
-func _record_timeline(command: InputCommand) -> void:
-	if timeline == null:
-		return
-	var now: int = NetworkManager.clock.tick
-	var oldest: int = now - NetworkManager.lag_compensator.max_rewind_ticks()
-	var stamp: int = clampi(roundi(command.client_tick), oldest, now)
-	stamp = maxi(stamp, _timeline_tick + 1)
-	if stamp > now:
-		return
-	_timeline_tick = stamp
-	timeline.record(stamp, _hitbox.center(), is_alive and _hitbox.monitorable)
+	_net_sync.restore(state)
 
 
 func _ready_as_host() -> void:
@@ -310,8 +250,7 @@ func _ready_as_host() -> void:
 	_health.died.connect(_on_died)
 	NetworkManager.channel.commands_received.connect(_on_commands_received)
 	if bot == null and peer_id != multiplayer.get_unique_id():
-		timeline = PositionHistory.new()
-		timeline.capacity = NetworkManager.lag_compensator.max_rewind_ticks() * 3
+		timeline = PlayerTimeline.new(NetworkManager.lag_compensator.max_rewind_ticks())
 	add_to_group(Groups.LIVING_PLAYERS)
 
 
@@ -349,32 +288,8 @@ func _on_commands_received(sender_id: int, data: PackedByteArray) -> void:
 		_commands.push(InputCommand.decode_batch(data), Time.get_ticks_usec() / 1000000.0)
 
 
-## Host: how this remote player's inputs arrive, for F3 (shared with clients) and the log.
-func _report_input() -> void:
-	var report: NetStats.PeerInput = NetworkManager.stats.peer_inputs.get(peer_id)
-	if report == null:
-		report = NetStats.PeerInput.new()
-		NetworkManager.stats.peer_inputs[peer_id] = report
-	var jitter_ms: float = _commands.jitter.jitter_seconds() * 1000.0
-	if _commands.buffer_ticks != report.buffer_ticks:
-		NetLog.write(
-			(
-				"inputs from %s arrive unevenly (jitter %.1f ms): holding back %d tick(s)"
-				% [display_name, jitter_ms, _commands.buffer_ticks]
-			)
-		)
-	report.jitter_ms = jitter_ms
-	report.buffer_ticks = _commands.buffer_ticks
-	report.late_per_second = _commands.late_per_second()
-	if _commands.stall_run == STALL_LOG_TICKS:
-		var stalled_ms: int = roundi(STALL_LOG_TICKS * NetClock.tick_delta() * 1000.0)
-		NetLog.write_limited(
-			"stall_%d" % peer_id, "hiccup: no input from %s for %d ms" % [display_name, stalled_ms]
-		)
-
-
 func _on_died(killer_id: int) -> void:
-	_move_velocity = Vector2.ZERO
+	move_velocity = Vector2.ZERO
 	_knockback.velocity = Vector2.ZERO
 	_set_alive(false)
 	EventBus.player_killed.emit(self, killer_id)

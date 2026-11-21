@@ -315,7 +315,7 @@ lint/format clean.
 - No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
 - Fullscreen uses the screen the window is on; there is no monitor picker.
 
-## Builds: more guns, hit effects and perks (in review, issue #67)
+## Builds: more guns, hit effects and perks ✅ (merged, issue #67)
 
 Goal: players can build different characters, and late waves get strategy from systems that
 combine (the CLAUDE.md goal) instead of from more health.
@@ -344,3 +344,20 @@ Protocol 8 (enemy snapshots +1 byte for status flags, bullets +1 byte for their 
 - Each Torch shot is 2 reliable bullet events, so a full lobby of Torches adds traffic (#43).
 - **Not verified:** playing it in a window (shop layout, effect rings, arcs, blasts), how the
   guns feel, two PCs.
+
+## Foundations: refactors for clarity ✅ (in review, issue #44)
+
+Branch `refactor-clarity`. No behaviour or network format change (protocol stays 7).
+
+| What | Where |
+|---|---|
+| A player's snapshot (capture, show, restore) is its own component; `Player` forwards to it | `player/player_net_sync.gd` (new node in `player.tscn`) |
+| The fair-dodging timeline is its own class | `player/player_timeline.gd` |
+| The host's report on how a player's inputs arrive moved to the stats it fills | `NetStats.report_inputs` |
+| Every smoke scenario extends one base instead of copying the same helpers (about 400 lines less) | `tests/net/smoke_script.gd` |
+| Typed classes instead of loose Dictionaries | `LaunchArgs.Options`, `PositionHistory.Place`, `TimelineHits.Hit`, `Player.HudStats`, `Scoreboard.Row`, `BotBrain.Candidate` |
+
+`player/player.gd` went from 389 to about 300 lines. `MatchNetState` keeps its mode-specific
+fields (26 bytes; splitting it would change the network format for little gain).
+**Checked:** 292 GUT tests, lint, format, and all 18 smoke roles pass. Tests that called the
+changed functions now use the typed fields instead of Dictionary keys.

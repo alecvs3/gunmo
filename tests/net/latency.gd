@@ -1,4 +1,4 @@
-extends SceneTree
+extends "res://tests/net/smoke_script.gd"
 ## Smoke scenario G: measures the latency chain against shared/network/latency_budget.tres.
 ##   client  1. clean connection: ticks from an input to its own player moving, and how far
 ##              behind the host it draws remote objects (the adaptive smoothing delay)
@@ -16,27 +16,16 @@ const LAGGED_SETTLE_SECONDS: float = 9.0
 const MEASURE_SECONDS: float = 6.0
 const BUDGET_PATH: String = "res://shared/network/latency_budget.tres"
 
-var _role: String = ""
-var _port: int = 7797
-var _failures := PackedStringArray()
-var _finished: bool = false
 var _budget: Resource
-var _input_command_script: GDScript
-var _samples: Dictionary = {}
 
 
 func _initialize() -> void:
-	var args: PackedStringArray = OS.get_cmdline_user_args()
-	_role = args[0] if args.size() > 0 else "latencyhost"
-	_port = args[1].to_int() if args.size() > 1 else _port
-	root.add_child(load("res://main.tscn").instantiate())
-	create_timer(WATCHDOG_SECONDS).timeout.connect(_finish.bind("watchdog timeout"))
-	_run.call_deferred()
+	_boot("latencyhost", 7797, WATCHDOG_SECONDS)
+	_metric_label = "LATENCY"
 
 
 func _run() -> void:
 	_budget = load(BUDGET_PATH)
-	_input_command_script = load("res://shared/network/input_command.gd")
 	if _role == "latencyhost":
 		await _run_host()
 	else:
@@ -156,59 +145,3 @@ func _input_response_ticks(direction: float) -> float:
 		if (player.position.x - start_x) * direction > 0.0:
 			break
 	return ticks
-
-
-func _add(name: String, value: float) -> void:
-	var values: PackedFloat64Array = _samples.get(name, PackedFloat64Array())
-	values.append(value)
-	_samples[name] = values
-
-
-func _average(name: String) -> float:
-	var values: PackedFloat64Array = _samples.get(name, PackedFloat64Array())
-	var total: float = 0.0
-	for value in values:
-		total += value
-	return total / values.size() if values.size() > 0 else 0.0
-
-
-func _percentile(name: String, fraction: float) -> float:
-	var values: PackedFloat64Array = (_samples.get(name, PackedFloat64Array())).duplicate()
-	if values.is_empty():
-		return 0.0
-	values.sort()
-	return values[mini(floori(fraction * values.size()), values.size() - 1)]
-
-
-func _metric(name: String, value: float) -> void:
-	print("LATENCY METRIC %s %.2f" % [name, value])
-
-
-func _own_player() -> Node2D:
-	var path: String = "Main/LevelContainer/TestArena/Players/%d" % root.multiplayer.get_unique_id()
-	return root.get_node_or_null(path) as Node2D
-
-
-func _wait_until(condition: Callable, timeout: float) -> void:
-	var time_left: float = timeout
-	while time_left > 0.0 and not condition.call():
-		await create_timer(0.1).timeout
-		time_left -= 0.1
-
-
-func _check(condition: bool, failure: String) -> void:
-	if not condition:
-		_failures.append(failure)
-
-
-func _finish(extra_failure: String) -> void:
-	if _finished:
-		return
-	_finished = true
-	if not extra_failure.is_empty():
-		_failures.append(extra_failure)
-	if _failures.is_empty():
-		print("SMOKE PASS %s" % _role)
-	else:
-		print("SMOKE FAIL %s: %s" % [_role, "; ".join(_failures)])
-	quit(0 if _failures.is_empty() else 1)

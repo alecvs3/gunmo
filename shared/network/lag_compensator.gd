@@ -25,6 +25,8 @@ var config: NetworkConfig
 
 var _clock: NetClock
 var _histories: Dictionary = {}
+## Reused by every sweep (see PositionHistory.sample_into).
+var _place := PositionHistory.Place.new(Vector2.ZERO, false)
 
 
 func setup(clock: NetClock) -> void:
@@ -90,17 +92,19 @@ func sweep(
 			continue
 		if ignore_owner_id != 0 and hitbox.owner_id == ignore_owner_id:
 			continue
-		var place: Dictionary = _place(hitbox, at_tick)
-		if not place["hittable"]:
+		var place: PositionHistory.Place = _place_at(hitbox, at_tick)
+		if not place.hittable:
 			continue
-		var fraction: float = hitbox.sweep_fraction(from, to, place["position"], bullet_radius)
+		var fraction: float = hitbox.sweep_fraction(from, to, place.position, bullet_radius)
 		if fraction >= 0.0 and (best == null or fraction < best.fraction):
 			best = Hit.new(hitbox, from.lerp(to, fraction), fraction)
 	return best
 
 
-func _place(hitbox: HitboxComponent, at_tick: float) -> Dictionary:
+## Where `hitbox` was at `at_tick`, in the reused _place (valid until the next call).
+func _place_at(hitbox: HitboxComponent, at_tick: float) -> PositionHistory.Place:
 	var history: PositionHistory = _histories[hitbox]
-	if at_tick == PRESENT or history.is_empty():
-		return {"position": hitbox.center(), "hittable": hitbox.is_hittable()}
-	return history.sample(at_tick)
+	if at_tick == PRESENT or not history.sample_into(at_tick, _place):
+		_place.position = hitbox.center()
+		_place.hittable = hitbox.is_hittable()
+	return _place

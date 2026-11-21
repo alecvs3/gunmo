@@ -204,11 +204,11 @@ func _settle() -> void:
 func _check_timeline(end_tick: int, end_point: Vector2) -> bool:
 	if _timeline == null:
 		return false
-	var hit: Dictionary = _timeline.check(shot, end_tick, end_point)
-	if hit.is_empty():
+	var hit: TimelineHits.Hit = _timeline.check(shot, end_tick, end_point)
+	if hit == null:
 		return false
-	_damage(hit["hitbox"], hit["point"])
-	_finish(hit["point"], true, hit["tick"])
+	_damage(hit.hitbox, hit.point)
+	_finish(hit.point, true, hit.tick)
 	return true
 
 
