@@ -79,7 +79,18 @@ refused instead of misreading snapshots.
 `PlayerInputSource`, and handle it inside `Player.simulate()`. It is then predicted, replayed and
 validated automatically. Bump `Handshake.PROTOCOL`.
 
-**A one-off event** (wave started, pickup taken, upgrade bought): host sends
+**Match state** (the game mode): `GameMode` lives under `Main/ModeContainer`, replicated by
+`ModeSpawner`, and carries a `NetEntity` of kind MATCH. Its `MatchNetState` (phase, wave,
+phase end tick, enemies left, players in/alive/ready) reaches clients with every snapshot;
+clients use the newest one and everything announces it through
+`EventBus.match_state_changed`. Timers are host ticks, so every countdown is identical.
+
+**A request from a client** (ready up now, buy an upgrade later): the client calls
+`NetworkManager.channel.send_request(TOPIC, bytes)`; the host gets `channel.request_received`
+with the sender's peer id and must check it against the rules before acting (see
+`GameMode._on_request_received`).
+
+**A one-off event** (pickup taken, upgrade bought): host sends
 `NetworkManager.channel.send_event(peer_id, TOPIC, bytes)`; clients listen to
 `channel.event_received`. Pick a new topic number (bullets use 1).
 
