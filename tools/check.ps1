@@ -2,8 +2,9 @@
 #   import (retried: Godot 4.7.2's import sometimes crashes) -> GUT tests -> gdlint ->
 #   gdformat --check -> (with -Smoke) the multiplayer smoke test
 # Usage (from anywhere in the repo):
-#   .\tools\check.ps1                 everything except the smoke test (about 1 minute)
-#   .\tools\check.ps1 -Smoke          also the smoke scenarios A-H (about 8 more minutes)
+#   .\tools\check.ps1                 everything except the smoke test (about 15 seconds)
+#   .\tools\check.ps1 -Smoke          also the smoke scenarios A-H (about 2.5 more minutes)
+#   .\tools\check.ps1 -Smoke -Scenarios A,E   only those smoke scenarios
 #   .\tools\check.ps1 -Only tests     one step: import, tests, lint, format or smoke
 #   .\tools\check.ps1 -Fix            run gdformat (fixes formatting) before checking
 # Godot is found from -Godot, the GODOT environment variable, PATH, or the usual folders.
@@ -14,6 +15,7 @@ param(
     [ValidateSet("", "import", "tests", "lint", "format", "smoke")]
     [string]$Only = "",
     [switch]$Fix,
+    [string[]]$Scenarios = @(),
     [string]$LogDir = (Join-Path $env:TEMP "gunmo_check")
 )
 
@@ -117,7 +119,7 @@ function Step-Format {
 
 function Step-Smoke([string]$Exe) {
     $smokeLogs = Join-Path $LogDir "smoke"
-    $output = & (Join-Path $root "tests\net\run_smoke.ps1") -Godot $Exe -LogDir $smokeLogs *>&1
+    $output = & (Join-Path $root "tests\net\run_smoke.ps1") -Godot $Exe -LogDir $smokeLogs -Only $Scenarios *>&1
     $ok = $LASTEXITCODE -eq 0
     $passed = @($output | Where-Object { "$_" -match "SMOKE PASS" }).Count
     $failures = @($output | Where-Object { "$_" -match "SMOKE FAIL" } | ForEach-Object { "$_" })

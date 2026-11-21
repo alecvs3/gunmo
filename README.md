@@ -20,7 +20,7 @@ this for you. Otherwise:
 ## Checks before opening a PR
 
 **One command for everything:** `.\tools\check.ps1` (import, tests, lint, format; about 15 s) or
-`.\tools\check.ps1 -Smoke` (also the multiplayer smoke test, a few more minutes). It prints only
+`.\tools\check.ps1 -Smoke` (also the multiplayer smoke test, about 2.5 more minutes; `-Scenarios A,E` runs only some). It prints only
 what failed and why. `-Fix` formats first; `-Only tests|lint|format|smoke` runs one step.
 It finds Godot from `-Godot`, the `GODOT` environment variable, PATH, or `%LOCALAPPDATA%\Programs\Godot`,
 `C:\Tools\Godot`, `~\Godot`, `~\Downloads`.

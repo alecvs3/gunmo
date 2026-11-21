@@ -378,3 +378,8 @@ reading everything first.
 **Checked:** the add-weapon recipe was followed once on a throwaway branch (a new gun, data only):
 import, 295 tests, lint and format passed, and the shop listed it. That branch was not kept.
 Claude Code loads a folder's `CLAUDE.md` when it works in that folder.
+
+## Faster checks ✅ (in review, issue #71)
+
+The smoke scenarios A-E (behaviour only) run at the same time, each on its own port; F (stress), G (latency) and H (fairness) measure timing and still run alone afterwards. Stress measures 12 s (was 20), fairness plays 20 s (was 30). `.\tools\check.ps1 -Smoke` went from about 4.5 minutes to about 2 minutes on Alex's PC; `-Scenarios A,E` runs only some (`run_smoke.ps1 -Only`).
+The latency scenario allows one isolated ran-dry hitch per 6 s phase (a single one already reads as 10/min); the per-minute budget applies above that.

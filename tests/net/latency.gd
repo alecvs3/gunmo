@@ -111,7 +111,11 @@ func _measure_phase(phase: String, buffer_budget_ms: float, dry_budget: float) -
 		"%s: buffer %.0f ms more than the jitter needs" % [phase, excess]
 	)
 	_check(buffer_p95 <= buffer_budget_ms, "%s: smoothing p95 %.0f ms" % [phase, buffer_p95])
-	_check(dry_per_minute <= dry_budget, "%s: ran dry %.0f times/min" % [phase, dry_per_minute])
+	# A 6 s window can't resolve a per-minute budget below 10: one hitch would already be
+	# 10/min. So one isolated hitch per phase is allowed, and the budget applies above that.
+	var dry_events: int = clock.ran_dry_count - dry_before
+	var allowed: float = maxf(dry_budget * MEASURE_SECONDS / 60.0, 1.0)
+	_check(dry_events <= allowed, "%s: ran dry %.0f times/min" % [phase, dry_per_minute])
 	_check(
 		response <= _budget.own_input_response_ticks,
 		"%s: own input took %.0f ticks" % [phase, response]

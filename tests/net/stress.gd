@@ -15,7 +15,7 @@ const WATCHDOG_SECONDS: float = 100.0
 const MATCH_PATH: String = "res://tests/net/data/stress_match.tres"
 const BOTS: int = 6
 const WARM_UP_SECONDS: float = 6.0
-const MEASURE_SECONDS: float = 20.0
+const MEASURE_SECONDS: float = 12.0
 ## Budgets. A 60 Hz tick has 16.7 ms; the host must leave room for rendering, the physics
 ## server and the OS. Measured on Alex's PC (M5 foundations): p95 about 4.6 ms; CI runners are
 ## slower, hence the headroom.
