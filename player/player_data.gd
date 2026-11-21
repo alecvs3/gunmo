@@ -19,6 +19,9 @@ extends Resource
 ## How much of the world everyone sees around their player (world pixels), whatever their
 ## window's size or shape (FairView). Wider or taller windows get bars, not more map.
 @export var view_size: Vector2 = Vector2(1152, 648)
+## A window whose shape is off from view_size's by up to this share is filled edge to edge by
+## showing that much less of the box on one axis (never more); beyond it, bars cover the rest.
+@export_range(0.0, 0.5) var view_max_crop: float = 0.12
 
 @export_group("Looks")
 ## Characters for human players, picked by peer id (so every peer picks the same one).

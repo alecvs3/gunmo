@@ -79,6 +79,11 @@ func test_ui_scale_exclusive_and_window_are_remembered() -> void:
 	settings.get_tree().root.content_scale_factor = 1.0
 
 
+func test_maximized_is_remembered() -> void:
+	_fresh_settings()._save_value("display", "window_maximized", true)
+	assert_true(_fresh_settings().window_maximized)
+
+
 func test_bad_saved_ui_scale_falls_back() -> void:
 	_fresh_settings()._save_value("display", "ui_scale", "huge")
 	assert_eq(_fresh_settings().ui_scale, 1.0)

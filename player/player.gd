@@ -114,6 +114,7 @@ func _ready() -> void:
 	camera.follow_time = player_data.camera_follow_time
 	camera.spectate_follow_time = player_data.spectate_follow_time
 	camera.view_size = player_data.view_size
+	camera.view_max_crop = player_data.view_max_crop
 	$PlayerSpectate.set_process(is_owner)
 	$PlayerSpectate.set_process_unhandled_input(is_owner)
 	add_to_group(Groups.PLAYERS)
