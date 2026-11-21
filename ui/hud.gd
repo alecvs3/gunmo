@@ -17,6 +17,7 @@ var _banner_left: float = 0.0
 @onready var _health_label: Label = %HealthLabel
 @onready var _ammo_label: Label = %AmmoLabel
 @onready var _reload_bar: ProgressBar = %ReloadBar
+@onready var _credits_label: Label = %CreditsLabel
 @onready var _wave_label: Label = %WaveLabel
 @onready var _info_label: Label = %InfoLabel
 @onready var _ready_label: Label = %ReadyLabel
@@ -115,6 +116,7 @@ func _show_player(player: Player) -> void:
 	_ammo_label.text = (
 		"Reloading…" if reload > 0.0 else "%d / %d" % [stats["ammo"], stats["magazine"]]
 	)
+	_credits_label.text = "%d credits" % stats["credits"]
 	var down: bool = not player.is_alive and _state.phase == GameMode.Phase.ACTIVE
 	_status_label.visible = down
 	if down:

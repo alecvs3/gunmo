@@ -15,6 +15,7 @@ func test_every_type_is_complete() -> void:
 		assert_gt(data.move_speed, 0.0, type_name)
 		assert_gt(data.cost, 0.0, type_name)
 		assert_gt(data.spawn_weight, 0.0, type_name)
+		assert_gt(data.bounty, 0, type_name)
 
 
 func test_types_play_differently() -> void:
@@ -28,3 +29,5 @@ func test_types_play_differently() -> void:
 	assert_gt(brute.cost, runner.cost)
 	assert_eq(grunt.first_wave, 1)
 	assert_gt(brute.first_wave, runner.first_wave)
+	assert_gt(brute.bounty, runner.bounty, "tougher enemies pay more")
+	assert_gt(runner.bounty, grunt.bounty)

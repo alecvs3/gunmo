@@ -18,3 +18,4 @@ knockback_taken = 1.0
 cost = 1.0
 first_wave = 1
 spawn_weight = 3.0
+bounty = 10

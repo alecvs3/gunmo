@@ -75,6 +75,14 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_reload_fill")
 max_value = 1.0
 show_percentage = false
 
+[node name="CreditsLabel" type="Label" parent="PlayerPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+text = "0 credits"
+
 [node name="MatchPanel" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 5

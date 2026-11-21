@@ -32,3 +32,5 @@ extends Resource
 @export_range(1, 255) var first_wave: int = 1
 ## How often it is picked compared with the other affordable types.
 @export_range(0.0, 100.0) var spawn_weight: float = 1.0
+## Credits for the player who kills it.
+@export_range(0, 100000) var bounty: int = 0

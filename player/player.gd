@@ -27,6 +27,7 @@ var _commands := CommandQueue.new()
 @onready var _hitbox: HitboxComponent = $HitboxComponent
 @onready var _weapon: WeaponComponent = $WeaponComponent
 @onready var _loadout: PlayerLoadout = $PlayerLoadout
+@onready var _wallet: WalletComponent = $WalletComponent
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _input_source: PlayerInputSource = $PlayerInputSource
 @onready var _prediction: PlayerPrediction = $PlayerPrediction
@@ -99,7 +100,16 @@ func hud_stats() -> Dictionary:
 		"ammo": _weapon.ammo,
 		"magazine": _weapon.weapon_data.magazine_size,
 		"reload": _weapon.reload_progress(),
+		"credits": _wallet.credits,
 	}
+
+
+func get_wallet() -> WalletComponent:
+	return _wallet
+
+
+func get_loadout() -> PlayerLoadout:
+	return _loadout
 
 
 ## Host only: out of the fight without dying (a late joiner spectating until the break).
@@ -134,6 +144,7 @@ func capture_net_state() -> NetState:
 	state.teleport_count = teleport_count
 	state.last_command = last_command
 	state.weapon_index = _loadout.weapon_index
+	state.credits = _wallet.credits
 	return state
 
 
@@ -144,6 +155,7 @@ func apply_net_state(state: NetState) -> void:
 	_pivot.rotation = player_state.aim
 	_health.apply_replicated(player_state.health)
 	_loadout.load_state(player_state.weapon_index)
+	_wallet.apply_replicated(player_state.credits)
 	_weapon.ammo = player_state.ammo
 	teleport_count = player_state.teleport_count
 	is_alive = player_state.alive
@@ -160,6 +172,7 @@ func restore_from_state(state: PlayerNetState) -> void:
 	_move_velocity = state.move_velocity
 	_knockback.velocity = state.knockback
 	_loadout.load_state(state.weapon_index)
+	_wallet.apply_replicated(state.credits)
 	_weapon.restore(state.ammo, state.cooldown_left, state.reload_left)
 	_health.apply_replicated(state.health)
 	teleport_count = state.teleport_count

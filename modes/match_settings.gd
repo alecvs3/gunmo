@@ -11,5 +11,10 @@ extends Resource
 @export var revive_at_break: bool = false
 ## Someone joining mid-wave watches until the next break instead of dropping in.
 @export var late_joiners_spectate: bool = false
+## Credits each player starts the match with.
+@export_range(0, 1000000) var starting_credits: int = 0
+## Credits for every player still standing when a wave is cleared: base + per_wave × wave.
+@export_range(0, 100000) var wave_clear_bonus: int = 0
+@export_range(0, 100000) var wave_clear_bonus_per_wave: int = 0
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
