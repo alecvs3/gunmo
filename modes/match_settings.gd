@@ -37,3 +37,5 @@ extends Resource
 @export_range(0.0, 30.0) var respawn_seconds: float = 0.0
 ## After respawning a player can't be hurt for this long.
 @export_range(0.0, 10.0) var spawn_protection_seconds: float = 0.0
+## Bots take these profiles in turn (bot_fill_to says how many bots).
+@export var bot_profiles: Array[BotProfile] = []

@@ -5,6 +5,7 @@ extends Node2D
 ## MultiplayerSpawners replicate what they add.
 
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
+const BOT_CONTROLLER: Script = preload("res://bots/bot_controller.gd")
 
 @export var players_root: Node2D
 @export var enemies_root: Node2D
@@ -33,6 +34,22 @@ func spawn_player(peer_id: int, display_name: String = "") -> Player:
 	return new_player
 
 
+## A bot: a normal player (negative id) driven by a BotController that only the host has.
+func spawn_bot(bot_id: int, display_name: String, profile: BotProfile) -> Player:
+	var new_bot: Player = PLAYER_SCENE.instantiate()
+	new_bot.name = str(bot_id)
+	new_bot.display_name = display_name
+	new_bot.is_bot = true
+	var controller: BotController = BOT_CONTROLLER.new()
+	controller.name = "BotController"
+	controller.profile = profile
+	controller.roam_points = _respawn_positions()
+	new_bot.bot = controller
+	new_bot.add_child(controller)
+	players_root.add_child(new_bot, true)
+	return new_bot
+
+
 func remove_player(peer_id: int) -> void:
 	var leaving: Player = player(peer_id)
 	if leaving != null:
@@ -59,13 +76,7 @@ func player_spawn_position(index: int) -> Vector2:
 
 ## The respawn point whose nearest other player is farthest away.
 func farthest_respawn_point(others: Array[Vector2]) -> Vector2:
-	var root: Node2D = respawn_points if respawn_points != null else player_spawn_points
-	if root.get_child_count() == 0:
-		root = player_spawn_points
-	var candidates: Array[Vector2] = []
-	for point: Node2D in root.get_children():
-		candidates.append(point.position)
-	return farthest_from(candidates, others)
+	return farthest_from(_respawn_positions(), others)
 
 
 ## Of `candidates`, the one with the largest distance to its nearest point in `others`
@@ -81,6 +92,16 @@ static func farthest_from(candidates: Array[Vector2], others: Array[Vector2]) ->
 			best = candidate
 			best_distance = nearest
 	return best
+
+
+func _respawn_positions() -> Array[Vector2]:
+	var root: Node2D = respawn_points if respawn_points != null else player_spawn_points
+	if root.get_child_count() == 0:
+		root = player_spawn_points
+	var positions: Array[Vector2] = []
+	for point: Node2D in root.get_children():
+		positions.append(point.position)
+	return positions
 
 
 func enemy_spawn_positions() -> Array[Vector2]:

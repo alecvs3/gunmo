@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="MatchSettings" load_steps=8 format=3]
+[gd_resource type="Resource" script_class="MatchSettings" load_steps=12 format=3]
 
 [ext_resource type="Script" path="res://modes/match_settings.gd" id="1_match"]
 [ext_resource type="PackedScene" path="res://modes/gun_game/gun_game_mode.tscn" id="2_mode"]
@@ -7,6 +7,10 @@
 [ext_resource type="Resource" path="res://weapons/data/shotgun.tres" id="5_shotgun"]
 [ext_resource type="Resource" path="res://weapons/data/pistol.tres" id="6_pistol"]
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="7_wdata"]
+[ext_resource type="Script" path="res://bots/bot_profile.gd" id="8_profile"]
+[ext_resource type="Resource" path="res://bots/profiles/easy.tres" id="9_easy"]
+[ext_resource type="Resource" path="res://bots/profiles/normal.tres" id="10_normal"]
+[ext_resource type="Resource" path="res://bots/profiles/hard.tres" id="11_hard"]
 
 [resource]
 script = ExtResource("1_match")
@@ -17,3 +21,4 @@ kills_per_tier = 3
 final_tier_kills = 2
 respawn_seconds = 2.0
 spawn_protection_seconds = 1.5
+bot_profiles = Array[ExtResource("8_profile")]([ExtResource("10_normal"), ExtResource("9_easy"), ExtResource("11_hard")])

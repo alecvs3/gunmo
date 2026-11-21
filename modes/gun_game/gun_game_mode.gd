@@ -4,7 +4,11 @@ extends GameMode
 ## move you to the next one, and the first to finish the last gun wins. Host only: gives
 ## every player a team of its own, equips each player's tier gun, respawns the dead at the
 ## spawn point farthest from everyone else with a moment of spawn protection, and keeps the
-## replicated MatchState current. The ladder, kill targets and timings come from MatchSettings.
+## replicated MatchState current. Empty slots are filled with bots up to bot_fill_to (they
+## leave again as humans join). The ladder, kill targets, timings and bot profiles come from
+## MatchSettings.
+
+const FALLBACK_BOT_PROFILE: String = "res://bots/profiles/normal.tres"
 
 ## Ladder guns as ShopCatalog weapon indices (what PlayerLoadout equips and snapshots carry).
 var _ladder_weapons: Array[int] = []
@@ -59,12 +63,53 @@ func _on_peer_joined(peer_id: int) -> void:
 	var joined: Player = level.player(peer_id)
 	if joined != null:
 		_prepare(joined)
+	_sync_bots()
 
 
 func _on_peer_left(peer_id: int) -> void:
 	super(peer_id)
+	_forget(peer_id)
+	_sync_bots()
+
+
+func _forget(peer_id: int) -> void:
 	_respawn_at.erase(peer_id)
 	_protected_until.erase(peer_id)
+
+
+## Adds or removes bots so humans + bots = bot_fill_to (never removes humans).
+func _sync_bots() -> void:
+	var bots: Array[Player] = []
+	var humans: int = 0
+	for player in level.players():
+		if player.is_bot:
+			bots.append(player)
+		else:
+			humans += 1
+	var wanted: int = maxi(settings.bot_fill_to - humans, 0)
+	while bots.size() > wanted:
+		var leaving: Player = bots.pop_back()
+		_forget(leaving.peer_id)
+		level.remove_player(leaving.peer_id)
+	while bots.size() < wanted:
+		bots.append(_add_bot())
+
+
+func _add_bot() -> Player:
+	var number: int = 1
+	while level.player(-number) != null:
+		number += 1
+	var profile: BotProfile = _bot_profile(number)
+	var name_text: String = "Bot %d · %s" % [number, profile.display_name]
+	var bot: Player = level.spawn_bot(-number, name_text, profile)
+	_prepare(bot)
+	return bot
+
+
+func _bot_profile(number: int) -> BotProfile:
+	if settings.bot_profiles.is_empty():
+		return load(FALLBACK_BOT_PROFILE)
+	return settings.bot_profiles[(number - 1) % settings.bot_profiles.size()]
 
 
 ## A fresh start for one player: own team, first gun, no score, a spawn away from others.

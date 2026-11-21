@@ -17,6 +17,8 @@ var peer_id: int = 1
 var display_name: String = ""
 ## Host-run bot (negative peer id). Also spawn-synced, for the scoreboard.
 var is_bot: bool = false
+## Host: drives a bot instead of a human's input (set by Level.spawn_bot).
+var bot: BotController = null
 ## 0 = the co-op team; any other number is a team of its own (see HitboxComponent.team_for).
 var team_id: int = 0:
 	set(value):
@@ -102,7 +104,9 @@ func _physics_process(_delta: float) -> void:
 	if not multiplayer.is_server():
 		_prediction.run_tick(self)
 		return
-	if peer_id == multiplayer.get_unique_id():
+	if bot != null:
+		_commands.push([bot.next_command()])
+	elif peer_id == multiplayer.get_unique_id():
 		_commands.push([_input_source.next_command()])
 	for command in _commands.take_for_tick():
 		simulate(command, false)
