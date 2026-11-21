@@ -40,6 +40,7 @@ Add `--net-sim 100,20,5` to any instance to fake 100 ms lag, ±20 ms jitter and 
 few seconds and reports whether the view moves evenly every frame.
 
 **Waves:** press **F** to ready up (the lobby and breaks end early when everyone is ready).
+Kills and cleared waves earn credits; the shop opens in the lobby and between waves (**B** hides it).
 `-- --match res://tests/net/data/quick_match.tres` hosts a quick 2-wave match for testing.
 **CI:** every PR runs lint, format, GUT and the smoke test on GitHub Actions (`checks`).
 

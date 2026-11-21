@@ -40,13 +40,17 @@ jobs:
           Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
           "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
 
-      # The very first import can crash in Godot 4.7.2 while it builds its cache; the second
-      # run is the one that must succeed.
+      # Godot 4.7.2's import occasionally crashes while it builds its cache (a known engine
+      # issue on our side too); it is retried, and a crash on every attempt fails the job.
       - name: Import project
         run: |
           & $env:GODOT --headless --path . --import
-          & $env:GODOT --headless --path . --import
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          for ($attempt = 1; $attempt -le 3; $attempt++) {
+            & $env:GODOT --headless --path . --import
+            if ($LASTEXITCODE -eq 0) { exit 0 }
+            Write-Host "Import attempt $attempt crashed (exit $LASTEXITCODE); retrying."
+          }
+          exit 1
 
       - name: Unit tests (GUT)
         run: |
