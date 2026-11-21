@@ -384,7 +384,7 @@ Claude Code loads a folder's `CLAUDE.md` when it works in that folder.
 The smoke scenarios A-E (behaviour only) run at the same time, each on its own port; F (stress), G (latency) and H (fairness) measure timing and still run alone afterwards. Stress measures 12 s (was 20), fairness plays 20 s (was 30). `.\tools\check.ps1 -Smoke` went from about 4.5 minutes to about 2 minutes on Alex's PC; `-Scenarios A,E` runs only some (`run_smoke.ps1 -Only`).
 The latency scenario allows one isolated ran-dry hitch per 6 s phase (a single one already reads as 10/min); the per-minute budget applies above that.
 
-## Adaptive screen sizes ✅ (in review, issue #73)
+## Adaptive screen sizes ✅ (merged, issue #73)
 
 Branch `adaptive-screen`. Movement, shooting, aim, hits, bots and the netcode already ran on
 ticks in world units; this makes the *view* and the *menus* fit any window, and locks that in.
@@ -405,4 +405,18 @@ starts and hosts without errors.
 
 ### Known limitations
 - Exclusive fullscreen has no menu option yet (it waits for the settings menu, #49).
-- The view box is fixed at 16:9; on 21:9 the sides are dark bars by design (fair in Gun Game).
+- The view box is 16:9. Windows within 12% of that shape are filled; on 21:9 thinner dark bars remain at the sides by design (fair in Gun Game).
+
+## Screen fill fix ✅ (in review, issue #75)
+
+Alex's report after #74: a maximized window didn't fill (thin bars at the sides) and leaving
+fullscreen dropped back to a small window.
+- **Cause 1:** a maximized window on a 16:9 monitor is 1920x1009 (taskbar and title bar), a bit
+  wider than 16:9, so the strict fair box added side bars.
+  **Fix:** a window within `PlayerData.view_max_crop` (12%) of the box's shape is filled edge to
+  edge by showing up to that much *less* of the box on one axis; nobody ever sees more. Only
+  shapes further off (21:9) still get bars, now thinner.
+- **Cause 2:** leaving fullscreen restored the saved window size even when it had been maximized.
+  **Fix:** maximized is remembered (`window_maximized`) and comes back, at start and after F11.
+- Checked in a real window on a 1920x1080 monitor: windowed, maximized (filled, no bars),
+  F11 fullscreen, back to maximized. Tests for the crop rule and the saved maximized state.

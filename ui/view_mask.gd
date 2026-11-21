@@ -19,7 +19,8 @@ func _process(_delta: float) -> void:
 	visible = player != null
 	if player == null:
 		return
-	var box: Rect2 = FairView.box_on_screen(size, player.player_data.view_size)
+	var data: PlayerData = player.player_data
+	var box: Rect2 = FairView.box_on_screen(size, data.view_size, data.view_max_crop)
 	if not box.is_equal_approx(_box):
 		_box = box
 		queue_redraw()

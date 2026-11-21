@@ -33,6 +33,8 @@ var fullscreen_exclusive: bool = false
 var ui_scale: float = 1.0
 ## The last windowed size and place (zero size = none saved yet).
 var window_rect := Rect2i()
+## The window was maximized (it comes back maximized, also after leaving fullscreen).
+var window_maximized: bool = false
 ## Where the settings are saved (tests point it at a file of their own).
 var settings_path: String = SETTINGS_PATH
 
@@ -42,7 +44,6 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
 	DisplayServer.window_set_min_size(WindowRules.MIN_SIZE)
-	_restore_window()
 	_apply_window_mode()
 	_apply_ui_scale()
 	print("[display] %s" % display_summary())
@@ -104,8 +105,6 @@ func set_fullscreen(on: bool) -> void:
 	fullscreen = on
 	_save_value("display", "fullscreen", fullscreen)
 	_apply_window_mode()
-	if not on:
-		_restore_window()
 	fullscreen_changed.emit(fullscreen)
 
 
@@ -130,22 +129,36 @@ static func window_mode_for(on: bool, exclusive: bool = false) -> DisplayServer.
 	return WindowRules.window_mode_for(on, exclusive)
 
 
+## Fullscreen, or the window as it was left: maximized, or at its saved size and place.
 func _apply_window_mode() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
-	DisplayServer.window_set_mode(window_mode_for(fullscreen, fullscreen_exclusive))
+	if fullscreen:
+		DisplayServer.window_set_mode(window_mode_for(true, fullscreen_exclusive))
+		return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
+	_restore_window()
+	if window_maximized:
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_MAXIMIZED)
 
 
 func _apply_ui_scale() -> void:
 	get_tree().root.content_scale_factor = ui_scale
 
 
-## Windowed only: saves the window's size and place.
+## Saves how the window is: maximized, or its size and place (nothing while fullscreen or
+## minimized, which say nothing about the window the player wants back).
 func _remember_window() -> void:
 	if DisplayServer.get_name() == "headless" or fullscreen:
 		return
-	window_rect = Rect2i(DisplayServer.window_get_position(), DisplayServer.window_get_size())
-	_save_value("display", "window_rect", window_rect)
+	var mode: DisplayServer.WindowMode = DisplayServer.window_get_mode()
+	if mode == DisplayServer.WINDOW_MODE_MINIMIZED:
+		return
+	window_maximized = mode == DisplayServer.WINDOW_MODE_MAXIMIZED
+	_save_value("display", "window_maximized", window_maximized)
+	if mode == DisplayServer.WINDOW_MODE_WINDOWED:
+		window_rect = Rect2i(DisplayServer.window_get_position(), DisplayServer.window_get_size())
+		_save_value("display", "window_rect", window_rect)
 
 
 ## Puts the window back where it was saved, on a screen that still exists.
@@ -179,3 +192,4 @@ func _load() -> void:
 		)
 		var rect: Variant = file.get_value("display", "window_rect", Rect2i())
 		window_rect = rect if rect is Rect2i else Rect2i()
+		window_maximized = file.get_value("display", "window_maximized", false) == true
