@@ -17,10 +17,12 @@ const DATA_FOLDER: String = "res://enemies/data/"
 var data_path: String = ""
 
 var _contact_cooldown_left: float = 0.0
+var _repath_left: float = 0.0
 
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _contact_area: Area2D = $ContactArea
+@onready var _agent: NavigationAgent2D = $NavigationAgent2D
 
 
 func _ready() -> void:
@@ -63,11 +65,27 @@ func _move(delta: float) -> void:
 	var target: Node2D = _find_nearest_target()
 	var chase: Vector2 = Vector2.ZERO
 	if target != null:
-		chase = global_position.direction_to(target.global_position) * enemy_data.move_speed
+		chase = _direction_towards(target.global_position, delta) * enemy_data.move_speed
 	velocity = chase + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
 	_knockback.step(delta)
+
+
+## Along the navigation path around obstacles. Straight at the target while there is no path
+## (the baked map reaches the navigation server a few physics frames after the level starts).
+func _direction_towards(target_position: Vector2, delta: float) -> Vector2:
+	_repath_left -= delta
+	if _repath_left <= 0.0:
+		_repath_left = enemy_data.repath_interval
+		_agent.target_position = target_position
+	var map: RID = _agent.get_navigation_map()
+	if NavigationServer2D.map_get_iteration_id(map) == 0 or _agent.is_navigation_finished():
+		return global_position.direction_to(target_position)
+	var next: Vector2 = _agent.get_next_path_position()
+	if next.is_equal_approx(global_position):
+		return global_position.direction_to(target_position)
+	return global_position.direction_to(next)
 
 
 func _find_nearest_target() -> Node2D:

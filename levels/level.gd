@@ -10,6 +10,14 @@ const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 @export var enemies_root: Node2D
 @export var player_spawn_points: Node2D
 @export var enemy_spawn_points: Node2D
+## Where enemies can walk. Baked on the host when the level starts, from the static colliders
+## in the "navigation_obstacles" group (walls, pillars); clients don't need it.
+@export var navigation_region: NavigationRegion2D
+
+
+func _ready() -> void:
+	if multiplayer.is_server() and navigation_region != null:
+		navigation_region.bake_navigation_polygon(false)
 
 
 func spawn_player(peer_id: int) -> Player:

@@ -8,6 +8,7 @@ display_name = "Brute"
 color = Color(0.6, 0.3, 0.85, 1)
 max_health = 220
 move_speed = 85.0
+repath_interval = 0.25
 contact_damage = 20
 contact_interval = 0.8
 contact_knockback = 600.0

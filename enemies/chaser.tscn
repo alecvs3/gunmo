@@ -64,6 +64,10 @@ monitorable = false
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea"]
 shape = SubResource("RectangleShape2D_contact")
 
+[node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
+path_desired_distance = 8.0
+target_desired_distance = 8.0
+
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("6_netentity")
 kind = 2

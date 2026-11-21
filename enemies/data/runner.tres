@@ -8,6 +8,7 @@ display_name = "Runner"
 color = Color(1, 0.65, 0.2, 1)
 max_health = 30
 move_speed = 230.0
+repath_interval = 0.25
 contact_damage = 6
 contact_interval = 0.5
 contact_knockback = 250.0

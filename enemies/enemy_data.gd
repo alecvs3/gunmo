@@ -8,6 +8,8 @@ extends Resource
 @export_range(1, 100000) var max_health: int = 1
 ## Pixels per second.
 @export_range(0.0, 2000.0) var move_speed: float = 1.0
+## Seconds between path updates towards its target (lower = reacts sooner, costs more).
+@export_range(0.05, 5.0) var repath_interval: float = 1.0
 ## Damage per touch.
 @export_range(0, 1000) var contact_damage: int = 1
 ## Seconds between touches.
