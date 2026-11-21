@@ -5,3 +5,6 @@
 # Export output
 /export/
 *.translation
+
+# Personal Claude Code overrides (the shared settings are .claude/settings.json)
+.claude/settings.local.json
