@@ -67,6 +67,35 @@ func test_change_is_announced_once() -> void:
 	assert_signal_emitted_with_parameters(settings, "fullscreen_changed", [true])
 
 
+func test_ui_scale_exclusive_and_window_are_remembered() -> void:
+	var settings: Node = _fresh_settings()
+	settings.set_ui_scale(1.3)
+	settings.set_fullscreen_exclusive(true)
+	settings._save_value("display", "window_rect", Rect2i(50, 60, 1280, 720))
+	var reloaded: Node = _fresh_settings()
+	assert_eq(reloaded.ui_scale, 1.25, "snapped to a choice")
+	assert_true(reloaded.fullscreen_exclusive)
+	assert_eq(reloaded.window_rect, Rect2i(50, 60, 1280, 720))
+	settings.get_tree().root.content_scale_factor = 1.0
+
+
+func test_bad_saved_ui_scale_falls_back() -> void:
+	_fresh_settings()._save_value("display", "ui_scale", "huge")
+	assert_eq(_fresh_settings().ui_scale, 1.0)
+
+
+func test_ui_scale_picker_follows_and_changes_the_setting() -> void:
+	var real_scale: float = GameSettings.ui_scale
+	var picker := UiScaleOption.new()
+	add_child_autofree(picker)
+	GameSettings.set_ui_scale(1.5)
+	assert_eq(picker.selected, 3, "follows the other menu")
+	picker.item_selected.emit(0)
+	assert_eq(GameSettings.ui_scale, 0.85, "picking changes the setting")
+	GameSettings.set_ui_scale(real_scale)
+	get_tree().root.content_scale_factor = 1.0
+
+
 func test_checkbox_follows_and_changes_the_setting() -> void:
 	GameSettings.set_fullscreen(false)
 	var check := FullscreenCheck.new()

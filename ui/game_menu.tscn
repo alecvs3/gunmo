@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://ui/game_menu.gd" id="1_gamemenu"]
 [ext_resource type="Script" path="res://ui/fullscreen_check.gd" id="2_fullscreen"]
+[ext_resource type="Script" path="res://ui/ui_scale_option.gd" id="3_uiscale"]
 
 [node name="GameMenu" type="Control"]
 layout_mode = 3
@@ -49,6 +50,10 @@ text = "Resume"
 layout_mode = 2
 text = "Fullscreen (F11)"
 script = ExtResource("2_fullscreen")
+
+[node name="UiScaleOption" type="OptionButton" parent="Center/Box"]
+layout_mode = 2
+script = ExtResource("3_uiscale")
 
 [node name="LeaveButton" type="Button" parent="Center/Box"]
 unique_name_in_owner = true

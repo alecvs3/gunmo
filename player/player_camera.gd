@@ -19,6 +19,8 @@ var follow_time: float = 0.0
 var spectate_target: Node2D = null
 ## Seconds to catch up with a spectated teammate (smooths their network updates).
 var spectate_follow_time: float = 0.15
+## The world box every window shows (PlayerData.view_size, FairView).
+var view_size: Vector2 = Vector2(1152, 648)
 
 var _previous_tick_position: Vector2 = Vector2.ZERO
 var _current_tick_position: Vector2 = Vector2.ZERO
@@ -49,6 +51,7 @@ func _physics_process(_delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	zoom = Vector2.ONE * FairView.zoom_for(get_viewport_rect().size, view_size)
 	if spectate_target != null and is_instance_valid(spectate_target):
 		var watched: Vector2 = spectate_target.global_position
 		global_position = follow(global_position, watched, delta, spectate_follow_time)

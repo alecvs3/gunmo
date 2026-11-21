@@ -28,6 +28,7 @@ shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback,
 player/*         Player scene: input, movement (PlayerMotor), prediction, snapshot (PlayerNetSync)
 weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, hit effects (HitEffects, ImpactEffects),
                  fair dodging (TimelineHits)
+shared/          WindowRules (window modes, min size, UI scales), Groups
 upgrades/        ShopCatalog, UpgradeData (stats and perks), PlayerStats (stacking), ShopRules
 enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres

@@ -22,6 +22,7 @@ wallet, score, loadout.
 | `player_prediction.gd`, `own_player_drawing.gd` | Your own player: instant response, corrections eased out |
 | `player_loadout.gd` | Weapon index and upgrade levels → effective stats (`upgrades/player_stats.gd`) |
 | `player_camera.gd`, `player_spectate.gd` | Camera, and watching a teammate while down |
+| `fair_view.gd` | Every window shape sees the same world box (`PlayerData.view_size`): the camera's zoom, and where `ui/view_mask.gd` puts its bars |
 | `player_look.gd`, `character_look.gd`, `looks/` | The sprite per weapon pose and where its barrel ends |
 | `data/default_player.tres` | `PlayerData`: speed, health, knockback, camera |
 
@@ -34,6 +35,8 @@ wallet, score, loadout.
   show effects twice.
 - **A new field the owner must rewind to goes in the snapshot** (see the `add-networked-field`
   recipe). Otherwise prediction drifts and the player rubber-bands.
+- **Nothing here may depend on the window.** Window size, UI scale and frame rate change only
+  how things are drawn (`tests/test_no_window_dependence.gd` checks it).
 - Shots start at the drawn barrel: `CharacterLook.muzzle_for(pose)`, rotated by the aim.
 
 ## Tests

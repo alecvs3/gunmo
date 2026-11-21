@@ -16,6 +16,9 @@ extends Resource
 @export_range(0.0, 1.0) var camera_follow_time: float = 0.0
 ## Seconds the camera takes to catch up with a teammate you spectate while down.
 @export_range(0.0, 1.0) var spectate_follow_time: float = 0.0
+## How much of the world everyone sees around their player (world pixels), whatever their
+## window's size or shape (FairView). Wider or taller windows get bars, not more map.
+@export var view_size: Vector2 = Vector2(1152, 648)
 
 @export_group("Looks")
 ## Characters for human players, picked by peer id (so every peer picks the same one).
