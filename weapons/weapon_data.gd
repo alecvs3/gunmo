@@ -15,3 +15,7 @@ extends Resource
 @export_range(1, 500) var magazine_size: int = 1
 ## Seconds.
 @export_range(0.0, 10.0) var reload_time: float = 1.0
+## Bullet size for hit tests (px).
+@export_range(0.0, 64.0) var bullet_radius: float = 4.0
+## Push given to whatever the bullet hits (px/s along the bullet's path).
+@export_range(0.0, 3000.0) var knockback: float = 0.0

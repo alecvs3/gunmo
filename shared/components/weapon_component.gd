@@ -1,59 +1,53 @@
 class_name WeaponComponent
 extends Node
-## Fire rate, ammo and reloading for one weapon, all read from WeaponData. Runs on the host.
-## It decides whether a shot happens; the owner spawns the bullet when `fired` is emitted.
+## Fire rate, ammo and reloading for one weapon, all read from WeaponData.
+## Stepped exactly once per input command, on the host and on the predicting owner alike, so
+## both agree on when shots happen; restore() rewinds it to the host's numbers so the owner can
+## replay unconfirmed commands. Spread is random but seeded per shot, so both sides draw the
+## same bullet path.
 
-signal fired(origin: Vector2, direction: Vector2)
-signal reload_started
-signal reloaded
+## Timers below this count as finished, so float rounding can't add a tick to the fire rate
+## (4 shots/s must be exactly every 15 ticks at 60 Hz).
+const TIME_EPSILON: float = 0.000001
 
 @export var weapon_data: WeaponData
 
 var ammo: int = 0
-var _cooldown_left: float = 0.0
-var _reload_left: float = 0.0
+var cooldown_left: float = 0.0
+var reload_left: float = 0.0
 
 
-## Host only: on clients the synchronizer has already applied the host's ammo by now.
 func _ready() -> void:
-	var is_host: bool = multiplayer.is_server()
-	set_physics_process(is_host)
-	if is_host:
-		ammo = weapon_data.magazine_size
+	ammo = weapon_data.magazine_size
 
 
-func _physics_process(delta: float) -> void:
-	tick(delta)
+## The same seed on every peer for the same shot.
+static func shot_seed(shooter_id: int, shot_id: int) -> int:
+	return hash([shooter_id, shot_id])
 
 
 func is_reloading() -> bool:
-	return _reload_left > 0.0
+	return reload_left > TIME_EPSILON
 
 
 func can_fire() -> bool:
-	return ammo > 0 and _cooldown_left <= 0.0 and not is_reloading()
+	return ammo > 0 and cooldown_left <= TIME_EPSILON and not is_reloading()
 
 
-func tick(delta: float) -> void:
-	_cooldown_left = maxf(_cooldown_left - delta, 0.0)
-	if not is_reloading():
-		return
-	_reload_left -= delta
-	if _reload_left <= 0.0:
-		_reload_left = 0.0
-		ammo = weapon_data.magazine_size
-		reloaded.emit()
-
-
-## Returns true if a shot was fired. An empty magazine starts a reload automatically.
-func try_fire(origin: Vector2, aim_direction: Vector2) -> bool:
+## One tick of time with these buttons held. Returns true if a shot was fired.
+## An empty magazine starts a reload automatically.
+func step(delta: float, wants_fire: bool, wants_reload: bool) -> bool:
+	_advance_timers(delta)
+	if wants_reload:
+		start_reload()
+	if not wants_fire:
+		return false
 	if not can_fire():
 		if ammo == 0:
 			start_reload()
 		return false
 	ammo -= 1
-	_cooldown_left = 1.0 / weapon_data.fire_rate
-	fired.emit(origin, spread_direction(aim_direction))
+	cooldown_left = 1.0 / weapon_data.fire_rate
 	if ammo == 0:
 		start_reload()
 	return true
@@ -62,11 +56,29 @@ func try_fire(origin: Vector2, aim_direction: Vector2) -> bool:
 func start_reload() -> void:
 	if is_reloading() or ammo == weapon_data.magazine_size:
 		return
-	_reload_left = weapon_data.reload_time
-	reload_started.emit()
+	reload_left = weapon_data.reload_time
 
 
-## Rotates the aim randomly within +/- half of WeaponData.spread (degrees).
-func spread_direction(aim_direction: Vector2) -> Vector2:
+## Back to the host's numbers (prediction replay).
+func restore(state_ammo: int, state_cooldown: float, state_reload: float) -> void:
+	ammo = state_ammo
+	cooldown_left = state_cooldown
+	reload_left = state_reload
+
+
+## The aim rotated by a random angle within +/- half of WeaponData.spread (degrees).
+func spread_direction(aim_direction: Vector2, seed_value: int) -> Vector2:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
 	var half_spread: float = deg_to_rad(weapon_data.spread) * 0.5
-	return aim_direction.normalized().rotated(randf_range(-half_spread, half_spread))
+	return aim_direction.normalized().rotated(rng.randf_range(-half_spread, half_spread))
+
+
+func _advance_timers(delta: float) -> void:
+	cooldown_left = maxf(cooldown_left - delta, 0.0)
+	if not is_reloading():
+		return
+	reload_left -= delta
+	if reload_left <= TIME_EPSILON:
+		reload_left = 0.0
+		ammo = weapon_data.magazine_size

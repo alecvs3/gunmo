@@ -1,4 +1,6 @@
 extends GutTest
+## Bullet damage driven by WeaponData, through the real host-side hit path
+## (LagCompensator sweep -> HitboxComponent -> HealthComponent / KnockbackComponent).
 
 const BULLET_SCENE: PackedScene = preload("res://weapons/bullet.tscn")
 
@@ -8,80 +10,101 @@ var data: WeaponData
 func before_each() -> void:
 	data = WeaponData.new()
 	data.damage = 35
-	data.bullet_speed = 500.0
-	data.bullet_lifetime = 0.5
+	data.bullet_speed = 600.0
+	data.bullet_lifetime = 1.0
+	data.bullet_radius = 2.0
+	data.knockback = 100.0
 
 
-func test_spawn_data_comes_from_weapon_data() -> void:
-	var spawn_data: Dictionary = Bullet.make_spawn_data(data, Vector2(10, 20), Vector2(0, 5), 4)
-	assert_eq(spawn_data["damage"], 35)
-	assert_eq(spawn_data["speed"], 500.0)
-	assert_eq(spawn_data["lifetime"], 0.5)
-	assert_eq(spawn_data["shooter_id"], 4)
-	assert_eq(spawn_data["position"], Vector2(10, 20))
-	assert_eq(spawn_data["direction"], Vector2.DOWN, "direction is normalized")
+func test_hit_deals_weapon_damage_with_shooter_credit_and_push() -> void:
+	var target: Dictionary = _make_target(Vector2(30, 0), 100)
+	watch_signals(target["health"])
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)
+	_tick(bullet, 10)
+	assert_eq((target["health"] as HealthComponent).current_health, 65)
+	assert_signal_emitted_with_parameters(target["health"], "damaged", [35, 4])
+	assert_almost_eq((target["knockback"] as KnockbackComponent).velocity.x, 100.0, 0.001)
 
 
-func test_hit_deals_weapon_damage_with_shooter_credit() -> void:
-	var health: HealthComponent = _make_target(100)
-	var bullet: Bullet = _make_bullet()
-	watch_signals(health)
-
-	bullet.apply_hit(_hitbox_for(health))
-
-	assert_eq(health.current_health, 65)
-	assert_signal_emitted_with_parameters(health, "damaged", [35, 4])
+func test_bullet_hits_only_the_first_target() -> void:
+	var near: Dictionary = _make_target(Vector2(30, 0), 100)
+	var far: Dictionary = _make_target(Vector2(60, 0), 100)
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)
+	_tick(bullet, 20)
+	assert_eq((near["health"] as HealthComponent).current_health, 65)
+	assert_eq((far["health"] as HealthComponent).current_health, 100)
 
 
-func test_bullet_hits_only_once() -> void:
-	var first: HealthComponent = _make_target(100)
-	var second: HealthComponent = _make_target(100)
-	var bullet: Bullet = _make_bullet()
+func test_fast_bullet_does_not_tunnel_through_thin_target() -> void:
+	data.bullet_speed = 6000.0
+	var target: Dictionary = _make_target(Vector2(150, 0), 100, 4.0)
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)
+	_tick(bullet, 3)
+	assert_eq((target["health"] as HealthComponent).current_health, 65, "100 px per tick")
 
-	bullet.apply_hit(_hitbox_for(first))
-	bullet.apply_hit(_hitbox_for(second))
 
-	assert_eq(first.current_health, 65)
-	assert_eq(second.current_health, 100)
+func test_same_team_is_not_hit() -> void:
+	var friend: Dictionary = _make_target(Vector2(30, 0), 100)
+	(friend["hitbox"] as HitboxComponent).team = &"players"
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT, &"players")
+	_tick(bullet, 10)
+	assert_eq((friend["health"] as HealthComponent).current_health, 100)
 
 
 func test_pistol_kills_test_enemy_in_expected_shots() -> void:
 	var pistol: WeaponData = load("res://weapons/data/pistol.tres")
 	var enemy_data: EnemyData = load("res://enemies/data/test_enemy.tres")
-	var expected_shots: int = ceili(float(enemy_data.max_health) / pistol.damage)
-	var health: HealthComponent = _make_target(enemy_data.max_health)
-	var hitbox: HitboxComponent = _hitbox_for(health)
-	for i in expected_shots - 1:
-		_make_bullet(pistol).apply_hit(hitbox)
+	var shots_needed: int = ceili(float(enemy_data.max_health) / pistol.damage)
+	var target: Dictionary = _make_target(Vector2(40, 0), enemy_data.max_health)
+	var health: HealthComponent = target["health"]
+	data = pistol
+	for i in shots_needed - 1:
+		_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 10)
 	assert_false(health.is_dead(), "still alive one shot before the expected count")
-	_make_bullet(pistol).apply_hit(hitbox)
+	_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 10)
 	assert_true(health.is_dead())
 
 
-func test_bullet_moves_along_direction_at_speed() -> void:
-	var bullet: Bullet = _make_bullet()
-	bullet.set_physics_process(false)
-	bullet._physics_process(0.1)
-	assert_almost_eq(bullet.position.x, 50.0, 0.001)
-	assert_almost_eq(bullet.position.y, 0.0, 0.001)
+func test_bullet_ends_after_lifetime() -> void:
+	data.bullet_lifetime = 0.1
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)
+	watch_signals(bullet)
+	_tick(bullet, 6)
+	assert_signal_emitted(bullet, "finished")
 
 
-func _make_bullet(weapon: WeaponData = data) -> Bullet:
+func _fire(origin: Vector2, direction: Vector2, team: StringName = &"tests") -> Bullet:
+	var shot: Shot = Shot.from_weapon(data, origin, direction)
+	shot.shooter_id = 4
+	shot.team = team
+	shot.view_tick = NetworkManager.clock.tick
 	var bullet: Bullet = BULLET_SCENE.instantiate()
-	bullet.setup(Bullet.make_spawn_data(weapon, Vector2.ZERO, Vector2.RIGHT, 4))
+	bullet.setup(shot, Bullet.Mode.AUTHORITATIVE)
 	add_child_autofree(bullet)
+	bullet.set_physics_process(false)
 	return bullet
 
 
-func _make_target(max_health: int) -> HealthComponent:
+func _tick(bullet: Bullet, ticks: int) -> void:
+	for i in ticks:
+		if is_instance_valid(bullet) and not bullet.is_queued_for_deletion():
+			bullet._physics_process(NetClock.tick_delta())
+
+
+func _make_target(at: Vector2, max_health: int, radius: float = 16.0) -> Dictionary:
 	var health := HealthComponent.new()
 	health.max_health = max_health
-	add_child_autofree(health)
-	return health
-
-
-func _hitbox_for(health: HealthComponent) -> HitboxComponent:
+	var knockback := KnockbackComponent.new()
 	var hitbox := HitboxComponent.new()
 	hitbox.health = health
+	hitbox.knockback = knockback
+	hitbox.team = &"targets"
+	var shape := CollisionShape2D.new()
+	shape.shape = CircleShape2D.new()
+	(shape.shape as CircleShape2D).radius = radius
+	hitbox.add_child(shape)
+	hitbox.position = at
+	add_child_autofree(health)
+	add_child_autofree(knockback)
 	add_child_autofree(hitbox)
-	return hitbox
+	return {"health": health, "knockback": knockback, "hitbox": hitbox}

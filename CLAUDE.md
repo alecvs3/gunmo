@@ -41,6 +41,7 @@ tests/       automated tests, mirroring the folders above
 6. **Tuning numbers live in Resources (`.tres`), never in code:** `WeaponData`, `UpgradeData`, `EnemyData`, `WaveConfig`, `BotProfile`, `MatchSettings`.
 7. **Mode logic stays inside `modes/`.** Shared systems never check which mode is running.
 8. **Only the three autoloads listed above.** Ask before adding another.
+9. **Networking follows `docs/NETCODE.md`:** the host decides, the owner predicts, others interpolate. Continuous state goes through `NetEntity` snapshots (never a continuous `MultiplayerSynchronizer`), player actions through `InputCommand`, one-off messages through `NetChannel` events. Keep `Player.simulate()` deterministic and bump `Handshake.PROTOCOL` when a network format changes.
 
 ## Code style
 - `snake_case` for files, variables and functions, `PascalCase` for `class_name`, `UPPER_SNAKE` for constants.
@@ -70,7 +71,8 @@ tests/       automated tests, mirroring the folders above
 - Lint: `gdlint .`
 - Format check: `gdformat --check .`
 - Multiplayer smoke test: `.	ests
-etun_smoke.ps1 -Godot <console exe>` (run it for any networking change)
+et
+un_smoke.ps1 -Godot <console exe>` (run it for any networking change)
 
 ## Glossary
 - **Tier:** one gun on the gun game ladder.

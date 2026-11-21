@@ -84,3 +84,11 @@ func test_client_cannot_change_health() -> void:
 	assert_eq(client_health.current_health, 30)
 	assert_signal_not_emitted(client_health, "damaged")
 	assert_signal_not_emitted(client_health, "healed")
+
+
+func test_apply_replicated_shows_host_value_clamped() -> void:
+	health.apply_replicated(40)
+	assert_eq(health.current_health, 40)
+	health.apply_replicated(500)
+	assert_eq(health.current_health, 100)
+	assert_signal_not_emitted(health, "damaged")

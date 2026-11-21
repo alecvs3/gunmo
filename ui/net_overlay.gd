@@ -54,8 +54,43 @@ func _details_text(tracker: PingTracker) -> String:
 	var up_kb: float = tracker.sent_bytes_per_sec / 1024.0
 	var down_kb: float = tracker.received_bytes_per_sec / 1024.0
 	lines.append("Loss %.1f%% · up %.1f KB/s · down %.1f KB/s" % [loss_percent, up_kb, down_kb])
+	lines.append_array(_netcode_lines())
 	for peer_id: int in tracker.peer_pings:
 		var suffix: String = " (host)" if peer_id == 1 else ""
 		suffix += " (you)" if peer_id == own_id else ""
 		lines.append("Peer %d: %d ms%s" % [peer_id, tracker.peer_pings[peer_id], suffix])
 	return "\n".join(lines)
+
+
+func _netcode_lines() -> PackedStringArray:
+	var lines := PackedStringArray()
+	var stats: NetStats = NetworkManager.stats
+	var clock: NetClock = NetworkManager.clock
+	if NetworkManager.is_host():
+		var kb: float = stats.snapshot_bytes / 1024.0
+		lines.append(
+			"Tick %d · snapshot %d entities, %.1f KB" % [clock.tick, stats.snapshot_entities, kb]
+		)
+	else:
+		var behind_ms: float = (
+			(clock.server_tick_now() - clock.render_tick()) * 1000.0 / NetClock.tick_rate()
+		)
+		lines.append(
+			(
+				"Server tick ≈ %.0f · others drawn %.0f ms behind"
+				% [clock.server_tick_now(), behind_ms]
+			)
+		)
+		lines.append(
+			(
+				"Prediction error %.1f px · %d unconfirmed inputs"
+				% [stats.prediction_error, stats.unconfirmed_commands]
+			)
+		)
+	var simulator: NetSimulator = NetworkManager.channel.simulator
+	if simulator.is_active():
+		var loss: float = simulator.loss * 100.0
+		lines.append(
+			"SIMULATED +%d ±%d ms, %.0f%% loss" % [simulator.latency_ms, simulator.jitter_ms, loss]
+		)
+	return lines

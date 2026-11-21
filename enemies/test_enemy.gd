@@ -1,18 +1,22 @@
 class_name TestEnemy
 extends CharacterBody2D
-## Chases the nearest living player and damages players it touches.
-## The AI runs only on the host; clients just show the synced position and health.
+## Chases the nearest living player and damages and pushes away players it touches.
+## The AI runs only on the host; clients show its snapshots, interpolated (NetEntity).
 
 @export var enemy_data: EnemyData
 
 var _contact_cooldown_left: float = 0.0
 
 @onready var _health: HealthComponent = $HealthComponent
+@onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _contact_area: Area2D = $ContactArea
 
 
 func _ready() -> void:
 	_health.max_health = enemy_data.max_health
+	_knockback.configure(
+		enemy_data.knockback_friction, enemy_data.knockback_bounce, enemy_data.knockback_taken
+	)
 	if not multiplayer.is_server():
 		set_physics_process(false)
 		_contact_area.monitoring = false
@@ -23,17 +27,33 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_chase_nearest_player()
+	_move(delta)
 	_deal_contact_damage(delta)
 
 
-func _chase_nearest_player() -> void:
+func capture_net_state() -> NetState:
+	var state := EnemyNetState.new()
+	state.position = position
+	state.health = _health.current_health
+	return state
+
+
+func apply_net_state(state: NetState) -> void:
+	var enemy_state := state as EnemyNetState
+	position = enemy_state.position
+	_health.apply_replicated(enemy_state.health)
+	visible = true
+
+
+func _move(delta: float) -> void:
 	var target: Node2D = _find_nearest_target()
-	if target == null:
-		velocity = Vector2.ZERO
-	else:
-		velocity = global_position.direction_to(target.global_position) * enemy_data.move_speed
+	var chase: Vector2 = Vector2.ZERO
+	if target != null:
+		chase = global_position.direction_to(target.global_position) * enemy_data.move_speed
+	velocity = chase + _knockback.velocity
 	move_and_slide()
+	_knockback.bounce_off_collisions(self)
+	_knockback.step(delta)
 
 
 func _find_nearest_target() -> Node2D:
@@ -52,9 +72,12 @@ func _deal_contact_damage(delta: float) -> void:
 	if _contact_cooldown_left > 0.0:
 		return
 	for area in _contact_area.get_overlapping_areas():
-		if area is HitboxComponent:
-			(area as HitboxComponent).hit(enemy_data.contact_damage, 0)
-			_contact_cooldown_left = enemy_data.contact_interval
+		var hitbox := area as HitboxComponent
+		if hitbox == null:
+			continue
+		var away: Vector2 = global_position.direction_to(hitbox.center())
+		hitbox.hit(enemy_data.contact_damage, 0, away * enemy_data.contact_knockback)
+		_contact_cooldown_left = enemy_data.contact_interval
 
 
 func _on_died(killer_peer_id: int) -> void:

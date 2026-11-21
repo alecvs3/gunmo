@@ -8,19 +8,16 @@ const RELEASE: String = "release"
 const HASHED_EXTENSIONS: PackedStringArray = ["gd", "tscn", "tres"]
 const SKIPPED_DIRS: PackedStringArray = ["addons", "tests", "docs"]
 
-static var _cached_fingerprint: String = ""
-
 
 static func version() -> String:
 	return str(ProjectSettings.get_setting("application/config/version", "0.0.0"))
 
 
+## Reads every hashed file, so call it once (JoinGate keeps the result).
 static func fingerprint() -> String:
 	if not OS.has_feature("editor"):
 		return RELEASE
-	if _cached_fingerprint.is_empty():
-		_cached_fingerprint = hash_files(collect_files("res://"))
-	return _cached_fingerprint
+	return hash_files(collect_files("res://"))
 
 
 ## Line endings are ignored so a Windows CRLF checkout matches an LF one.

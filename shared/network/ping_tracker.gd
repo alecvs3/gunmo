@@ -28,6 +28,17 @@ static func quality(ping_ms: int, cfg: NetworkConfig) -> Quality:
 	return Quality.BAD
 
 
+## Client: the round trip to the host right now (ENet's running average), in ms.
+func live_rtt_ms() -> float:
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	if enet == null or multiplayer.is_server():
+		return 0.0
+	if enet.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return 0.0
+	var host_peer: ENetPacketPeer = enet.get_peer(1)
+	return 0.0 if host_peer == null else _round_trip_ms(host_peer)
+
+
 func reset() -> void:
 	own_ping_ms = 0
 	packet_loss = 0.0

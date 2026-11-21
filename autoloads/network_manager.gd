@@ -1,6 +1,9 @@
 extends Node
 ## Owns the connection: host, join, leave, kick, the connection state and the peer list.
-## Child nodes do the rest: JoinGate (the join check) and PingTracker (connection stats).
+## Child nodes do the rest (they are services, not extra autoloads):
+##   JoinGate        the join check            PingTracker     ping, loss, bandwidth
+##   NetClock        shared tick time          NetChannel      commands/snapshots/events
+##   Replicator      entity snapshots          LagCompensator  hit tests in the past
 
 signal hosting_started
 signal joined_host
@@ -18,8 +21,15 @@ var config: NetworkConfig = DEFAULT_CONFIG
 var state: State = State.OFFLINE
 ## Every connected peer id, including our own. The host is always id 1.
 var peers: Array[int] = []
+## True when this host is a dedicated server (no local player).
+var is_dedicated: bool = false
+var stats := NetStats.new()
 var gate: JoinGate
 var ping: PingTracker
+var clock: NetClock
+var channel: NetChannel
+var replicator: Replicator
+var lag_compensator: LagCompensator
 
 var _join_target: String = ""
 ## Set when the host tells us why it is about to disconnect us.
@@ -30,6 +40,7 @@ var _join_timer: Timer
 
 func _ready() -> void:
 	_create_children()
+	configure_simulator(config.sim_latency_ms, config.sim_jitter_ms, config.sim_loss)
 	var scene_multiplayer := multiplayer as SceneMultiplayer
 	gate.setup(scene_multiplayer, config)
 	gate.join_rejected.connect(_fail_join)
@@ -43,8 +54,8 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 
-## port 0 means config.default_port.
-func host(port: int = 0) -> Error:
+## port 0 means config.default_port. A dedicated host runs the game without a player of its own.
+func host(port: int = 0, dedicated: bool = false) -> Error:
 	if state != State.OFFLINE:
 		return ERR_ALREADY_IN_USE
 	port = port if port > 0 else config.default_port
@@ -55,8 +66,10 @@ func host(port: int = 0) -> Error:
 		return err
 	multiplayer.multiplayer_peer = peer
 	state = State.HOSTING
+	is_dedicated = dedicated
 	peers = [1]
-	NetLog.write("hosting on port %d, build %s" % [port, gate.hello["build"]])
+	var role: String = "dedicated server" if dedicated else "hosting"
+	NetLog.write("%s on port %d, build %s" % [role, port, gate.hello["build"]])
 	hosting_started.emit()
 	return OK
 
@@ -71,6 +84,7 @@ func join(address: String, port: int = 0) -> Error:
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer
+	clock.reset()
 	state = State.JOINING
 	_join_target = "%s:%d" % [address, port]
 	_join_timer.start(config.join_timeout)
@@ -112,6 +126,15 @@ func is_host() -> bool:
 	return state == State.HOSTING
 
 
+## Fake latency/jitter/loss on this peer's gameplay packets (testing); zeros turn it off.
+func configure_simulator(latency_ms: int, jitter_ms: int, loss: float) -> void:
+	channel.simulator.configure(latency_ms, jitter_ms, loss)
+	if channel.simulator.is_active():
+		NetLog.write(
+			"network simulator: +%d ms ±%d ms, %.0f%% loss" % [latency_ms, jitter_ms, loss * 100.0]
+		)
+
+
 func _create_children() -> void:
 	gate = JoinGate.new()
 	gate.name = "JoinGate"
@@ -120,10 +143,26 @@ func _create_children() -> void:
 	ping.name = "PingTracker"
 	ping.config = config
 	add_child(ping)
+	clock = _add_service(NetClock.new(), "NetClock")
+	clock.config = config
+	channel = _add_service(NetChannel.new(), "NetChannel")
+	replicator = _add_service(Replicator.new(), "Replicator")
+	replicator.config = config
+	replicator.stats = stats
+	replicator.setup(channel, clock, ping)
+	lag_compensator = _add_service(LagCompensator.new(), "LagCompensator")
+	lag_compensator.config = config
+	lag_compensator.setup(clock)
 	_join_timer = Timer.new()
 	_join_timer.one_shot = true
 	_join_timer.timeout.connect(_on_join_timed_out)
 	add_child(_join_timer)
+
+
+func _add_service(service: Node, service_name: String) -> Node:
+	service.name = service_name
+	add_child(service)
+	return service
 
 
 func _close_as_host() -> void:
@@ -158,6 +197,11 @@ func _close() -> void:
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	peers.clear()
 	ping.reset()
+	clock.reset()
+	channel.reset()
+	replicator.reset()
+	stats.reset()
+	is_dedicated = false
 	_notice_from_host = ""
 	_host_closing = false
 

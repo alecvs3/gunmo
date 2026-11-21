@@ -26,11 +26,15 @@ this for you. Otherwise:
 | Format | `gdformat --check .` (fix with `gdformat .`) |
 | Multiplayer | Debug → Customize Run Instances → 2 instances, press Play, Host in one window, Join in the other |
 | Multiplayer smoke test | `.	ests
-etun_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Starts a host, a client and a wrong-build client headless; all three must print PASS |
+et
+un_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Runs a listen host + lagged client + wrong-build client, then a dedicated server + two clients; every role must print PASS |
 
 **Skip the menu while testing:** in Debug → Customize Run Instances, enable 2 instances and set the
 launch arguments of instance 1 to `-- --host` and instance 2 to `-- --join 127.0.0.1`.
 Both also accept a port: `-- --host 7778`, `-- --join 100.x.y.z:7778`.
+Add `--net-sim 100,20,5` to any instance to fake 100 ms lag, ±20 ms jitter and 5% loss, and
+`-- --dedicated` runs a server with no player of its own. How the netcode works:
+[docs/NETCODE.md](docs/NETCODE.md).
 
 **In game:** the ping is in the top right (green/yellow/red), **F3** shows details for every
 player, **Esc** opens Resume / Leave match.

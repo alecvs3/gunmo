@@ -1,10 +1,11 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://enemies/test_enemy.gd" id="1_enemy"]
 [ext_resource type="Resource" path="res://enemies/data/test_enemy.tres" id="2_edata"]
 [ext_resource type="Script" path="res://shared/components/health_component.gd" id="3_health"]
 [ext_resource type="Script" path="res://shared/components/hitbox_component.gd" id="4_hitbox"]
-[ext_resource type="Script" path="res://shared/components/net_smoother.gd" id="5_smoother"]
+[ext_resource type="Script" path="res://shared/components/knockback_component.gd" id="5_knockback"]
+[ext_resource type="Script" path="res://shared/network/net_entity.gd" id="6_netentity"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(28, 28)
@@ -15,13 +16,10 @@ size = Vector2(32, 32)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_contact"]
 size = Vector2(36, 36)
 
-[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_state"]
-properties/0/path = NodePath("NetSmoother:target_position")
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_spawn"]
+properties/0/path = NodePath("NetEntity:net_id")
 properties/0/spawn = true
-properties/0/replication_mode = 1
-properties/1/path = NodePath("HealthComponent:current_health")
-properties/1/spawn = true
-properties/1/replication_mode = 2
+properties/0/replication_mode = 0
 
 [node name="TestEnemy" type="CharacterBody2D"]
 collision_layer = 4
@@ -40,12 +38,17 @@ polygon = PackedVector2Array(-14, -14, 14, -14, 14, 14, -14, 14)
 [node name="HealthComponent" type="Node" parent="."]
 script = ExtResource("3_health")
 
-[node name="HitboxComponent" type="Area2D" parent="." node_paths=PackedStringArray("health")]
+[node name="KnockbackComponent" type="Node" parent="."]
+script = ExtResource("5_knockback")
+
+[node name="HitboxComponent" type="Area2D" parent="." node_paths=PackedStringArray("health", "knockback")]
 collision_layer = 16
 collision_mask = 0
 monitoring = false
 script = ExtResource("4_hitbox")
 health = NodePath("../HealthComponent")
+knockback = NodePath("../KnockbackComponent")
+team = &"enemies"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxComponent"]
 shape = SubResource("RectangleShape2D_hitbox")
@@ -58,8 +61,9 @@ monitorable = false
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea"]
 shape = SubResource("RectangleShape2D_contact")
 
-[node name="NetSmoother" type="Node" parent="."]
-script = ExtResource("5_smoother")
+[node name="NetEntity" type="Node" parent="."]
+script = ExtResource("6_netentity")
+kind = 2
 
-[node name="StateSync" type="MultiplayerSynchronizer" parent="."]
-replication_config = SubResource("SceneReplicationConfig_state")
+[node name="SpawnSync" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_spawn")
