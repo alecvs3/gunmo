@@ -331,3 +331,20 @@ Branch `refactor-clarity`. No behaviour or network format change (protocol stays
 fields (26 bytes; splitting it would change the network format for little gain).
 **Checked:** 292 GUT tests, lint, format, and all 18 smoke roles pass. Tests that called the
 changed functions now use the typed fields instead of Dictionary keys.
+
+## Foundations: guides for Claude ✅ (in review, issue #50)
+
+Branch `ai-guides`. Makes the project quick for Claude (and new readers) to work in without
+reading everything first.
+
+| What | Where |
+|---|---|
+| System map: what each folder holds, one host tick, one client frame, one shot | root `CLAUDE.md` |
+| Folder guides: key files, rules that aren't obvious, which tests cover it | `CLAUDE.md` in `shared/network/`, `player/`, `weapons/`, `modes/`, `bots/`, `ui/` |
+| Recipes: add a weapon, enemy, upgrade, wave modifier, networked field, client request, game mode | `.claude/skills/*/SKILL.md` |
+| A test that fails when a guide names a file that no longer exists, and checks every recipe has a name and description | `tests/test_guides.gd` |
+| Rule: a PR that makes a guide wrong fixes it in the same PR | root `CLAUDE.md` |
+
+**Checked:** the add-weapon recipe was followed once on a throwaway branch (a new gun, data only):
+import, 295 tests, lint and format passed, and the shop listed it. That branch was not kept.
+Claude Code loads a folder's `CLAUDE.md` when it works in that folder.

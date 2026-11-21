@@ -14,7 +14,8 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
    `knockback`. No numbers in code (rule 6).
 2. **Add it to the shop catalog:** append it to `weapons` in `upgrades/data/shop_catalog.tres`.
    Every peer names weapons by **catalog index**, so append and never reorder. Index 0 must stay
-   the free starting pistol.
+   the free starting pistol. The shop lists it automatically (`ui/shop_panel.gd`), and the build
+   fingerprint covers the new file, so nothing else needs registering.
 3. **Gun Game:** to use it on the ladder, add it to `ladder` in `modes/data/gun_game_match.tres`.
    It must also be in the catalog (step 2).
 4. **Needs a new mechanic** (burst, charge, explosion...)?
