@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_wdata")
 display_name = "Shotgun"
-color = Color(0.7, 0.35, 0.15, 1)
+pose = 2
 price = 300
 pellets = 6
 pierce = 0

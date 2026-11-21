@@ -7,6 +7,8 @@ extends CharacterBody2D
 ## Where clients may load enemy data from (the path arrives from the host at spawn).
 const DATA_FOLDER: String = "res://enemies/data/"
 
+## How fast the sprite turns towards where it moves (higher = snappier). Looks only.
+@export_range(1.0, 60.0) var turn_rate: float = 12.0
 ## Set before the enemy enters the tree; its path is sent to clients with the spawn.
 @export var enemy_data: EnemyData:
 	set(value):
@@ -23,7 +25,9 @@ var _repath_left: float = 0.0
 var _speed: float = 0.0
 var _regen_per_second: float = 0.0
 var _regen_carry: float = 0.0
+var _last_drawn_position: Vector2 = Vector2.ZERO
 
+@onready var _body: Sprite2D = $Body
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _contact_area: Area2D = $ContactArea
@@ -31,6 +35,7 @@ var _regen_carry: float = 0.0
 
 
 func _ready() -> void:
+	_last_drawn_position = _body.global_position
 	if not multiplayer.is_server():
 		_load_data_from_host()
 	_apply_modifiers(ModifierCatalog.load_default().combined(modifier_mask))
@@ -49,6 +54,16 @@ func _physics_process(delta: float) -> void:
 	_regenerate(delta)
 	_move(delta)
 	_deal_contact_damage(delta)
+
+
+## Every peer turns the sprite towards where it is drawn moving (looks only, nothing is sent).
+func _process(delta: float) -> void:
+	var drawn: Vector2 = _body.global_position
+	var moved: Vector2 = drawn - _last_drawn_position
+	_last_drawn_position = drawn
+	if moved.length_squared() > 0.01:
+		var weight: float = 1.0 - exp(-turn_rate * delta)
+		_body.rotation = lerp_angle(_body.rotation, moved.angle(), weight)
 
 
 func capture_net_state() -> NetState:
@@ -127,7 +142,8 @@ func _apply_modifiers(combined: WaveModifier) -> void:
 	var tinted: Color = enemy_data.color
 	if modifier_mask != 0:
 		tinted = enemy_data.color.lerp(combined.color, 0.45)
-	($Body as Polygon2D).color = tinted
+	_body.modulate = tinted
+	_body.scale = Vector2.ONE * enemy_data.visual_scale
 	_health.max_health = maxi(roundi(enemy_data.max_health * combined.health_multiplier), 1)
 	_health.damage_taken_multiplier = combined.damage_taken_multiplier
 	_speed = enemy_data.move_speed * combined.speed_multiplier

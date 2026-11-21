@@ -17,6 +17,12 @@ extends Resource
 ## Seconds the camera takes to catch up with a teammate you spectate while down.
 @export_range(0.0, 1.0) var spectate_follow_time: float = 0.0
 
+@export_group("Looks")
+## Characters for human players, picked by peer id (so every peer picks the same one).
+@export var player_looks: Array[CharacterLook] = []
+## Characters for bots.
+@export var bot_looks: Array[CharacterLook] = []
+
 @export_group("Knockback")
 ## How fast a push dies down (px/s lost per second). 2400 stops a 350 px/s push in ~0.15 s.
 @export_range(0.0, 20000.0) var knockback_friction: float = 2400.0
@@ -24,3 +30,11 @@ extends Resource
 @export_range(0.0, 1.0) var knockback_bounce: float = 0.3
 ## Multiplier on pushes received (0 = immovable).
 @export_range(0.0, 5.0) var knockback_taken: float = 1.0
+
+
+## The character for a peer: bots (negative ids) from bot_looks, humans from player_looks.
+func look_for(peer_id: int) -> CharacterLook:
+	var looks: Array[CharacterLook] = bot_looks if peer_id < 0 else player_looks
+	if looks.is_empty():
+		return null
+	return looks[absi(peer_id) % looks.size()]

@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_wdata")
 display_name = "Rifle"
-color = Color(0.2, 0.55, 0.3, 1)
+pose = 1
 price = 400
 pellets = 1
 pierce = 2
