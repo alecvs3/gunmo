@@ -44,5 +44,25 @@ func test_button_labels() -> void:
 	assert_eq(ShopPanel.weapon_label(catalog.weapons[1], true), "Rifle (equipped)")
 	catalog.weapons[0].display_name = "Pistol"
 	assert_eq(ShopPanel.weapon_label(catalog.weapons[0], false), "Pistol · free")
-	assert_eq(ShopPanel.upgrade_label(catalog.upgrades[0], 1), "Damage 1/2 · 200")
-	assert_eq(ShopPanel.upgrade_label(catalog.upgrades[0], 2), "Damage 2/2 (max)")
+	var gun := WeaponData.new()
+	gun.damage_per_level = 4
+	assert_eq(ShopPanel.upgrade_label(catalog.upgrades[0], 1, gun), "Damage 1/2 · +4 dmg · 200")
+	assert_eq(ShopPanel.upgrade_label(catalog.upgrades[0], 2, gun), "Damage 2/2 (max)")
+
+
+func test_gain_text_follows_the_held_gun() -> void:
+	var rocket := WeaponData.new()
+	rocket.damage_per_level = 10
+	rocket.blast_damage_per_level = 6
+	rocket.magazine_per_level = 1
+	rocket.reload_per_level = 0.22
+	var upgrade := UpgradeData.new()
+	upgrade.stat = UpgradeData.Stat.DAMAGE
+	assert_eq(ShopPanel.gain_text(upgrade, rocket), "+10 dmg, +6 blast")
+	upgrade.stat = UpgradeData.Stat.MAGAZINE
+	assert_eq(ShopPanel.gain_text(upgrade, rocket), "+1 ammo")
+	upgrade.stat = UpgradeData.Stat.RELOAD_SPEED
+	assert_eq(ShopPanel.gain_text(upgrade, rocket), "-0.22 s")
+	upgrade.stat = UpgradeData.Stat.MAX_HEALTH
+	upgrade.per_level = 0.15
+	assert_eq(ShopPanel.gain_text(upgrade, rocket), "+15%", "player stats stay a percentage")

@@ -11,7 +11,10 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
    closest existing weapon and change its numbers: `display_name`, `pose` (GUN, MACHINE or
    SILENCER: how the character holds it), `price`, `pellets`, `pierce`, `damage`, `fire_rate`,
    `bullet_speed`, `bullet_lifetime`, `spread`, `magazine_size`, `reload_time`, `bullet_radius`,
-   `knockback`. No numbers in code (rule 6).
+   `knockback`, and what each upgrade level adds to it: `damage_per_level`,
+   `fire_rate_per_level`, `magazine_per_level`, `reload_per_level`, `knockback_per_level`
+   (and `blast_damage_per_level` if it explodes). Every one must be above 0, so every level
+   does something (`tests/upgrades/test_player_stats.gd` checks). No numbers in code (rule 6).
 2. **Add it to the shop catalog:** append it to `weapons` in `upgrades/data/shop_catalog.tres`.
    Every peer names weapons by **catalog index**, so append and never reorder. Index 0 must stay
    the free starting pistol. The shop lists it automatically (`ui/shop_panel.gd`), and the build

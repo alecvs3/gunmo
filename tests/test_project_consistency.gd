@@ -62,7 +62,9 @@ func _problems(resource: Resource) -> Array[String]:
 		_need(problems, enemy.cost > 0 and enemy.spawn_weight > 0.0, "cost/spawn_weight")
 	elif resource is UpgradeData:
 		var upgrade := resource as UpgradeData
-		_need(problems, upgrade.per_level > 0.0 and upgrade.base_cost > 0, "per_level/cost")
+		var weapon_stat: bool = UpgradeData.is_weapon_stat(upgrade.stat)
+		_need(problems, weapon_stat or upgrade.per_level > 0.0, "player stat without per_level")
+		_need(problems, upgrade.base_cost > 0, "base_cost")
 	elif resource is ShopCatalog:
 		var catalog := resource as ShopCatalog
 		_need(problems, not catalog.weapons.is_empty(), "no weapons")
