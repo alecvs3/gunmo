@@ -58,10 +58,14 @@ var _commands := CommandQueue.new()
 
 ## This peer's own player, if it has one (the HUD and shop read it).
 static func find_local(tree: SceneTree) -> Player:
-	var own_id: int = tree.get_multiplayer().get_unique_id()
+	return find_by_id(tree, tree.get_multiplayer().get_unique_id())
+
+
+## The player (or bot) with this id on this peer, if there is one.
+static func find_by_id(tree: SceneTree, id: int) -> Player:
 	for node in tree.get_nodes_in_group(Groups.PLAYERS):
 		var player := node as Player
-		if player != null and player.peer_id == own_id:
+		if player != null and player.peer_id == id:
 			return player
 	return null
 
