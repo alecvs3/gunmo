@@ -34,6 +34,12 @@ func equip(data: WeaponData) -> void:
 	reload_left = 0.0
 
 
+## Same weapon, new numbers (upgrades): ammo is kept, within the new magazine.
+func set_stats(data: WeaponData) -> void:
+	weapon_data = data
+	ammo = mini(ammo, data.magazine_size)
+
+
 func is_reloading() -> bool:
 	return reload_left > TIME_EPSILON
 

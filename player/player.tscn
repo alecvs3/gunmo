@@ -89,9 +89,10 @@ weapon_data = ExtResource("6_pistol")
 [node name="WalletComponent" type="Node" parent="."]
 script = ExtResource("14_wallet")
 
-[node name="PlayerLoadout" type="Node" parent="." node_paths=PackedStringArray("weapon", "barrel")]
+[node name="PlayerLoadout" type="Node" parent="." node_paths=PackedStringArray("weapon", "health", "barrel")]
 script = ExtResource("13_loadout")
 weapon = NodePath("../WeaponComponent")
+health = NodePath("../HealthComponent")
 barrel = NodePath("../Visual/Pivot/Barrel")
 
 [node name="PlayerInputSource" type="Node" parent="." node_paths=PackedStringArray("pivot")]

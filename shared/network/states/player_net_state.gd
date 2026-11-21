@@ -5,8 +5,8 @@ extends NetState
 
 const FLAG_ALIVE: int = 1
 ## 3 vectors (24) + f64 aim + u16 health + u16 ammo + 2 x f64 timers + u8 flags + u8 teleports
-## + u32 last command + u8 weapon index + u32 credits.
-const SIZE: int = 63
+## + u32 last command + u8 weapon index + u32 credits + 16 upgrade levels.
+const SIZE: int = 79
 
 var position: Vector2 = Vector2.ZERO
 var move_velocity: Vector2 = Vector2.ZERO
@@ -24,6 +24,12 @@ var last_command: int = -1
 ## Index into the ShopCatalog's weapons.
 var weapon_index: int = 0
 var credits: int = 0
+## One byte per catalog upgrade (ShopCatalog.MAX_UPGRADES).
+var upgrade_levels := PackedByteArray()
+
+
+func _init() -> void:
+	upgrade_levels.resize(ShopCatalog.MAX_UPGRADES)
 
 
 func encode(buffer: StreamPeerBuffer) -> void:
@@ -40,6 +46,9 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u32(last_command + 1)
 	buffer.put_u8(clampi(weapon_index, 0, 255))
 	buffer.put_u32(maxi(credits, 0))
+	var fixed: PackedByteArray = upgrade_levels.duplicate()
+	fixed.resize(ShopCatalog.MAX_UPGRADES)
+	buffer.put_data(fixed)
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -56,6 +65,7 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	last_command = buffer.get_u32() - 1
 	weapon_index = buffer.get_u8()
 	credits = buffer.get_u32()
+	upgrade_levels = buffer.get_data(ShopCatalog.MAX_UPGRADES)[1]
 
 
 func byte_size() -> int:
@@ -89,4 +99,5 @@ func copy() -> PlayerNetState:
 	duplicate.last_command = last_command
 	duplicate.weapon_index = weapon_index
 	duplicate.credits = credits
+	duplicate.upgrade_levels = upgrade_levels.duplicate()
 	return duplicate

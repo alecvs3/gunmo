@@ -39,7 +39,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	$Visual/Body.color = Color.from_hsv(fmod(peer_id * 0.618034, 1.0), 0.55, 0.95)
-	_health.max_health = player_data.max_health
+	_loadout.configure(player_data)
 	_knockback.configure(
 		player_data.knockback_friction, player_data.knockback_bounce, player_data.knockback_taken
 	)
@@ -82,7 +82,8 @@ func simulate(command: InputCommand, replaying: bool) -> void:
 		return
 	var delta: float = NetClock.tick_delta()
 	_pivot.rotation = command.aim
-	_move_velocity = PlayerMotor.step(_move_velocity, command.move, delta, player_data)
+	var stats: PlayerData = _loadout.effective_player
+	_move_velocity = PlayerMotor.step(_move_velocity, command.move, delta, stats)
 	velocity = _move_velocity + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -144,6 +145,7 @@ func capture_net_state() -> NetState:
 	state.teleport_count = teleport_count
 	state.last_command = last_command
 	state.weapon_index = _loadout.weapon_index
+	state.upgrade_levels = _loadout.levels.duplicate()
 	state.credits = _wallet.credits
 	return state
 
@@ -153,8 +155,8 @@ func apply_net_state(state: NetState) -> void:
 	var player_state := state as PlayerNetState
 	position = player_state.position
 	_pivot.rotation = player_state.aim
+	_loadout.load_state(player_state.weapon_index, player_state.upgrade_levels)
 	_health.apply_replicated(player_state.health)
-	_loadout.load_state(player_state.weapon_index)
 	_wallet.apply_replicated(player_state.credits)
 	_weapon.ammo = player_state.ammo
 	teleport_count = player_state.teleport_count
@@ -171,7 +173,7 @@ func restore_from_state(state: PlayerNetState) -> void:
 	position = state.position
 	_move_velocity = state.move_velocity
 	_knockback.velocity = state.knockback
-	_loadout.load_state(state.weapon_index)
+	_loadout.load_state(state.weapon_index, state.upgrade_levels)
 	_wallet.apply_replicated(state.credits)
 	_weapon.restore(state.ammo, state.cooldown_left, state.reload_left)
 	_health.apply_replicated(state.health)
