@@ -37,3 +37,7 @@ extends Resource
 @export_range(0.0, 100.0) var spawn_weight: float = 1.0
 ## Credits for the player who kills it.
 @export_range(0, 100000) var bounty: int = 0
+
+@export_group("Status effects")
+## The most a chill can slow it (0.6 = down to 40% speed at worst).
+@export_range(0.0, 1.0) var max_slow: float = 0.6

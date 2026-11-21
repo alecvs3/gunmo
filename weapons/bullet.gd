@@ -53,6 +53,8 @@ func setup(fired_shot: Shot, bullet_mode: Mode) -> void:
 	_pierce_left = shot.pierce
 	position = shot.origin
 	rotation = shot.direction.angle()
+	if shot.effect_mask != 0:
+		($Visual as Polygon2D).color = HitEffects.tint(shot.effect_mask)
 
 
 ## Whether a bullet along `fired_shot`'s whole path passes within `distance` of `point`.

@@ -94,7 +94,7 @@ func test_default_catalog_fits_the_snapshot() -> void:
 	assert_between(real.upgrades.size(), 1, ShopCatalog.MAX_UPGRADES)
 	for upgrade in real.upgrades:
 		assert_false(upgrade.display_name.is_empty())
-		assert_gt(upgrade.per_level, 0.0)
+		assert_true(upgrade.per_level > 0.0 or upgrade.is_perk(), upgrade.display_name)
 		assert_gt(upgrade.base_cost, 0)
 
 
