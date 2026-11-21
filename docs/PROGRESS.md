@@ -265,3 +265,21 @@ client's screen. Protocol 7.
   latency directly, which cut its lagged p95 from about 105 to 65 ms.
 - Light can't be beaten: Yusuf still sees others about his latency in the past. A server between
   your continents would split it evenly (needs the Linux build, #48).
+
+## Fullscreen (in review, issue #65)
+
+Branch `ui/fullscreen`. Display only: nothing is sent over the network.
+
+| What | How | Where |
+|---|---|---|
+| Fullscreen setting | `GameSettings.fullscreen`, saved in `user://settings.cfg` next to the name and applied on start. Borderless fullscreen (covers the screen, quick Alt+Tab) | `autoloads/game_settings.gd` |
+| Keys | Input action `toggle_fullscreen`: **F11** and **Alt+Enter**, handled before the GUI so Alt+Enter doesn't also press a focused button | `project.godot`, `autoloads/game_settings.gd` |
+| Menus | "Fullscreen (F11)" checkbox in the main menu and the Esc menu; both follow the keys and each other | `ui/fullscreen_check.gd`, `ui/main_menu.tscn`, `ui/game_menu.tscn` |
+
+**Verified:** 6 new GUT tests (`tests/autoloads/test_game_settings.gd`, using a test settings file);
+lint/format clean.
+
+### Known limitations
+
+- No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
+- Fullscreen uses the screen the window is on; there is no monitor picker.

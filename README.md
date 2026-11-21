@@ -56,7 +56,8 @@ hosts a short ladder with 2 bots.
 **CI:** every PR runs lint, format, GUT and the smoke test on GitHub Actions (`checks`).
 
 **In game:** the ping is in the top right (green/yellow/red), **F3** shows details for every
-player, **Esc** opens Resume / Leave match.
+player, **Esc** opens Resume / Leave match, **F11** or **Alt+Enter** toggles fullscreen (also a
+checkbox in the main menu and the Esc menu; remembered between sessions).
 
 ## Playing together over the internet
 
