@@ -22,6 +22,7 @@ func test_player_state_round_trip_is_exact() -> void:
 	state.alive = false
 	state.teleport_count = 3
 	state.last_command = 4567
+	state.weapon_index = 3
 	var back: PlayerNetState = _round_trip(state, PlayerNetState.new())
 	assert_eq(back.position, state.position)
 	assert_eq(back.move_velocity, state.move_velocity)
@@ -30,7 +31,7 @@ func test_player_state_round_trip_is_exact() -> void:
 	assert_eq(back.cooldown_left, state.cooldown_left, "timers exact for prediction")
 	assert_eq(back.reload_left, state.reload_left)
 	assert_eq([back.health, back.ammo, back.alive], [77, 5, false])
-	assert_eq([back.teleport_count, back.last_command], [3, 4567])
+	assert_eq([back.teleport_count, back.last_command, back.weapon_index], [3, 4567, 3])
 
 
 func test_player_no_command_yet_round_trips() -> void:

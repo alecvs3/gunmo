@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "Rifle"
+color = Color(0.2, 0.55, 0.3, 1)
+price = 400
+pellets = 1
+pierce = 2
+damage = 55
+fire_rate = 1.5
+bullet_speed = 1600.0
+bullet_lifetime = 1.0
+spread = 0.5
+magazine_size = 5
+reload_time = 1.8
+bullet_radius = 4.0
+knockback = 220.0

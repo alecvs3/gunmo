@@ -26,6 +26,14 @@ static func shot_seed(shooter_id: int, shot_id: int) -> int:
 	return hash([shooter_id, shot_id])
 
 
+## Switch to another weapon: full magazine, no cooldown or reload in progress.
+func equip(data: WeaponData) -> void:
+	weapon_data = data
+	ammo = data.magazine_size
+	cooldown_left = 0.0
+	reload_left = 0.0
+
+
 func is_reloading() -> bool:
 	return reload_left > TIME_EPSILON
 

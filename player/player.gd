@@ -26,6 +26,7 @@ var _commands := CommandQueue.new()
 @onready var _health: HealthComponent = $HealthComponent
 @onready var _hitbox: HitboxComponent = $HitboxComponent
 @onready var _weapon: WeaponComponent = $WeaponComponent
+@onready var _loadout: PlayerLoadout = $PlayerLoadout
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _input_source: PlayerInputSource = $PlayerInputSource
 @onready var _prediction: PlayerPrediction = $PlayerPrediction
@@ -132,6 +133,7 @@ func capture_net_state() -> NetState:
 	state.alive = is_alive
 	state.teleport_count = teleport_count
 	state.last_command = last_command
+	state.weapon_index = _loadout.weapon_index
 	return state
 
 
@@ -141,6 +143,7 @@ func apply_net_state(state: NetState) -> void:
 	position = player_state.position
 	_pivot.rotation = player_state.aim
 	_health.apply_replicated(player_state.health)
+	_loadout.load_state(player_state.weapon_index)
 	_weapon.ammo = player_state.ammo
 	teleport_count = player_state.teleport_count
 	is_alive = player_state.alive
@@ -156,6 +159,7 @@ func restore_from_state(state: PlayerNetState) -> void:
 	position = state.position
 	_move_velocity = state.move_velocity
 	_knockback.velocity = state.knockback
+	_loadout.load_state(state.weapon_index)
 	_weapon.restore(state.ammo, state.cooldown_left, state.reload_left)
 	_health.apply_replicated(state.health)
 	teleport_count = state.teleport_count
@@ -171,18 +175,28 @@ func _ready_as_host() -> void:
 	EventBus.player_spawned.emit(self)
 
 
-## The bullet leaves the muzzle of the simulated body (not the eased visuals), so the host and
-## the owner compute the same origin.
+## One shot from the weapon: a bullet per pellet, each with its own seeded spread. Bullets leave
+## the muzzle of the simulated body (not the eased visuals), so the host and the owner compute
+## the same origins and directions.
 func _fire(command: InputCommand) -> void:
 	var origin: Vector2 = global_position + _muzzle.position.rotated(command.aim)
-	var seed_value: int = WeaponComponent.shot_seed(peer_id, command.sequence)
+	for pellet in _weapon.weapon_data.pellets:
+		_emit_shot(_make_shot(command, origin, Shot.make_id(command.sequence, pellet)))
+
+
+func _make_shot(command: InputCommand, origin: Vector2, shot_id: int) -> Shot:
+	var seed_value: int = WeaponComponent.shot_seed(peer_id, shot_id)
 	var direction: Vector2 = _weapon.spread_direction(Vector2.from_angle(command.aim), seed_value)
 	var shot: Shot = Shot.from_weapon(_weapon.weapon_data, origin, direction)
 	shot.shooter_id = peer_id
-	shot.shot_id = command.sequence
+	shot.shot_id = shot_id
 	shot.team = _hitbox.team
 	shot.fire_tick = NetworkManager.clock.server_tick_now()
 	shot.view_tick = command.view_tick
+	return shot
+
+
+func _emit_shot(shot: Shot) -> void:
 	if multiplayer.is_server():
 		EventBus.shot_fired.emit(shot)
 	else:

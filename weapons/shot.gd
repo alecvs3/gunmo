@@ -1,8 +1,11 @@
 class_name Shot
 extends RefCounted
 ## One fired bullet: who fired it, from where, which way, and the weapon numbers it carries.
-## Identified by (shooter_id, shot_id); for players shot_id is the input command that fired it,
-## so the owner's predicted bullet and the host's real one share an id.
+## Identified by (shooter_id, shot_id). For players shot_id = command number × MAX_PELLETS +
+## pellet index, so the owner's predicted bullet and the host's real one share an id.
+
+## Room for pellets in shot ids (see make_id).
+const MAX_PELLETS: int = 16
 
 var shooter_id: int = 0
 var shot_id: int = 0
@@ -14,6 +17,8 @@ var lifetime: float = 0.0
 var radius: float = 0.0
 var damage: int = 0
 var knockback: float = 0.0
+## Enemies it can still pass through.
+var pierce: int = 0
 ## Host tick the shot was fired on.
 var fire_tick: float = 0.0
 ## Tick the shooter was looking at when firing (the host rewinds targets to it).
@@ -29,7 +34,12 @@ static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: 
 	shot.radius = data.bullet_radius
 	shot.damage = data.damage
 	shot.knockback = data.knockback
+	shot.pierce = data.pierce
 	return shot
+
+
+static func make_id(command_sequence: int, pellet: int) -> int:
+	return command_sequence * MAX_PELLETS + pellet
 
 
 func key() -> String:
@@ -56,6 +66,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_float(radius)
 	buffer.put_u16(clampi(damage, 0, 65535))
 	buffer.put_float(knockback)
+	buffer.put_u8(clampi(pierce, 0, 255))
 	buffer.put_double(fire_tick)
 	buffer.put_double(view_tick)
 
@@ -72,6 +83,7 @@ static func decode(buffer: StreamPeerBuffer) -> Shot:
 	shot.radius = buffer.get_float()
 	shot.damage = buffer.get_u16()
 	shot.knockback = buffer.get_float()
+	shot.pierce = buffer.get_u8()
 	shot.fire_tick = buffer.get_double()
 	shot.view_tick = buffer.get_double()
 	return shot

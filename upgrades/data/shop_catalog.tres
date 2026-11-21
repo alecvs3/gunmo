@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="ShopCatalog" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+[ext_resource type="Resource" path="res://weapons/data/pistol.tres" id="2_pistol"]
+[ext_resource type="Resource" path="res://weapons/data/smg.tres" id="3_smg"]
+[ext_resource type="Resource" path="res://weapons/data/shotgun.tres" id="4_shotgun"]
+[ext_resource type="Resource" path="res://weapons/data/rifle.tres" id="5_rifle"]
+[ext_resource type="Script" path="res://upgrades/shop_catalog.gd" id="6_catalog"]
+
+[resource]
+script = ExtResource("6_catalog")
+weapons = Array[ExtResource("1_wdata")]([ExtResource("2_pistol"), ExtResource("3_smg"), ExtResource("4_shotgun"), ExtResource("5_rifle")])

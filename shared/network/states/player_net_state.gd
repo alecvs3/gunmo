@@ -5,8 +5,8 @@ extends NetState
 
 const FLAG_ALIVE: int = 1
 ## 3 vectors (24) + f64 aim + u16 health + u16 ammo + 2 x f64 timers + u8 flags + u8 teleports
-## + u32 last command.
-const SIZE: int = 58
+## + u32 last command + u8 weapon index.
+const SIZE: int = 59
 
 var position: Vector2 = Vector2.ZERO
 var move_velocity: Vector2 = Vector2.ZERO
@@ -21,6 +21,8 @@ var alive: bool = true
 var teleport_count: int = 0
 ## Sequence of the last input command the host simulated (-1 = none yet).
 var last_command: int = -1
+## Index into the ShopCatalog's weapons.
+var weapon_index: int = 0
 
 
 func encode(buffer: StreamPeerBuffer) -> void:
@@ -35,6 +37,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(FLAG_ALIVE if alive else 0)
 	buffer.put_u8(teleport_count & 0xFF)
 	buffer.put_u32(last_command + 1)
+	buffer.put_u8(clampi(weapon_index, 0, 255))
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -49,6 +52,7 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	alive = buffer.get_u8() & FLAG_ALIVE != 0
 	teleport_count = buffer.get_u8()
 	last_command = buffer.get_u32() - 1
+	weapon_index = buffer.get_u8()
 
 
 func byte_size() -> int:
@@ -80,4 +84,5 @@ func copy() -> PlayerNetState:
 	duplicate.alive = alive
 	duplicate.teleport_count = teleport_count
 	duplicate.last_command = last_command
+	duplicate.weapon_index = weapon_index
 	return duplicate
