@@ -1,4 +1,4 @@
-# Runs the headless multiplayer smoke test in seven scenarios:
+# Runs the headless multiplayer smoke test in eight scenarios:
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
@@ -7,6 +7,8 @@
 #   F  stress: 8 players (6 bots) vs 40 enemies; host tick time and bandwidth within budget
 #   G  latency: own-input response, smoothing delay and hitches clean and under simulated lag,
 #      host input buffer; checked against shared/network/latency_budget.tres
+#   H  fairness: a client with 160 ms round trip vs 2 bots; bot hits must be where the
+#      client's own screen had it (fair dodging)
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 # or set the GODOT environment variable once and run it without -Godot.
@@ -129,5 +131,16 @@ foreach ($role in @("latencyhost", "latencyclient")) {
     }
 }
 
-if ($passA -and $passB -and $passC -and $passD -and $passE -and $passF -and $passG) { exit 0 }
+Write-Host "Scenario H: fairness under 160 ms round trip (fair dodging)"
+$h = @()
+$h += Start-Role "fairhost" ($Port + 7) "" "res://tests/net/fairness.gd"
+Start-Sleep -Seconds 1
+$h += Start-Role "fairclient" ($Port + 7) "" "res://tests/net/fairness.gd"
+Wait-Roles $h
+$passH = Test-Roles @("fairhost", "fairclient")
+Select-String -Path (Join-Path $logDir "fairclient.log") -Pattern "FAIRNESS METRIC (\S+) (\S+)" | ForEach-Object {
+    Write-Host ("  {0,-38} {1}" -f $_.Matches[0].Groups[1].Value, $_.Matches[0].Groups[2].Value)
+}
+
+if ($passA -and $passB -and $passC -and $passD -and $passE -and $passF -and $passG -and $passH) { exit 0 }
 exit 1

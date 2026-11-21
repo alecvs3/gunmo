@@ -49,6 +49,7 @@ func next_command() -> InputCommand:
 	_sequence += 1
 	command.sequence = _sequence
 	command.view_tick = NetworkManager.clock.render_tick()
+	command.client_tick = NetworkManager.clock.server_tick_now()
 	return command.sanitized()
 
 

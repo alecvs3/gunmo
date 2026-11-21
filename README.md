@@ -33,7 +33,7 @@ The individual steps, if you need them:
 | Lint | `gdlint .` |
 | Format | `gdformat --check .` (fix with `gdformat .`) |
 | Multiplayer | Debug → Customize Run Instances → 2 instances, press Play, Host in one window, Join in the other |
-| Multiplayer smoke test | `.\tests\net\run_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Runs six scenarios: A lag and a wrong build, B dedicated server, C the wave loop, D the shop, E Gun Game with bots, F stress test with a performance budget (its numbers are printed). Every role must print PASS |
+| Multiplayer smoke test | `.\tests\net\run_smoke.ps1 -Godot <path to Godot *console* exe>` (or set `GODOT` once). Runs eight scenarios: A lag and a wrong build, B dedicated server, C the wave loop, D the shop, E Gun Game with bots, F stress test with a performance budget, G latency budget, H fairness under 160 ms (their numbers are printed). Every role must print PASS |
 
 **Skip the menu while testing:** in Debug → Customize Run Instances, enable 2 instances and set the
 launch arguments of instance 1 to `-- --host` and instance 2 to `-- --join 127.0.0.1`.

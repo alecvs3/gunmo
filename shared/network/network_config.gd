@@ -34,10 +34,10 @@ extends Resource
 @export_range(1, 10) var snapshot_interval_ticks: int = 2
 ## Largest snapshot packet in bytes; bigger snapshots are split (stays under the network MTU).
 @export_range(200, 1400) var max_snapshot_bytes: int = 1100
-## Seconds clients draw remote objects behind the host when they join, so there are always
-## two snapshots to blend between. From then on it is the one-way latency plus a buffer that
+## The smoothing buffer clients start with (seconds, on top of the one-way latency), so there
+## are always two snapshots to blend between. From then on the buffer
 ## follows the measured snapshot jitter: one snapshot interval + jitter_scale x jitter +
-## smoothing_margin, the buffer kept between min_ and max_interpolation_delay.
+## smoothing_margin, kept between min_ and max_interpolation_delay.
 @export_range(0.02, 0.5) var interpolation_delay: float = 0.1
 @export_range(0.0, 0.5) var min_interpolation_delay: float = 0.0
 @export_range(0.02, 1.0) var max_interpolation_delay: float = 0.25
