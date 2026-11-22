@@ -7,7 +7,7 @@ extends CharacterBody2D
 ## Where clients may load enemy data from (the path arrives from the host at spawn).
 const DATA_FOLDER: String = "res://enemies/data/"
 
-## How fast the sprite turns towards where it moves (higher = snappier). Looks only.
+## How fast the sprite turns towards its facing (higher = snappier). Looks only.
 @export_range(1.0, 60.0) var turn_rate: float = 12.0
 ## Set before the enemy enters the tree; its path is sent to clients with the spawn.
 @export var enemy_data: EnemyData:
@@ -25,7 +25,10 @@ var _repath_left: float = 0.0
 var _speed: float = 0.0
 var _regen_per_second: float = 0.0
 var _regen_carry: float = 0.0
-var _last_drawn_position: Vector2 = Vector2.ZERO
+## Host: where it faces (walking direction plus any flinch).
+var _facing := EnemyFacing.new()
+## The angle the sprite turns towards: the host's own, or the latest from a snapshot.
+var _facing_target: float = 0.0
 
 @onready var _body: Sprite2D = $Body
 @onready var _health: HealthComponent = $HealthComponent
@@ -35,7 +38,6 @@ var _last_drawn_position: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
-	_last_drawn_position = _body.global_position
 	if not multiplayer.is_server():
 		_load_data_from_host()
 	_apply_modifiers(ModifierCatalog.load_default().combined(modifier_mask))
@@ -48,6 +50,8 @@ func _ready() -> void:
 		return
 	_health.reset()
 	_health.died.connect(_on_died)
+	_facing.configure(enemy_data.flinch_degrees, enemy_data.flinch_recovery)
+	_knockback.pushed.connect(_facing.flinch_from)
 
 
 func _physics_process(delta: float) -> void:
@@ -56,20 +60,18 @@ func _physics_process(delta: float) -> void:
 	_deal_contact_damage(delta)
 
 
-## Every peer turns the sprite towards where it is drawn moving (looks only, nothing is sent).
+## Every peer turns the sprite smoothly towards the facing (where it walks, plus flinches).
+## Not towards where it moves: a push would spin it around.
 func _process(delta: float) -> void:
-	var drawn: Vector2 = _body.global_position
-	var moved: Vector2 = drawn - _last_drawn_position
-	_last_drawn_position = drawn
-	if moved.length_squared() > 0.01:
-		var weight: float = 1.0 - exp(-turn_rate * delta)
-		_body.rotation = lerp_angle(_body.rotation, moved.angle(), weight)
+	var weight: float = 1.0 - exp(-turn_rate * delta)
+	_body.rotation = lerp_angle(_body.rotation, _facing_target, weight)
 
 
 func capture_net_state() -> NetState:
 	var state := EnemyNetState.new()
 	state.position = position
 	state.health = _health.current_health
+	state.facing = EnemyNetState.to_facing(_facing_target)
 	return state
 
 
@@ -77,6 +79,7 @@ func apply_net_state(state: NetState) -> void:
 	var enemy_state := state as EnemyNetState
 	position = enemy_state.position
 	_health.apply_replicated(enemy_state.health)
+	_facing_target = EnemyNetState.facing_angle(enemy_state.facing)
 	visible = true
 
 
@@ -89,6 +92,9 @@ func _move(delta: float) -> void:
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
 	_knockback.step(delta)
+	_facing.walk_towards(chase)
+	_facing.step(delta)
+	_facing_target = _facing.angle()
 
 
 ## Along the navigation path around obstacles. Straight at the target while there is no path

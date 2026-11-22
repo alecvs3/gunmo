@@ -28,6 +28,12 @@ extends Resource
 ## Multiplier on pushes received (0 = immovable; heavy or "armored" enemies use less).
 @export_range(0.0, 5.0) var knockback_taken: float = 1.0
 
+@export_group("Flinch")
+## How far a hit twists it towards the way it was pushed (degrees; 0 = no flinch). Looks only.
+@export_range(0.0, 90.0) var flinch_degrees: float = 25.0
+## Seconds it takes to turn back to where it is walking after a flinch.
+@export_range(0.01, 2.0) var flinch_recovery: float = 0.25
+
 @export_group("Waves")
 ## Wave budget points this enemy costs.
 @export_range(0.1, 100.0) var cost: float = 1.0

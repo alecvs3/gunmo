@@ -19,6 +19,16 @@ func test_impulse_scaled_by_taken() -> void:
 	assert_eq(knockback.velocity, Vector2(150, 0))
 
 
+func test_tells_what_a_push_added() -> void:
+	watch_signals(knockback)
+	knockback.taken = 0.5
+	knockback.apply(Vector2(100, 0))
+	assert_signal_emitted_with_parameters(knockback, "pushed", [Vector2(50, 0)])
+	knockback.taken = 0.0
+	knockback.apply(Vector2(100, 0))
+	assert_signal_emit_count(knockback, "pushed", 1, "an immovable owner isn't pushed")
+
+
 func test_push_dies_down_in_expected_time() -> void:
 	knockback.apply(Vector2(360, 0))
 	for i in 8:

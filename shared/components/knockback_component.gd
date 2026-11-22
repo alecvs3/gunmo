@@ -5,6 +5,9 @@ extends Node
 ## to let the push die down. A push into a wall bounces back a little; walking never does.
 ## Fully deterministic, so a predicting owner reproduces the host's knockback exactly.
 
+## A hit added `impulse` (px/s, after `taken`). Only where apply() runs (the host).
+signal pushed(impulse: Vector2)
+
 ## Below this speed (px/s) a push counts as over.
 const MIN_SPEED: float = 1.0
 
@@ -25,7 +28,11 @@ func configure(friction_value: float, bounce_value: float, taken_value: float) -
 
 
 func apply(impulse: Vector2) -> void:
-	velocity += impulse * taken
+	var added: Vector2 = impulse * taken
+	if added == Vector2.ZERO:
+		return
+	velocity += added
+	pushed.emit(added)
 
 
 func is_active() -> bool:
