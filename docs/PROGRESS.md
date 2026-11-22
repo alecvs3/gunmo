@@ -241,7 +241,7 @@ angle, and the player's collision sizes. Network messages are unchanged.
 |---|---|---|
 | Players | One character sprite under the aim pivot (it turns with the aim) replaces the octagon and barrel. Each peer gets a character from its peer id (Man Blue, Man Brown, Survivor, Soldier); bots get Robot or Hitman. Every peer picks the same one, so nothing is sent. | `player/player_look.gd`, `player/character_look.gd`, `player/looks/*.tres`, `PlayerData.player_looks` / `bot_looks` |
 | Weapon poses | `WeaponData.pose` (gun / machine / silencer) replaces the barrel color: pistol gun, SMG and rifle machine, shotgun silencer | `weapons/weapon_data.gd`, `weapons/data/*.tres` |
-| Enemies | Zombie sprite, tinted by `EnemyData.color` and the wave modifiers, drawn at `EnemyData.visual_scale` (brute 1.25), turns to face where it moves on every peer | `enemies/chaser.*`, `enemies/data/*.tres` |
+| Enemies | Zombie sprite, tinted by `EnemyData.color` and the wave modifiers, drawn at `EnemyData.visual_scale` (brute 1.25), faces where it walks (sent by the host, 1 byte) and flinches when hit (#81) | `enemies/chaser.*`, `enemies/data/*.tres` |
 | Arena | Floor and walls use repeating 64 px tiles | `levels/test_arena.tscn` |
 | Shots leave the barrel | Each look stores where its drawn barrel ends per pose (`gun_muzzle`, `machine_muzzle`, `silencer_muzzle`, about 10 px to the gun side). The host and the owner start shots there, from the held weapon's pose. The owner's aim turns the character slightly so the barrel line, not the head, passes through the mouse | `player/character_look.gd`, `player/looks/*.tres`, `player/player.gd`, `player/player_input_source.gd` |
 | Player collision | Body circle 16 → 18 px radius (walls), hit circle 18 → 21 px (about the shoulder width of the sprites) | `player/player.tscn` |
@@ -438,3 +438,28 @@ of each gun upgrade gives it.
 
 - The amounts are a first guess, roughly matching the old percentages.
 - A reload never gets shorter than 0.1 s.
+
+## Enemies face where they walk (in review, issue #81)
+
+Enemies used to turn their picture towards wherever they moved. A bullet pushes them backwards,
+so they spun around, and because a half turn is a tie that Godot always settles the same way,
+they spun to the left about 80% of the time.
+
+| Feature | Status | Where |
+|---|---|---|
+| Enemies face where they walk along their path, not where a push slides them | Done, tested | `enemies/enemy_facing.gd`, `enemies/chaser.gd` |
+| The host sends the facing to clients: 1 byte per enemy (256 directions), blended the short way round between snapshots (enemy data 6 → 7 bytes) | Done, tested | `shared/network/states/enemy_net_state.gd` |
+| A hit makes a short flinch towards the side it was pushed, then it turns back; a hit from straight in front picks a side at random | Done, tested | `enemies/enemy_facing.gd`, `EnemyData` "Flinch" |
+| `KnockbackComponent` tells when a push lands (`pushed` signal) | Done, tested | `shared/components/knockback_component.gd` |
+| Collision shapes don't rotate, so hits, walls and contact damage are unchanged | Unchanged | `enemies/chaser.tscn` |
+
+Protocol 10 (enemy snapshots carry the facing). Smoke scenario F: about 52.8 KB/s download per
+client (was about 51; budget 60).
+
+### Known limitations
+
+- The flinch numbers are a first guess (25°, back in 0.25 s, the same for every enemy type).
+- The flinch side comes from the push direction, not where the bullet touched the enemy.
+- On the host's own screen, the picture turns a few ticks before the (slightly delayed) body
+  is drawn moving.
+- **Not verified:** how it looks in a window.

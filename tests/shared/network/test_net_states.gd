@@ -87,6 +87,20 @@ func test_enemy_state_round_trip_and_blend() -> void:
 	assert_eq((a.interpolated(b, 0.5) as EnemyNetState).position, Vector2(15, 20))
 
 
+func test_enemy_facing_fits_one_byte_and_blends_the_short_way() -> void:
+	assert_eq(EnemyNetState.to_facing(0.0), 0)
+	assert_eq(EnemyNetState.to_facing(-PI / 2.0), 192, "negative angles wrap")
+	assert_eq(EnemyNetState.to_facing(TAU - 0.001), 0, "a full turn wraps to 0")
+	var angle: float = 2.0
+	var step: int = EnemyNetState.to_facing(angle)
+	assert_almost_eq(EnemyNetState.facing_angle(step), angle, TAU / 512.0, "within half a step")
+	var a := EnemyNetState.new()
+	var b := EnemyNetState.new()
+	a.facing = 250
+	b.facing = 6
+	assert_eq((a.interpolated(b, 0.5) as EnemyNetState).facing, 0, "across 0, not the long way")
+
+
 func test_kinds_make_matching_states() -> void:
 	assert_true(NetKinds.make_state(NetKinds.PLAYER) is PlayerNetState)
 	assert_true(NetKinds.make_state(NetKinds.ENEMY) is EnemyNetState)
