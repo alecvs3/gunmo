@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–3 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–4 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -43,7 +43,7 @@ balance at the end, when everything that affects balance exists.
   budget. Bump `Handshake.PROTOCOL` if an event format changes.
 - **Done when:** a ranged enemy shoots fairly for a 160 ms client.
 
-### 4. Enemy roster, part 1: roles
+### 4. Enemy roster, part 1: roles ✅ (#92)
 - **Adds:** Shooter (keeps distance, fires), Tank (slow, armored, resists knockback), Swarmer
   (cheap, fast, comes in groups). Each is a `.tres` with a cost; added to the schedule's types.
 - **Test:** data test that every `EnemyData` is valid (cost > 0, health > 0, has behaviours);

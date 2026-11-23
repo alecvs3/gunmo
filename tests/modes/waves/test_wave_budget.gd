@@ -87,7 +87,7 @@ func test_spawn_interval_blends_across_waves() -> void:
 func test_default_schedule_shape() -> void:
 	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
 	assert_eq(real.total_waves, 25)
-	assert_eq(real.enemy_types.size(), 3)
+	assert_eq(real.enemy_types.size(), 6)
 	var first: int = WaveBudget.plan(real, 1, _rng(1)).size()
 	var last: int = WaveBudget.plan(real, 25, _rng(1)).size()
 	assert_between(first, 4, 8, "wave 1 is a handful of grunts")
@@ -101,3 +101,14 @@ func test_default_schedule_shape() -> void:
 func test_wave_seed_is_match_seed_and_wave() -> void:
 	assert_eq(WaveBudget.wave_seed(99, 7), hash([99, 7]), "same seed as before: replays unchanged")
 	assert_ne(WaveBudget.wave_seed(99, 7), WaveBudget.wave_seed(99, 8))
+
+
+func test_group_types_are_bought_together() -> void:
+	var swarm: EnemyData = _type(0.5, 1, 1.0)
+	swarm.group_size = 4
+	schedule.enemy_types.assign([swarm])
+	schedule.base_budget = 5.0
+	var plan: Array[EnemyData] = WaveBudget.plan(schedule, 1, _rng(1))
+	assert_eq(plan.size(), 10, "whole groups while the points last")
+	schedule.base_budget = 1.0
+	assert_eq(WaveBudget.plan(schedule, 1, _rng(1)).size(), 2, "a partial group at the end")

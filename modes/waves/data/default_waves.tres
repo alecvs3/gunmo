@@ -5,6 +5,9 @@
 [ext_resource type="Resource" path="res://enemies/data/runner.tres" id="3_tsk5v"]
 [ext_resource type="Resource" path="res://enemies/data/brute.tres" id="4_jv2ol"]
 [ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="5_cj0e0"]
+[ext_resource type="Resource" path="res://enemies/data/shooter.tres" id="6_shooter"]
+[ext_resource type="Resource" path="res://enemies/data/tank.tres" id="7_tank"]
+[ext_resource type="Resource" path="res://enemies/data/swarmer.tres" id="8_swarmer"]
 
 [resource]
 script = ExtResource("5_cj0e0")
@@ -18,4 +21,4 @@ max_alive = 40
 min_spawn_distance = 400.0
 first_modifier_wave = 6
 double_modifier_wave = 16
-enemy_types = Array[ExtResource("1_67t42")]([ExtResource("2_5ao0f"), ExtResource("3_tsk5v"), ExtResource("4_jv2ol")])
+enemy_types = Array[ExtResource("1_67t42")]([ExtResource("2_5ao0f"), ExtResource("3_tsk5v"), ExtResource("4_jv2ol"), ExtResource("6_shooter"), ExtResource("7_tank"), ExtResource("8_swarmer")])

@@ -15,8 +15,8 @@ class Row:
 	var counts: Dictionary = {}
 	## Sum of the enemies' max health after the wave's modifiers.
 	var total_health: int = 0
-	## total_health divided by the damage-taken multiplier: the damage it takes to kill them all
-	## (armor counts, regeneration doesn't).
+	## Each enemy's health divided by its damage-taken multipliers (its own armor and the
+	## wave's): the damage it takes to kill them all (regeneration doesn't count).
 	var effective_health: int = 0
 	var modifier_mask: int = 0
 	var modifiers: String = ""
@@ -45,10 +45,13 @@ static func row(
 	result.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
 	result.modifiers = catalog.names(result.modifier_mask)
 	var combined: WaveModifier = catalog.combined(result.modifier_mask)
+	var effective: float = 0.0
 	for type in planned:
 		result.counts[type.display_name] = result.counts.get(type.display_name, 0) + 1
-		result.total_health += combined.scaled_health(type.max_health)
-	result.effective_health = roundi(result.total_health / combined.damage_taken_multiplier)
+		var health: int = combined.scaled_health(type.max_health)
+		result.total_health += health
+		effective += health / (combined.damage_taken_multiplier * type.damage_taken)
+	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
 	result.peak_alive = mini(planned.size(), schedule.max_alive)
 	result.spawn_seconds = maxi(planned.size() - 1, 0) * schedule.spawn_interval(wave)

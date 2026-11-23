@@ -107,3 +107,14 @@ func test_enemy_shooter_ids_are_fair_dodged_and_never_a_bot() -> void:
 func test_only_ranged_needs_a_line_of_sight_ray() -> void:
 	assert_false(_melee(10, 0.5, 350.0).needs_line_of_sight())
 	assert_true(_ranged(0.5).needs_line_of_sight())
+
+
+func test_keep_distance_walks_in_backs_off_and_holds() -> void:
+	var keep := KeepDistanceMovement.new()
+	keep.min_distance = 250.0
+	keep.max_distance = 450.0
+	keep.retreat_margin = 50.0
+	var target := Vector2.ZERO
+	assert_eq(keep.goal(Vector2(800, 0), target), target, "too far: walk in")
+	assert_eq(keep.goal(Vector2(100, 0), target), Vector2(300, 0), "too close: back off")
+	assert_eq(keep.goal(Vector2(350, 0), target), Vector2(350, 0), "in range: hold")
