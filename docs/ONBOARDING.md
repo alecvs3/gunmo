@@ -35,7 +35,7 @@ Active branch: m1-core (Milestone 1, PR #3). If PR #3 is already merged, use mai
    - gdformat --check .
 7. Read CLAUDE.md, README.md and docs/PROGRESS.md, and run `gh pr list --state all`. Then explain to me in plain words:
    - what's built and how the networking works (who decides what)
-   - which parts I own (see Ownership in CLAUDE.md) and should review closely
+   - what's next (docs/ROADMAP.md) and who is working on what (see Ownership in CLAUDE.md)
    - the known limitations
 8. Finish with a short checklist:
    - testing with 2 local instances (Debug → Customize Run Instances)

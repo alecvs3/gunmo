@@ -7,6 +7,8 @@ extends RefCounted
 const PROTOCOL: int = 10
 ## bytes_to_var needs at least a 4-byte type header.
 const MIN_PAYLOAD_SIZE: int = 4
+## A hello or reply is a few short strings; anything bigger is dropped unread.
+const MAX_PAYLOAD_SIZE: int = 1024
 const MAX_NAME_LENGTH: int = 16
 
 
@@ -39,9 +41,12 @@ static func encode(message: Dictionary) -> PackedByteArray:
 
 
 ## Never decodes objects, so a malicious peer can't make us instantiate anything.
-## Payloads shorter than a Variant header are dropped before Godot logs a decode error.
+## Payloads that are too short, too big or don't start with a plain Dictionary's type header are
+## dropped before Godot decodes them (and logs errors for garbage).
 static func decode(data: PackedByteArray) -> Dictionary:
-	if data.size() < MIN_PAYLOAD_SIZE:
+	if data.size() < MIN_PAYLOAD_SIZE or data.size() > MAX_PAYLOAD_SIZE:
+		return {}
+	if data.decode_u32(0) != TYPE_DICTIONARY:
 		return {}
 	var value: Variant = bytes_to_var(data)
 	if value is Dictionary:
