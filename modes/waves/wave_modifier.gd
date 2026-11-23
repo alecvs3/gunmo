@@ -13,3 +13,8 @@ extends Resource
 @export_range(0.05, 10.0) var damage_taken_multiplier: float = 1.0
 ## Share of max health healed per second (0.05 = 5%).
 @export_range(0.0, 1.0) var regen_per_second: float = 0.0
+
+
+## An enemy's max health under this modifier (whole points, at least 1).
+func scaled_health(base_health: int) -> int:
+	return maxi(roundi(base_health * health_multiplier), 1)

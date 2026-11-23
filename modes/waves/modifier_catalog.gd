@@ -22,6 +22,17 @@ static func count_for_wave(wave: int, first_wave: int, double_wave: int) -> int:
 	return 1 if wave < double_wave else 2
 
 
+## A wave's modifiers in a match: how many the schedule gives this wave, picked from their own
+## seed so they don't change which enemies spawn.
+func pick_for_wave(schedule: WaveSchedule, match_seed: int, wave: int) -> int:
+	var count: int = count_for_wave(
+		wave, schedule.first_modifier_wave, schedule.double_modifier_wave
+	)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash([match_seed, wave, "modifiers"])
+	return pick(count, rng)
+
+
 func usable_count() -> int:
 	return mini(modifiers.size(), MAX_MODIFIERS)
 
