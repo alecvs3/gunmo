@@ -4,7 +4,8 @@ extends Resource
 
 enum Pose { GUN, MACHINE, SILENCER }
 ## What flies out of it, so every peer draws the same thing (the value travels with each shot).
-enum Projectile { BULLET, ROCKET }
+## Append new kinds at the end: the number is sent with every shot.
+enum Projectile { BULLET, ROCKET, PELLET, RIFLE_ROUND }
 
 @export var display_name: String = ""
 ## How the character holds it (one picture per pose in each CharacterLook), so other players
@@ -48,8 +49,8 @@ enum Projectile { BULLET, ROCKET }
 @export_range(0.0, 1000.0) var knockback_per_level: float = 0.0
 
 @export_group("Looks")
-## Drawn over the character's hands, its front end at the muzzle (e.g. a launcher tube). None =
-## the character picture's own gun.
+## Drawn over the character's hands, its front end at the muzzle, covering the gun painted into
+## the character picture (weapons/models/). None = the picture's own gun.
 @export var held_model: PackedScene
 @export var projectile: Projectile = Projectile.BULLET
 

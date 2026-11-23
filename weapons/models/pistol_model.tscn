@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[node name="PistolModel" type="Node2D"]
+
+[node name="Grip" type="Polygon2D" parent="."]
+color = Color(0.29, 0.21, 0.15, 1)
+polygon = PackedVector2Array(-15, 2.5, -10, 2.5, -9, 8, -14, 8)
+
+[node name="Slide" type="Polygon2D" parent="."]
+color = Color(0.23, 0.235, 0.25, 1)
+polygon = PackedVector2Array(-16, -2.5, 0, -2.5, 0, 2.5, -16, 2.5)
+
+[node name="Shine" type="Polygon2D" parent="."]
+color = Color(0.36, 0.37, 0.4, 1)
+polygon = PackedVector2Array(-16, -2.5, 0, -2.5, 0, -1, -16, -1)
+
+[node name="Muzzle" type="Polygon2D" parent="."]
+color = Color(0.125, 0.13, 0.14, 1)
+polygon = PackedVector2Array(-2, -3.2, 0, -3.2, 0, 3.2, -2, 3.2)

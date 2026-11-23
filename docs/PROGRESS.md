@@ -463,3 +463,19 @@ client (was about 51; budget 60).
 - On the host's own screen, the picture turns a few ticks before the (slightly delayed) body
   is drawn moving.
 - **Not verified:** how it looks in a window.
+
+## Gun and bullet redesign (in review, issue #85)
+
+The pistol, SMG, shotgun and rifle were only the small guns painted into each character picture, and
+every bullet was the same pale-yellow bar that was hard to see on the concrete floor. Looks
+only: no numbers, shop or ladder changes.
+
+| Feature | Status | Where |
+|---|---|---|
+| Pistol, SMG, shotgun and rifle get their own models drawn over the hands, like the rocket launcher (black pistol with a brown grip; gunmetal SMG with a wire stock and side magazine; shotgun with a wooden pump and stock; tan rifle with a scope) | Done, checked on all 6 characters in a render | `weapons/models/pistol_model.tscn`, `weapons/models/smg_model.tscn`, `weapons/models/shotgun_model.tscn`, `weapons/models/rifle_model.tscn` |
+| Bullets: orange tracer (pistol, SMG), long red-white streak (rifle), round orange pellets (shotgun), all with a dark outline and a fading tail | Done, tested | `weapons/bullet.tscn`, `weapons/rifle_round.tscn`, `weapons/pellet.tscn` |
+| Two new projectile kinds, `PELLET` and `RIFLE_ROUND` (added at the end; the shot format is unchanged, so no protocol bump) | Done, tested | `weapons/weapon_data.gd`, `weapons/projectile_system.gd` |
+
+### Known limitations
+
+- **Not verified:** how it looks in a multiplayer game.

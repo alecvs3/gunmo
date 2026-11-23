@@ -5,6 +5,20 @@
 [node name="Bullet" type="Node2D"]
 script = ExtResource("1_bullet")
 
-[node name="Visual" type="Polygon2D" parent="."]
-color = Color(1, 0.85, 0.3, 1)
-polygon = PackedVector2Array(-6, -2, 6, -2, 6, 2, -6, 2)
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Tail" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.54, 0.12, 0.35)
+polygon = PackedVector2Array(-22, -1, -5, -2, -5, 2, -22, 1)
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.1, 0.1, 0.1, 1)
+polygon = PackedVector2Array(-6, -3, 5, -3, 7, 0, 5, 3, -6, 3)
+
+[node name="Core" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.54, 0.12, 1)
+polygon = PackedVector2Array(-5, -2, 4, -2, 5.5, 0, 4, 2, -5, 2)
+
+[node name="Tip" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.95, 0.75, 1)
+polygon = PackedVector2Array(1, -1.2, 4, -1.2, 5, 0, 4, 1.2, 1, 1.2)
