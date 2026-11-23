@@ -7,6 +7,10 @@ extends CharacterBody2D
 
 ## Where clients may load enemy data from (the path arrives from the host at spawn).
 const DATA_FOLDER: String = "res://enemies/data/"
+## Hitbox and shot team (enemies never hurt each other).
+const TEAM: StringName = &"enemies"
+## Walls, for line of sight.
+const WORLD_MASK: int = 1
 
 ## How fast the sprite turns towards its facing (higher = snappier). Looks only.
 @export_range(1.0, 60.0) var turn_rate: float = 12.0
@@ -22,6 +26,7 @@ var data_path: String = ""
 var modifier_mask: int = 0
 
 var _attack_cooldown_left: float = 0.0
+var _shots_fired: int = 0
 var _repath_left: float = 0.0
 var _speed: float = 0.0
 var _regen_per_second: float = 0.0
@@ -129,14 +134,39 @@ func _find_nearest_target() -> Node2D:
 
 func _attack(target: Node2D, delta: float) -> void:
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
+	if _attack_cooldown_left > 0.0:
+		return
 	var attack: EnemyAttack = enemy_data.attack
 	var distance: float = INF
 	if target != null:
 		distance = global_position.distance_to(target.global_position)
-	if not attack.wants_to_attack(_attack_cooldown_left, distance, target != null):
+	var can_see: bool = target != null
+	if can_see and attack.needs_line_of_sight():
+		can_see = _can_see(target)
+	if not attack.wants_to_attack(_attack_cooldown_left, distance, can_see):
 		return
 	if attack.perform(self, target, _touching_hitboxes()):
 		_attack_cooldown_left = attack.interval
+
+
+## The id its shots carry (negative: enemy bullets get fair dodging, see Shot).
+func shooter_id() -> int:
+	return Shot.enemy_shooter_id($NetEntity.net_id)
+
+
+func next_shot_id() -> int:
+	_shots_fired += 1
+	return _shots_fired
+
+
+## No wall between it and the target.
+func _can_see(target: Node2D) -> bool:
+	if target == null:
+		return false
+	var query := PhysicsRayQueryParameters2D.create(
+		global_position, target.global_position, WORLD_MASK
+	)
+	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
 ## Player hitboxes in the contact area.

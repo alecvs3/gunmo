@@ -11,15 +11,17 @@ reloading are `shared/components/weapon_component.gd`.
    Owner client: `shot_predicted` → a PREDICTED bullet, shown at once, deals nothing.
    Other clients: a REMOTE bullet, drawn on their render timeline.
 3. The host's bullet sweeps along its path each tick (`bullet.gd`). Human shots are tested
-   with lag compensation (what the shooter saw). A bot's shots are tested against remote humans
+   with lag compensation (what the shooter saw). Bots' and enemies' shots (any negative
+   shooter id; enemies use `Shot.enemy_shooter_id(net_id)`) are tested against remote humans
    on their own timeline (`timeline_hits.gd`, fair dodging).
+   Ranged enemies fire through the same `shot_fired` (`enemies/behaviours/ranged_attack.gd`).
 4. On a hit the host applies damage and knockback, then tells the shooter (`EVENT_HIT`) and
    the victim (`EVENT_HURT`). When the bullet ends, everyone is told where and when
    (`EVENT_ENDED`).
 
 ## Looks, rockets and explosions
 - `WeaponData.projectile` picks the scene every peer draws (`bullet.tscn`, `rocket.tscn`,
-  `pellet.tscn` or `rifle_round.tscn`, `PROJECTILE_SCENES` in `projectile_system.gd`, in enum
+  `pellet.tscn`, `rifle_round.tscn` or `enemy_bolt.tscn`, `PROJECTILE_SCENES` in `projectile_system.gd`, in enum
   order); the value travels with the shot, so new kinds go at the end. Bullets are bright with
   a dark outline and a fading tail so they show on any floor; the look is separate from
   `bullet_radius` (the hit size).

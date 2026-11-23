@@ -527,7 +527,7 @@ only: no numbers, shop or ladder changes.
 
 - **Not verified:** how it looks in a multiplayer game.
 
-## M7 step 2: enemy behaviours as parts ✅ (issue #88)
+## M7 step 2: enemy behaviours as parts ✅ (merged, issue #88)
 
 An enemy type is now a combination of parts instead of code. No behaviour change.
 
@@ -539,3 +539,28 @@ An enemy type is now a combination of parts instead of code. No behaviour change
 | The data check fails on an `EnemyData` without movement or attack | Done | `tests/test_project_consistency.gd` |
 
 No network format change (protocol stays 10); clients never run the behaviours. Wave report unchanged.
+
+## M7 step 3: enemy projectiles ✅ (issue #90)
+
+Enemies can shoot now, and a laggy player can dodge their bullets fairly.
+
+| Feature | Status | Where |
+|---|---|---|
+| `RangedAttack`: fires a `WeaponData`'s bullets at its target when it sees it (no wall in between) within `attack_range`, leading a moving target by `lead` (0..1). Shots go through `shot_fired` on the enemies' team | Done, tested | `enemies/behaviours/ranged_attack.gd`, `enemies/chaser.gd` |
+| Enemy bolt: slow (420 px/s), 12 damage, a pink orb every peer draws (projectile kind 4, after the redesign's pellet and rifle round) | Done, not checked in a window | `enemies/behaviours/data/enemy_bolt.tres`, `weapons/enemy_bolt.tscn` |
+| **Fair dodging for enemy bullets:** enemies fire as shooter `Shot.enemy_shooter_id(net_id)` (negative, below any bot), so `TimelineHits` tests them on each remote player's own timeline like bots' bullets | Done, tested | `weapons/shot.gd`, `weapons/timeline_hits.gd` |
+| Leading a target is one shared function for bots and enemies | Done (moved) | `weapons/aim_lead.gd` (was `BotBrain.intercept`) |
+| Smoke **H**: 2 ranged test enemies also hunt the 160 ms client; their hits are judged on their own count. Smoke **F**: half of the 40 stress enemies are ranged | Done | `tests/net/fairness.gd`, `tests/net/data/test_spitter.tres`, `stress_waves.tres` |
+
+Protocol 11 (a new projectile kind; the shot format is unchanged).
+
+**Measured:** smoke H: enemy-bolt hits on the lagged client **8 of 8 (100%) where its own
+screen had it** (bot hits 41 of 41). Smoke F with ranged enemies: host tick p95 4.6 ms
+(budget 10), client download 53.8 KB/s (budget 60). A first version cast a line-of-sight ray
+for every enemy every tick (p95 9.7 ms); now only a ranged enemy whose attack is ready casts one.
+
+### Known limitations
+- No enemy in the waves uses `RangedAttack` yet: the Shooter comes in step 4. The test spitter
+  only lives in the smoke data (clients draw it as a grunt).
+- Enemies lead from where the host has the target (not the target's own screen, as bots do).
+- Line of sight is one ray from the enemy's center; a bolt can still clip a pillar's corner.

@@ -21,6 +21,7 @@ const PROJECTILE_SCENES: Array[PackedScene] = [
 	preload("res://weapons/rocket.tscn"),
 	preload("res://weapons/pellet.tscn"),
 	preload("res://weapons/rifle_round.tscn"),
+	preload("res://weapons/enemy_bolt.tscn"),
 ]
 const EXPLOSION_SCENE: PackedScene = preload("res://weapons/explosion_flash.tscn")
 ## NetChannel event topic for bullets.

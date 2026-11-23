@@ -8,6 +8,12 @@ extends Resource
 @export_range(0.05, 10.0) var interval: float = 1.0
 
 
+## Whether `wants_to_attack` needs real line of sight (the enemy casts a ray only then, and
+## only once the cooldown is over; otherwise `can_see` is just "has a target").
+func needs_line_of_sight() -> bool:
+	return false
+
+
 ## Pure: does it want to attack now? `distance` is to its target, `can_see` = line of sight.
 func wants_to_attack(cooldown_left: float, _distance: float, _can_see: bool) -> bool:
 	return cooldown_left <= 0.0

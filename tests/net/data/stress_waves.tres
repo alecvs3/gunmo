@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
 [ext_resource type="Resource" path="res://enemies/data/grunt.tres" id="2_grunt"]
+[ext_resource type="Resource" path="res://tests/net/data/test_spitter.tres" id="3_spitter"]
 [ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="5_schedule"]
 
 [resource]
@@ -16,4 +17,4 @@ max_alive = 40
 min_spawn_distance = 0.0
 first_modifier_wave = 99
 double_modifier_wave = 99
-enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_grunt")])
+enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_grunt"), ExtResource("3_spitter")])

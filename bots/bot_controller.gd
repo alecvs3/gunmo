@@ -131,7 +131,7 @@ func _lead(target: HitboxComponent) -> Vector2:
 	if human != null:
 		position += velocity * human.timeline_lead()
 	var weapon: WeaponData = _player.get_loadout().current_weapon()
-	return BotBrain.intercept(
+	return AimLead.intercept(
 		_player.global_position, position, velocity, weapon.bullet_speed, weapon.bullet_lifetime
 	)
 

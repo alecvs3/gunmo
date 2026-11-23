@@ -26,7 +26,7 @@ func _hitbox() -> HitboxComponent:
 
 
 func test_intercept_leads_a_moving_target() -> void:
-	var aim: Vector2 = BotBrain.intercept(
+	var aim: Vector2 = AimLead.intercept(
 		Vector2.ZERO, Vector2(300, 0), Vector2(0, 100), 1000.0, 2.0
 	)
 	var time: float = aim.length() / 1000.0
@@ -35,11 +35,9 @@ func test_intercept_leads_a_moving_target() -> void:
 
 
 func test_intercept_still_target_and_unreachable() -> void:
-	var still: Vector2 = BotBrain.intercept(
-		Vector2.ZERO, Vector2(200, 50), Vector2.ZERO, 900.0, 2.0
-	)
+	var still: Vector2 = AimLead.intercept(Vector2.ZERO, Vector2(200, 50), Vector2.ZERO, 900.0, 2.0)
 	assert_eq(still, Vector2(200, 50))
-	var away: Vector2 = BotBrain.intercept(
+	var away: Vector2 = AimLead.intercept(
 		Vector2.ZERO, Vector2(100, 0), Vector2(2000, 0), 900.0, 2.0
 	)
 	assert_eq(away, Vector2(100, 0), "faster than the bullet: aim at it")

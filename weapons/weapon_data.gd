@@ -5,7 +5,7 @@ extends Resource
 enum Pose { GUN, MACHINE, SILENCER }
 ## What flies out of it, so every peer draws the same thing (the value travels with each shot).
 ## Append new kinds at the end: the number is sent with every shot.
-enum Projectile { BULLET, ROCKET, PELLET, RIFLE_ROUND }
+enum Projectile { BULLET, ROCKET, PELLET, RIFLE_ROUND, ENEMY_BOLT }
 
 @export var display_name: String = ""
 ## How the character holds it (one picture per pose in each CharacterLook), so other players

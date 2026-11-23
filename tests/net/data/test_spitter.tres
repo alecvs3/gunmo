@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Script" path="res://enemies/behaviours/ranged_attack.gd" id="2_ranged"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/chase.tres" id="3_chase"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/enemy_bolt.tres" id="4_bolt"]
+
+[sub_resource type="Resource" id="Resource_ranged"]
+script = ExtResource("2_ranged")
+interval = 1.2
+weapon = ExtResource("4_bolt")
+attack_range = 650.0
+lead = 0.5
+
+[resource]
+script = ExtResource("1_edata")
+display_name = "Test spitter"
+color = Color(1, 0.5, 0.8, 1)
+max_health = 60
+move_speed = 110.0
+repath_interval = 0.25
+movement = ExtResource("3_chase")
+attack = SubResource("Resource_ranged")
+cost = 1.0
+spawn_weight = 1.0
+bounty = 10

@@ -6,7 +6,8 @@ extends RefCounted
 ## is their latency plus input buffer behind what they see on their own screen). A tick can
 ## only be checked once that player's input for it has arrived, so the verdict comes a little
 ## later, but a dodge the player made on their own screen counts.
-## Human shooters keep the usual shooter-favoured lag compensation; this is only for bots.
+## Human shooters keep the usual shooter-favoured lag compensation; this is for bots and
+## enemies (every negative shooter id, see Shot.enemy_shooter_id).
 ## When two targets could both be hit, the first one found wins (rare, and it ends the bullet).
 
 
@@ -36,8 +37,8 @@ var _targets: Array[Target] = []
 var _place := PositionHistory.Place.new(Vector2.ZERO, false)
 
 
-## The targets for a bot's `shot`: every remote human player on another team. Empty (and
-## unused) for anyone else's shots.
+## The targets for a bot's or an enemy's `shot`: every remote human player on another team.
+## Empty (and unused) for human players' shots.
 static func for_shot(shot: Shot, tree: SceneTree) -> TimelineHits:
 	var hits := TimelineHits.new()
 	if shot.shooter_id >= 0:

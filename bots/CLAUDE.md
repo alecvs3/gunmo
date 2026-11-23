@@ -7,7 +7,7 @@ a `BotController` to it (`Level.spawn_bot`). Clients see bots exactly like human
 | File | Job |
 |---|---|
 | `bot_controller.gd` | Host only. Gathers facts each tick (targets, line of sight, paths) and builds an `InputCommand` like a human's |
-| `bot_brain.gd` | Pure decisions, unit-tested: choose a target (`Candidate`), lead a moving target (`intercept`), turn the aim, when to fire, where to move |
+| `bot_brain.gd` | Pure decisions, unit-tested: choose a target (`Candidate`), turn the aim (leading a moving target is `weapons/aim_lead.gd`), when to fire, where to move |
 | `bot_profile.gd`, `profiles/*.tres` | Skill: reaction time, aim error, turn speed, fire cone, awareness, distance, strafing |
 
 ## Rules that aren't obvious
