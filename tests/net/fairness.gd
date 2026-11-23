@@ -20,6 +20,8 @@ const MIN_ENEMY_HITS: int = 3
 const SPITTER_PATH: String = "res://tests/net/data/test_spitter.tres"
 const CHASER_SCENE_PATH: String = "res://enemies/chaser.tscn"
 const SPITTERS: int = 2
+## Groups.LIVING_PLAYERS: who enemies hunt.
+const LIVING_GROUP: StringName = &"living_players"
 ## Shot.ENEMY_SHOOTER_BASE: enemy shooter ids are at or below it.
 const ENEMY_SHOOTER_BASE: int = -(1 << 20)
 ## Both bots share this team, so they leave each other alone and go for the client.
@@ -69,6 +71,9 @@ func _run_host() -> void:
 		for player: Node in _players():
 			if player.get("is_bot"):
 				player.set("team_id", BOT_TEAM)
+			# Enemies chase the nearest living player: only the client counts as one here.
+			if player.get("is_bot") or player.name == "1":
+				player.remove_from_group(LIVING_GROUP)
 		for enemy: Node in _enemies():
 			enemy.get_node("HealthComponent").invulnerable = true
 			# On the bots' team, so the bots keep hunting the client instead of the spitters.
