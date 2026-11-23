@@ -7,6 +7,9 @@ extends RefCounted
 
 ## Room for pellets in shot ids (see make_id).
 const MAX_PELLETS: int = 16
+## Enemies fire as shooter ENEMY_SHOOTER_BASE − their net id: negative like bots (so their
+## bullets get fair dodging) but far below any bot id.
+const ENEMY_SHOOTER_BASE: int = -(1 << 20)
 
 var shooter_id: int = 0
 var shot_id: int = 0
@@ -46,6 +49,14 @@ static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: 
 		shot.blast_radius = data.blast_radius
 		shot.blast_damage = data.blast_damage
 	return shot
+
+
+static func enemy_shooter_id(net_id: int) -> int:
+	return ENEMY_SHOOTER_BASE - net_id
+
+
+static func is_enemy_shooter(id: int) -> bool:
+	return id <= ENEMY_SHOOTER_BASE
 
 
 static func make_id(command_sequence: int, pellet: int) -> int:

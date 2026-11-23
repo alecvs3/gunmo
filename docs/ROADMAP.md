@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–2 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–3 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -35,7 +35,7 @@ balance at the end, when everything that affects balance exists.
   given positions, what does it want to do).
 - **Done when:** adding an enemy type is a `.tres` file plus at most one new behaviour.
 
-### 3. Enemy projectiles
+### 3. Enemy projectiles ✅ (#90)
 - **Adds:** a ranged attack behaviour that fires through `ProjectileSystem` on the enemy team.
   Fair dodging (`TimelineHits`) already covers bots' bullets; extend it to enemy bullets.
 - **Test:** GUT for the attack timing and aim lead; extend smoke **H** (fairness) so a lagged

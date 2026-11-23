@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "Enemy bolt"
+damage = 12
+fire_rate = 1.0
+bullet_speed = 420.0
+bullet_lifetime = 1.6
+magazine_size = 1
+bullet_radius = 6.0
+knockback = 150.0
+projectile = 4

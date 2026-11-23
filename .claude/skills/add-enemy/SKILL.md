@@ -10,7 +10,9 @@ Area: `enemies/`, `modes/waves/` (no fixed owner for now; say what you're changi
 ## A new enemy type (data only)
 One scene, `enemies/chaser.tscn`, plays every `EnemyData`. An enemy type is a combination of
 a **movement** behaviour (`enemies/behaviours/`, e.g. `enemies/behaviours/data/chase.tres`) and an **attack**
-behaviour (e.g. a `MeleeAttack` sub-resource with its damage, interval and knockback).
+behaviour (e.g. a `MeleeAttack` sub-resource with its damage, interval and knockback, or a
+`RangedAttack` with a bullet `WeaponData` such as `enemies/behaviours/data/enemy_bolt.tres`,
+a range and a lead).
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
    closest type (grunt, runner, brute) and change its numbers: `display_name`, `color`,
    `visual_scale`, `max_health`, `move_speed`, `repath_interval`, the Behaviours group

@@ -61,14 +61,16 @@ frame (always `NetClock.tick_delta()`).
   shooter they see, and end it exactly where and when the host said. A bullet whose path comes
   near your own player catches up from that past timeline to the present over its first
   0.2 s, so a bullet that hits you visibly reaches you when the damage lands.
-- **Bots' bullets and fair dodging** (`weapons/timeline_hits.gd`): every input carries the
+- **Bots' and enemies' bullets and fair dodging** (`weapons/timeline_hits.gd`): every input carries the
   sender's view of the host clock (`InputCommand.client_tick`), and the host records where each
   remote player's own inputs put them on that timeline (`Player.timeline`). A bot's bullet is
   tested against a remote human there, tick by tick as their inputs arrive (it may wait up to
   `max_rewind` after it stops), so a dodge made on a laggy player's own screen counts. Stamps
   may only be up to `max_rewind` in the past, never in the future or out of order. Human
-  shooters keep shooter-favoured lag compensation. Bots lead moving targets (intercept), from
-  where that player's own screen has them.
+  shooters keep shooter-favoured lag compensation. Bots lead moving targets
+  (`AimLead.intercept`), from where that player's own screen has them. Ranged enemies
+  (`RangedAttack`) fire as shooter `Shot.enemy_shooter_id(net_id)`, a negative id far below any
+  bot's, so their bullets get the same fair dodging; they lead from the host's view.
 - The player who was hit gets `EVENT_HURT` with the direction it came from (the HUD's
   hit-direction marker, `ui/hurt_indicator.gd`).
 - `ProjectileSystem.hit_confirmed` fires on the shooter's PC when the host confirms a hit

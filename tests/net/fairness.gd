@@ -6,7 +6,8 @@ extends "res://tests/net/smoke_script.gd"
 ## and records where its own screen had its player at every tick of its own timeline. Every time the
 ## host says a bot's bullet hit the client, the client checks where that was: on its own player at
 ## that moment (fair: what it saw is what counted), or somewhere it no longer was (a hit from a
-## bullet that missed on its screen). Fails below MIN_FAIR_SHARE.
+## bullet that missed on its screen). Fails below MIN_FAIR_SHARE. Two ranged test enemies
+## (test_spitter) also hunt the client and are judged the same way, on their own count.
 ## Usage: -s res://tests/net/fairness.gd -- <fairhost|fairclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
@@ -15,6 +16,14 @@ const MATCH_PATH: String = "res://tests/net/data/quick_gun_game.tres"
 const PLAY_SECONDS: float = 20.0
 const MIN_HITS: int = 5
 const MIN_FAIR_SHARE: float = 0.85
+const MIN_ENEMY_HITS: int = 3
+const SPITTER_PATH: String = "res://tests/net/data/test_spitter.tres"
+const CHASER_SCENE_PATH: String = "res://enemies/chaser.tscn"
+const SPITTERS: int = 2
+## Groups.LIVING_PLAYERS: who enemies hunt.
+const LIVING_GROUP: StringName = &"living_players"
+## Shot.ENEMY_SHOOTER_BASE: enemy shooter ids are at or below it.
+const ENEMY_SHOOTER_BASE: int = -(1 << 20)
 ## Both bots share this team, so they leave each other alone and go for the client.
 const BOT_TEAM: int = -100
 ## Player hitbox radius + bullet radius + a little slack for blending between ticks (px).
@@ -29,6 +38,8 @@ var _own_positions: Dictionary = {}
 var _hurt_pending: int = 0
 var _fair: int = 0
 var _unfair: int = 0
+var _enemy_fair: int = 0
+var _enemy_unfair: int = 0
 
 
 func _initialize() -> void:
@@ -49,6 +60,8 @@ func _run_host() -> void:
 	_check(net.host(_port) == OK, "host() failed")
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
+	await create_timer(3.0).timeout
+	_spawn_spitters()
 	while net.peers.size() >= 2:
 		for player: Node in _players():
 			player.get_node("HealthComponent").invulnerable = true
@@ -58,6 +71,13 @@ func _run_host() -> void:
 		for player: Node in _players():
 			if player.get("is_bot"):
 				player.set("team_id", BOT_TEAM)
+			# Enemies chase the nearest living player: only the client counts as one here.
+			if player.get("is_bot") or player.name == "1":
+				player.remove_from_group(LIVING_GROUP)
+		for enemy: Node in _enemies():
+			enemy.get_node("HealthComponent").invulnerable = true
+			# On the bots' team, so the bots keep hunting the client instead of the spitters.
+			enemy.get_node("HitboxComponent").team = StringName("team_%d" % BOT_TEAM)
 		await process_frame
 	net.leave()
 	await create_timer(0.5).timeout
@@ -121,11 +141,13 @@ func _on_bullet_ended(buffer: StreamPeerBuffer) -> void:
 	var tick: int = roundi(end_tick)
 	if not _own_positions.has(tick):
 		return
-	var distance: float = (_own_positions[tick] as Vector2).distance_to(end_point)
-	if distance <= ON_PLAYER_DISTANCE:
-		_fair += 1
+	var fair: bool = (_own_positions[tick] as Vector2).distance_to(end_point) <= ON_PLAYER_DISTANCE
+	if shooter_id <= ENEMY_SHOOTER_BASE:
+		_enemy_fair += 1 if fair else 0
+		_enemy_unfair += 0 if fair else 1
 	else:
-		_unfair += 1
+		_fair += 1 if fair else 0
+		_unfair += 0 if fair else 1
 
 
 func _report() -> void:
@@ -135,6 +157,15 @@ func _report() -> void:
 	print("FAIRNESS METRIC fair_share %.2f" % share)
 	_check(hits >= MIN_HITS, "only %d bot hits on the client to judge" % hits)
 	_check(share >= MIN_FAIR_SHARE, "only %.0f%% of bot hits were where we were" % (share * 100))
+	var enemy_hits: int = _enemy_fair + _enemy_unfair
+	var enemy_share: float = _enemy_fair / float(enemy_hits) if enemy_hits > 0 else 0.0
+	print("FAIRNESS METRIC enemy_hits_on_client %d" % enemy_hits)
+	print("FAIRNESS METRIC enemy_fair_share %.2f" % enemy_share)
+	_check(enemy_hits >= MIN_ENEMY_HITS, "only %d enemy hits on the client to judge" % enemy_hits)
+	_check(
+		enemy_share >= MIN_FAIR_SHARE,
+		"only %.0f%% of enemy hits were where we were" % (enemy_share * 100)
+	)
 
 
 func _walk(move: Vector2) -> void:
@@ -144,6 +175,34 @@ func _walk(move: Vector2) -> void:
 	var command: RefCounted = _input_command_script.new()
 	command.move = move
 	player.get_node("PlayerInputSource").scripted = command
+
+
+## Host: ranged test enemies at the level's enemy spawn points nearest the client.
+func _spawn_spitters() -> void:
+	var level: Node = root.get_node("Main/LevelContainer/TestArena")
+	var client: Node2D = null
+	for player: Node in _players():
+		if not player.get("is_bot") and player.name != "1":
+			client = player
+	var points: Array = level.call("enemy_spawn_positions")
+	if client != null:
+		points.sort_custom(
+			func(a: Vector2, b: Vector2) -> bool:
+				return (
+					a.distance_squared_to(client.global_position)
+					< b.distance_squared_to(client.global_position)
+				)
+		)
+	for i in mini(SPITTERS, points.size()):
+		var enemy: Node2D = (load(CHASER_SCENE_PATH) as PackedScene).instantiate()
+		enemy.set("enemy_data", load(SPITTER_PATH))
+		enemy.position = points[i]
+		level.call("add_enemy", enemy)
+
+
+func _enemies() -> Array[Node]:
+	var enemies_root: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Enemies")
+	return enemies_root.get_children() if enemies_root != null else []
 
 
 func _players() -> Array[Node]:
