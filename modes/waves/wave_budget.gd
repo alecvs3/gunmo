@@ -7,6 +7,11 @@ extends RefCounted
 const EPSILON: float = 0.0001
 
 
+## The seed for a wave's enemies: the match seed and the wave number, so a match replays exactly.
+static func wave_seed(match_seed: int, wave: int) -> int:
+	return hash([match_seed, wave])
+
+
 static func budget(schedule: WaveSchedule, wave: int) -> float:
 	var steps: float = maxf(wave - 1, 0)
 	return schedule.base_budget + schedule.budget_growth * pow(steps, schedule.budget_curve)

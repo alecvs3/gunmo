@@ -464,7 +464,7 @@ client (was about 51; budget 60).
   is drawn moving.
 - **Not verified:** how it looks in a window.
 
-## Hardening: client limits, garbage input, soak ✅ (in review, issue #47)
+## Hardening: client limits, garbage input, soak ✅ (merged, issue #47)
 
 - **Client limits:** the host lets each client send at most 120 command packets a second
   (bursts of 40) and 8 requests a second (bursts of 16), and drops requests over 64 bytes, before
@@ -489,6 +489,27 @@ client (was about 51; budget 60).
 - The garbage test covers what clients send today; each new client decoder needs its own case.
 - Client object count rose about 3% over the 90 s soak (within the limit); the 10-minute soak is
   the real check.
+
+## M7 step 1: wave report ✅ (in review, issue #84)
+
+A measuring tool for the rest of M7: one command prints the whole wave difficulty curve.
+
+| Feature | Status | Where |
+|---|---|---|
+| `.\tools\wave_report.ps1` prints a markdown table for every wave: budget, enemies by type, total health (after modifiers), effective health (armor counted), peak alive, spawn time and modifiers. `-Seed N` (default 1) and `-Schedule res://...` | Done, tested | `tools/wave_report.ps1`, `tools/wave_report.gd`, `modes/waves/wave_report.gd` |
+| The wave seed, the modifier pick and an enemy's scaled health are now pure functions that the game and the report both call, so the report can't drift from what spawns. Same seeds and numbers as before (tests pin them) | Done, tested | `WaveBudget.wave_seed`, `ModifierCatalog.pick_for_wave`, `WaveModifier.scaled_health` |
+| `check.ps1` and the report share one Godot finder | Done | `tools/find_godot.ps1` |
+
+No network format change (protocol stays 10).
+
+### Known limitations
+- **Peak alive is the `max_alive` cap** (fewer enemies or the cap), not a prediction: the real
+  peak depends on how fast players kill.
+- Effective health counts armor (damage taken) but not regeneration.
+- One seed per report: the enemy mix and modifiers change with the seed, the budget doesn't.
+  Compare before/after with the same seed.
+- Godot prints "ObjectDB instances leaked" at exit for any `-s` script in this project (an
+  empty one too); the `.ps1` hides it. Same engine shutdown-order noise as the GUT runs.
 
 ## Gun and bullet redesign (in review, issue #85)
 

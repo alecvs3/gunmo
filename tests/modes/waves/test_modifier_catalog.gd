@@ -85,3 +85,19 @@ func test_default_catalog_and_schedule() -> void:
 	assert_lte(real.modifiers.size(), ModifierCatalog.MAX_MODIFIERS)
 	var schedule: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
 	assert_eq([schedule.first_modifier_wave, schedule.double_modifier_wave], [6, 16])
+
+
+func test_pick_for_wave_uses_the_schedule_and_its_own_seed() -> void:
+	var schedule := WaveSchedule.new()
+	schedule.first_modifier_wave = 6
+	schedule.double_modifier_wave = 16
+	assert_eq(catalog.pick_for_wave(schedule, 5, 5), 0)
+	for wave in [6, 16, 25]:
+		var count: int = ModifierCatalog.count_for_wave(wave, 6, 16)
+		var expected: int = catalog.pick(count, _rng(hash([5, wave, "modifiers"])))
+		assert_eq(catalog.pick_for_wave(schedule, 5, wave), expected, "wave %d" % wave)
+
+
+func test_scaled_health_rounds_and_never_hits_zero() -> void:
+	assert_eq(_modifier("x", 1.5, 1.0, 1.0, 0.0).scaled_health(101), 152)
+	assert_eq(_modifier("x", 0.1, 1.0, 1.0, 0.0).scaled_health(1), 1)

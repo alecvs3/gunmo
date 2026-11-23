@@ -5,7 +5,7 @@ description: Add a new enemy type to wave mode. Use when asked to add, create or
 
 # Add an enemy
 
-Area: **Yusuf** (`enemies/`, `modes/waves/`). Say so before editing if you're working for Alex.
+Area: `enemies/`, `modes/waves/` (no fixed owner for now; say what you're changing).
 
 ## A new chaser type (data only)
 One scene, `enemies/chaser.tscn`, plays every `EnemyData`.
@@ -19,6 +19,7 @@ One scene, `enemies/chaser.tscn`, plays every `EnemyData`.
    (`WaveSchedule`). `cost` and `first_wave` decide when it shows up (`modes/waves/wave_budget.gd`).
 3. **Tests:** `tests/enemies/test_enemy_data.gd` checks every type is complete and that types
    play differently. Add to it. If wave budgets change, check `tests/modes/waves/test_wave_budget.gd`.
+4. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR.
 
 ## A new behaviour (ranged, splitting, exploding...)
 - Make a new scene and script in `enemies/`, built from the shared components (Health, Hitbox,
