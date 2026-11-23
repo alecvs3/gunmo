@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+[ext_resource type="PackedScene" path="res://weapons/models/pistol_model.tscn" id="2_model"]
 
 [resource]
 script = ExtResource("1_wdata")
@@ -22,3 +23,4 @@ fire_rate_per_level = 0.4
 magazine_per_level = 2
 reload_per_level = 0.12
 knockback_per_level = 25.0
+held_model = ExtResource("2_model")

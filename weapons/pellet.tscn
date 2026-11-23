@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://weapons/bullet.gd" id="1_bullet"]
+
+[node name="Pellet" type="Node2D"]
+script = ExtResource("1_bullet")
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Tail" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.35, 0.12, 0.35)
+polygon = PackedVector2Array(-11.25, -0.75, -1.25, -2.5, -1.25, 2.5, -11.25, 0.75)
+
+[node name="Outline" type="Polygon2D" parent="Visual"]
+color = Color(0.1, 0.1, 0.1, 1)
+polygon = PackedVector2Array(4, 0, 2.82, 2.82, 0, 4, -2.82, 2.82, -4, 0, -2.82, -2.82, 0, -4, 2.82, -2.82)
+
+[node name="Core" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.35, 0.12, 1)
+polygon = PackedVector2Array(2.75, 0, 1.95, 1.95, 0, 2.75, -1.95, 1.95, -2.75, 0, -1.95, -1.95, 0, -2.75, 1.95, -1.95)
+
+[node name="Glint" type="Polygon2D" parent="Visual"]
+color = Color(1, 0.88, 0.75, 1)
+polygon = PackedVector2Array(1.75, -0.75, 0.75, 0.25, -0.25, -0.75, 0.75, -1.75)

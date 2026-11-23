@@ -22,9 +22,11 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
 3. **Gun Game:** to use it on the ladder, add it to `ladder` in `modes/data/gun_game_match.tres`.
    It must also be in the catalog (step 2).
    - **Explodes?** Set `blast_radius` and `blast_damage` (see `weapons/data/rocket_launcher.tres`).
-   - **Looks different?** `projectile` (BULLET or ROCKET) picks what flies, and `held_model` is
-     a scene drawn at the muzzle (`weapons/models/rocket_launcher_tube.tscn`). A new projectile
-     look = a new scene plus an entry in `PROJECTILE_SCENES` (`weapons/projectile_system.gd`).
+   - **Looks:** every gun gets a `held_model`, a scene of Polygon2D shapes drawn at the muzzle
+     that covers the gun painted into the character picture (copy one from `weapons/models/`
+     and check it on every character). `projectile` (BULLET, ROCKET, PELLET or RIFLE_ROUND)
+     picks what flies. A new projectile look = a new scene, a new value at the END of
+     `WeaponData.Projectile` and an entry in `PROJECTILE_SCENES` (`weapons/projectile_system.gd`).
 4. **Needs a new mechanic** (burst, charge...)?
    - Add an `@export` field to `WeaponData` and use it in `shared/components/weapon_component.gd`
      or `weapons/bullet.gd`.

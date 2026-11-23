@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[node name="ShotgunModel" type="Node2D"]
+
+[node name="Stock" type="Polygon2D" parent="."]
+color = Color(0.43, 0.27, 0.15, 1)
+polygon = PackedVector2Array(-44, -3, -34, -3, -34, 3, -44, 3)
+
+[node name="Receiver" type="Polygon2D" parent="."]
+color = Color(0.14, 0.14, 0.15, 1)
+polygon = PackedVector2Array(-34, -3.5, -24, -3.5, -24, 3.5, -34, 3.5)
+
+[node name="Barrel" type="Polygon2D" parent="."]
+color = Color(0.23, 0.235, 0.25, 1)
+polygon = PackedVector2Array(-24, -2.5, 0, -2.5, 0, 2.5, -24, 2.5)
+
+[node name="BarrelShine" type="Polygon2D" parent="."]
+color = Color(0.36, 0.37, 0.4, 1)
+polygon = PackedVector2Array(-24, -2.5, 0, -2.5, 0, -1, -24, -1)
+
+[node name="Pump" type="Polygon2D" parent="."]
+color = Color(0.54, 0.35, 0.2, 1)
+polygon = PackedVector2Array(-21, -4, -11, -4, -11, 4, -21, 4)
+
+[node name="PumpShine" type="Polygon2D" parent="."]
+color = Color(0.66, 0.45, 0.29, 1)
+polygon = PackedVector2Array(-21, -4, -11, -4, -11, -2.5, -21, -2.5)
+
+[node name="Muzzle" type="Polygon2D" parent="."]
+color = Color(0.125, 0.13, 0.14, 1)
+polygon = PackedVector2Array(-2, -3, 0, -3, 0, 3, -2, 3)
