@@ -114,3 +114,12 @@ func test_every_default_wave_has_enemies() -> void:
 			assert_gt(row.enemies, 0, "seed %d wave %d is empty" % [seed_value, row.wave])
 			assert_gt(row.total_health, 0)
 	assert_eq(WaveReport.build(real, real_catalog, 1).size(), 25)
+
+
+func test_effective_health_counts_an_enemy_s_own_armor() -> void:
+	ogre.damage_taken = 0.5
+	var row: WaveReport.Row = WaveReport.row(schedule, catalog, MATCH_SEED, 1)
+	var expected: float = 0.0
+	for type in _plan(1):
+		expected += type.max_health / type.damage_taken
+	assert_eq(row.effective_health, roundi(expected))

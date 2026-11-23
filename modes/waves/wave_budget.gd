@@ -26,7 +26,9 @@ static func available(schedule: WaveSchedule, wave: int) -> Array[EnemyData]:
 	return types
 
 
-## Buys random affordable enemies (weighted by spawn_weight) until nothing more fits.
+## Buys random affordable enemies (weighted by spawn_weight) until nothing more fits. A type
+## with group_size > 1 is bought as a group (as many of the group as the points still allow),
+## listed one after another so the spawner releases them together.
 static func plan(schedule: WaveSchedule, wave: int, rng: RandomNumberGenerator) -> Array[EnemyData]:
 	var bought: Array[EnemyData] = []
 	var left: float = budget(schedule, wave)
@@ -39,8 +41,11 @@ static func plan(schedule: WaveSchedule, wave: int, rng: RandomNumberGenerator) 
 		if affordable.is_empty():
 			break
 		var pick: EnemyData = _weighted_pick(affordable, rng)
-		bought.append(pick)
-		left -= pick.cost
+		for member in pick.group_size:
+			if member > 0 and pick.cost > left + EPSILON:
+				break
+			bought.append(pick)
+			left -= pick.cost
 	return bought
 
 

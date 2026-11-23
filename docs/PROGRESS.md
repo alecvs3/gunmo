@@ -540,7 +540,7 @@ An enemy type is now a combination of parts instead of code. No behaviour change
 
 No network format change (protocol stays 10); clients never run the behaviours. Wave report unchanged.
 
-## M7 step 3: enemy projectiles ✅ (issue #90)
+## M7 step 3: enemy projectiles ✅ (merged, issue #90)
 
 Enemies can shoot now, and a laggy player can dodge their bullets fairly.
 
@@ -564,3 +564,28 @@ for every enemy every tick (p95 9.7 ms); now only a ranged enemy whose attack is
   only lives in the smoke data (clients draw it as a grunt).
 - Enemies lead from where the host has the target (not the target's own screen, as bots do).
 - Line of sight is one ray from the enemy's center; a bolt can still clip a pillar's corner.
+
+## M7 step 4: enemy roster, part 1: roles ✅ (issue #92)
+
+Three new enemy types, each a combination of parts plus numbers (`enemies/data/*.tres`), all
+bought by the default schedule.
+
+| Enemy | Role | Parts and numbers |
+|---|---|---|
+| **Shooter** (from wave 6, cost 3) | Ranged: keeps 260–460 px away and fires enemy bolts | `KeepDistanceMovement` + `RangedAttack` (1.6 s, 560 px, 60% lead); 70 health |
+| **Tank** (from wave 9, cost 7) | Frontline: slow, armored, barely pushed | chase + melee (30 damage); 650 health, takes 60% damage (`damage_taken`), 5% knockback |
+| **Swarmer** (from wave 6, cost 0.4 each) | Swarm: cheap, fast, comes 6 at a time | chase + melee (4 damage, fast); 18 health; `group_size` 6, bought and spawned together |
+
+| System | Where |
+|---|---|
+| `KeepDistanceMovement`: walk in when too far, back off when too close, hold in between | `enemies/behaviours/keep_distance_movement.gd` |
+| `EnemyData.damage_taken` (armor, stacks with the wave's modifiers; the wave report's Effective column counts it) | `enemies/enemy_data.gd`, `enemies/chaser.gd`, `modes/waves/wave_report.gd` |
+| `EnemyData.group_size`: the budget buys a group at once (a partial one if points run out); the spawner releases one group around one point (`WaveSpawner.group_count`, `group_offset`), never past `max_alive` | `modes/waves/wave_budget.gd`, `modes/waves/wave_spawner.gd` |
+
+No network format change (clients load the new types from `enemies/data/` like the others).
+
+### Known limitations
+- The waves' mix is still random by weight: some waves get few swarmers, some many (wave 11:
+  26). Composition rules per wave come in step 7.
+- All enemies use the zombie picture, told apart by tint and size.
+- **Not verified:** how the three play in a window.

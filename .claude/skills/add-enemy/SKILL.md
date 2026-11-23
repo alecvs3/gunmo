@@ -14,10 +14,11 @@ behaviour (e.g. a `MeleeAttack` sub-resource with its damage, interval and knock
 `RangedAttack` with a bullet `WeaponData` such as `enemies/behaviours/data/enemy_bolt.tres`,
 a range and a lead).
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
-   closest type (grunt, runner, brute) and change its numbers: `display_name`, `color`,
-   `visual_scale`, `max_health`, `move_speed`, `repath_interval`, the Behaviours group
-   (`movement`, `attack`), knockback, and the Waves group (`cost`, `first_wave`, `spawn_weight`,
-   `bounty`). It **must** live in `enemies/data/`: clients only load enemy data from
+   closest type (grunt, runner, brute, shooter, tank, swarmer) and change its numbers:
+   `display_name`, `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
+   `move_speed`, `repath_interval`, the Behaviours group
+   (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
+   group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`). It **must** live in `enemies/data/`: clients only load enemy data from
    `Chaser.DATA_FOLDER`.
 2. **Let the waves buy it:** add it to `enemy_types` in `modes/waves/data/default_waves.tres`
    (`WaveSchedule`). `cost` and `first_wave` decide when it shows up (`modes/waves/wave_budget.gd`).

@@ -1,6 +1,6 @@
 extends GutTest
 
-const TYPES: Array[String] = ["grunt", "runner", "brute"]
+const TYPES: Array[String] = ["grunt", "runner", "brute", "shooter", "tank", "swarmer"]
 
 
 func _load(type_name: String) -> EnemyData:
@@ -31,3 +31,24 @@ func test_types_play_differently() -> void:
 	assert_gt(brute.first_wave, runner.first_wave)
 	assert_gt(brute.bounty, runner.bounty, "tougher enemies pay more")
 	assert_gt(runner.bounty, grunt.bounty)
+
+
+func test_roles() -> void:
+	var grunt: EnemyData = _load("grunt")
+	var shooter: EnemyData = _load("shooter")
+	var tank: EnemyData = _load("tank")
+	var swarmer: EnemyData = _load("swarmer")
+	assert_true(shooter.attack is RangedAttack, "shooter fires")
+	assert_true(shooter.movement is KeepDistanceMovement, "shooter keeps its distance")
+	assert_lt(tank.move_speed, grunt.move_speed, "tank is slow")
+	assert_lt(tank.damage_taken, 1.0, "tank is armored")
+	assert_lt(tank.knockback_taken, 0.1, "tank barely moves when shot")
+	assert_gt(swarmer.group_size, 1, "swarmers come in groups")
+	assert_lt(swarmer.cost, grunt.cost, "swarmers are cheap")
+	assert_gt(swarmer.move_speed, grunt.move_speed, "swarmers are fast")
+
+
+func test_every_type_is_in_the_default_schedule() -> void:
+	var schedule: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
+	for type_name in TYPES:
+		assert_has(schedule.enemy_types, _load(type_name), type_name)
