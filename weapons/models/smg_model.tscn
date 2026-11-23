@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[node name="SmgModel" type="Node2D"]
+
+[node name="StockTop" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-34, -2.5, -22, -2.5, -22, -1.5, -34, -1.5)
+
+[node name="StockBottom" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-34, 1.5, -22, 1.5, -22, 2.5, -34, 2.5)
+
+[node name="ButtPlate" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-36, -3, -33, -3, -33, 3, -36, 3)
+
+[node name="Magazine" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-16, 3, -11, 3, -9, 12, -14, 12)
+
+[node name="Body" type="Polygon2D" parent="."]
+color = Color(0.2, 0.23, 0.29, 1)
+polygon = PackedVector2Array(-22, -3, -6, -3, -6, 3, -22, 3)
+
+[node name="Shine" type="Polygon2D" parent="."]
+color = Color(0.33, 0.37, 0.45, 1)
+polygon = PackedVector2Array(-22, -3, -6, -3, -6, -1.5, -22, -1.5)
+
+[node name="Shroud" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-6, -2.8, 0, -2.8, 0, 2.8, -6, 2.8)
+
+[node name="VentFront" type="Polygon2D" parent="."]
+color = Color(0.33, 0.37, 0.45, 1)
+polygon = PackedVector2Array(-2.5, -1, -1.5, -1, -1.5, 1, -2.5, 1)
+
+[node name="VentBack" type="Polygon2D" parent="."]
+color = Color(0.33, 0.37, 0.45, 1)
+polygon = PackedVector2Array(-4.5, -1, -3.5, -1, -3.5, 1, -4.5, 1)

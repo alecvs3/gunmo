@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="WeaponData" format=3]
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+[ext_resource type="PackedScene" path="res://weapons/models/shotgun_model.tscn" id="2_model"]
 
 [resource]
 script = ExtResource("1_wdata")
@@ -23,3 +24,5 @@ fire_rate_per_level = 0.13
 magazine_per_level = 1
 reload_per_level = 0.16
 knockback_per_level = 30.0
+held_model = ExtResource("2_model")
+projectile = 2

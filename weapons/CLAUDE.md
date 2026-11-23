@@ -17,11 +17,16 @@ reloading are `shared/components/weapon_component.gd`.
    the victim (`EVENT_HURT`). When the bullet ends, everyone is told where and when
    (`EVENT_ENDED`).
 
-## Rockets and explosions
-- `WeaponData.projectile` picks the scene every peer draws (`bullet.tscn` or `rocket.tscn`,
-  `PROJECTILE_SCENES` in `projectile_system.gd`); the value travels with the shot.
-- `WeaponData.held_model` is a scene drawn over the character's hands with its front end at
-  the muzzle (`models/rocket_launcher_tube.tscn`), set by `player/player_look.gd`.
+## Looks, rockets and explosions
+- `WeaponData.projectile` picks the scene every peer draws (`bullet.tscn`, `rocket.tscn`,
+  `pellet.tscn` or `rifle_round.tscn`, `PROJECTILE_SCENES` in `projectile_system.gd`, in enum
+  order); the value travels with the shot, so new kinds go at the end. Bullets are bright with
+  a dark outline and a fading tail so they show on any floor; the look is separate from
+  `bullet_radius` (the hit size).
+- `WeaponData.held_model` is a scene of Polygon2D shapes drawn over the character's hands with
+  its front end at the muzzle (`models/*.tscn`: one per gun), set
+  by `player/player_look.gd`. It must cover the gun painted into the character picture for
+  its pose, on every character in `player/looks/`.
 - `blast_radius` + `blast_damage`: where the shot lands (a hit, a wall or the end of its range)
   the host runs `explosion.gd` (everyone else in the radius takes the blast and is pushed
   away; never the shooter or teammates) and tells every peer (`EVENT_BLAST`), who draws

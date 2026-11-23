@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[node name="RifleModel" type="Node2D"]
+
+[node name="Body" type="Polygon2D" parent="."]
+color = Color(0.55, 0.47, 0.32, 1)
+polygon = PackedVector2Array(-50, -3, -10, -3, -10, 3, -50, 3)
+
+[node name="Shine" type="Polygon2D" parent="."]
+color = Color(0.66, 0.58, 0.42, 1)
+polygon = PackedVector2Array(-50, -3, -10, -3, -10, -1.5, -50, -1.5)
+
+[node name="Handguard" type="Polygon2D" parent="."]
+color = Color(0.165, 0.17, 0.18, 1)
+polygon = PackedVector2Array(-10, -2.6, -3, -2.6, -3, 2.6, -10, 2.6)
+
+[node name="MuzzleBrake" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-3, -3, 0, -3, 0, 3, -3, 3)
+
+[node name="Scope" type="Polygon2D" parent="."]
+color = Color(0.12, 0.12, 0.13, 1)
+polygon = PackedVector2Array(-34, -2, -18, -2, -18, 2, -34, 2)
+
+[node name="Lens" type="Polygon2D" parent="."]
+color = Color(0.44, 0.83, 1, 1)
+polygon = PackedVector2Array(-19, -1.5, -18, -1.5, -18, 1.5, -19, 1.5)

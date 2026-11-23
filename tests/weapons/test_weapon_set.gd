@@ -80,3 +80,24 @@ func test_rocket_launcher_is_on_the_gun_game_ladder() -> void:
 	var settings: MatchSettings = load("res://modes/data/gun_game_match.tres")
 	assert_has(settings.ladder, _named("Rocket Launcher"))
 	assert_eq(settings.ladder.back().display_name, "Pistol", "the ladder still ends on the pistol")
+
+
+func test_every_projectile_kind_has_a_scene() -> void:
+	assert_eq(ProjectileSystem.PROJECTILE_SCENES.size(), WeaponData.Projectile.size())
+	for scene: PackedScene in ProjectileSystem.PROJECTILE_SCENES:
+		var projectile: Node = scene.instantiate()
+		assert_true(projectile is Bullet, scene.resource_path + " flies as a Bullet")
+		projectile.free()
+
+
+func test_guns_draw_their_own_model_and_bullet() -> void:
+	var expected: Dictionary = {
+		"Pistol": WeaponData.Projectile.BULLET,
+		"SMG": WeaponData.Projectile.BULLET,
+		"Shotgun": WeaponData.Projectile.PELLET,
+		"Rifle": WeaponData.Projectile.RIFLE_ROUND,
+	}
+	for display_name: String in expected:
+		var weapon: WeaponData = _named(display_name)
+		assert_not_null(weapon.held_model, display_name + " has its own model")
+		assert_eq(weapon.projectile, expected[display_name], display_name + " bullet look")
