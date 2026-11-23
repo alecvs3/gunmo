@@ -164,6 +164,7 @@ func _create_children() -> void:
 	clock = _add_service(NetClock.new(), "NetClock")
 	clock.config = config
 	channel = _add_service(NetChannel.new(), "NetChannel")
+	channel.configure(config)
 	replicator = _add_service(Replicator.new(), "Replicator")
 	replicator.config = config
 	replicator.stats = stats

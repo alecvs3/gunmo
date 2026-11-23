@@ -86,6 +86,17 @@ extends Resource
 ## players' unevenly arriving inputs. The host's shots are checked at that same moment.
 @export_range(0, 10) var host_view_delay_ticks: int = 0
 
+@export_group("Client limits")
+## Command packets one client may send per second (it sends one per tick, 60), with bursts of
+## up to command_burst after a hitch. Extra packets are dropped (RateLimiter).
+@export_range(1.0, 1000.0) var command_packets_per_second: float = 120.0
+@export_range(1.0, 1000.0) var command_burst: float = 40.0
+## Requests (buy, ready, ...) one client may send per second, with bursts of request_burst.
+@export_range(0.5, 100.0) var requests_per_second: float = 8.0
+@export_range(1.0, 200.0) var request_burst: float = 16.0
+## Bigger requests are dropped unread. Every request today is a few bytes.
+@export_range(1, 4096) var max_request_bytes: int = 64
+
 @export_group("Diagnostics")
 ## A client with no snapshot for this long logs a hiccup (seconds).
 @export_range(0.05, 5.0) var hiccup_seconds: float = 0.25

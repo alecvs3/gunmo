@@ -20,6 +20,7 @@ Read `docs/NETCODE.md` for the full design. This page is the short version for w
 | `net_state.gd`, `states/` | Fixed binary layout per entity kind (`PlayerNetState`, `EnemyNetState`, `MatchNetState`) |
 | `net_kinds.gd` | Entity kind → `NetState` class |
 | `snapshot_codec.gd` | Packs states into packets under the MTU (4-byte header per entity) |
+| `rate_limiter.gd` | Host: per-client limits on command packets and requests (NetChannel drops the extra; numbers in `NetworkConfig`) |
 | `command_queue.gd` | Host: one player's inputs waiting to run, with a small playout buffer only when they stall |
 | `lag_compensator.gd`, `position_history.gd` | Shots hit what the shooter saw (rewind up to `max_rewind`) |
 | `handshake.gd`, `join_gate.gd`, `build_info.gd` | Who may join: same `PROTOCOL` and build, lobby not full |
@@ -35,7 +36,8 @@ Tuning lives in `default_network_config.tres` (`NetworkConfig`), never in code.
   `InputCommand`, the snapshot header, and event or request payloads.
 - **Never use a continuous `MultiplayerSynchronizer`.** Spawn-time properties (`SpawnSync`) are fine.
 - **Clients' data is untrusted.** Clamp and check everything decoded from a client: sizes,
-  indices, ticks (see how `player_timeline.gd` clamps `client_tick`).
+  indices, ticks (see how `player_timeline.gd` clamps `client_tick`). A new decoder of client
+  data gets a case in `tests/shared/network/test_garbage_input.gd` (random bytes, seeded).
 - **Snapshots go to each client separately.** A client gets its own player in full and everyone
   else in the public form. A private field (credits, ammo, upgrades) must stay out of
   `encode_public`.
@@ -51,3 +53,5 @@ Tuning lives in `default_network_config.tres` (`NetworkConfig`), never in code.
   `tests/shared/network/test_net_state_fields.gd`; it has a `NOT_PUBLIC` list of private fields.
 - Run `.\tools\check.ps1 -Smoke` for **any** change here. It runs the multiplayer scenarios in
   `tests/net/` (lag, dedicated server, waves, shop, gun game, stress, latency, fairness).
+- Soak: `.\tools\check.ps1 -Smoke -Scenarios S` runs the stress scene for 10 minutes and fails
+  if memory, objects or nodes keep growing. Opt-in; run it after big changes.

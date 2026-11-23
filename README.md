@@ -86,8 +86,8 @@ logged as `[net hh:mm:ss] ...` lines in the Output panel and in `user://logs/god
 
 - One GitHub issue → one branch (`m2/wave-budget`, ...) → one PR with `Closes #N`.
 - The other person reviews the PR and tests it with the author (see above) before merging to `main`.
-- Ownership: Alex — player, weapons, upgrades, gun game ladder. Yusuf — enemies, waves, bot AI,
-  HUD and menus. Both — `autoloads/`, `shared/`, `modes/` base, `main.tscn`, `project.godot`.
+- No fixed areas for now: both work anywhere. Both review `autoloads/`, `shared/`, `modes/` base,
+  `main.tscn` and `project.godot`. What comes next is in `docs/ROADMAP.md`.
 - Avoid editing the same `.tscn` at the same time; say so on the issue first. Scene files merge badly.
 
 ## Credits

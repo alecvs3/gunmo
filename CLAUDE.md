@@ -71,7 +71,8 @@ wave modifier, networked field, client request or game mode. Use one when it fit
 ## How Claude should work here
 - **Plan first.** For anything bigger than a small fix, list the files you'll touch and the approach, then wait for an OK.
 - **Keep changes small:** one GitHub issue per branch, and say `Closes #N` in the PR.
-- **Stay in your lane.** Say so before editing files in the other developer's area (see Ownership).
+- **Say what you're about to change.** There are no fixed areas yet (see Ownership), so before a big change name the systems it touches, in case the other developer is working there.
+- **Follow the roadmap.** `docs/ROADMAP.md` lists the next milestones and their steps in order, each with how to test it.
 - **Edit scene files carefully.** Keep `.tscn` diffs minimal and explain them. Never edit `project.godot`, `.import` files or `export_presets.cfg` without asking.
 - **Test logic.** Add or update tests for damage math, upgrade stacking, wave budgets, ladder progression and bot decisions.
 - **Before calling something done,** run the tests and the linter and report the results honestly. If you couldn't run the game or test multiplayer, say so.
@@ -81,12 +82,11 @@ wave modifier, networked field, client request or game mode. Use one when it fit
 - **Keep the guides current.** If a change makes a folder `CLAUDE.md`, a recipe or the system map above wrong, fix it in the same PR. `tests/test_guides.gd` fails when a file path a guide names no longer exists.
 
 ## Ownership
-- **Alex (Dev A):** player, weapons, upgrades, gun game ladder
-- **Yusuf (Dev B):** enemies, waves, bot AI, HUD and menus
-- **Shared (both review):** `autoloads/`, `shared/`, `modes/` base class, `main.tscn`, `project.godot`
+- No fixed areas for now: Alex and Yusuf both work anywhere. Areas may be assigned later; this section will say so.
+- **Both review:** `autoloads/`, `shared/`, `modes/` base class, `main.tscn`, `project.godot`
 
 ## Commands
-- **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step.
+- **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step. `-Smoke -Scenarios S` is the 10-minute soak test (opt-in: memory and node counts must not keep growing).
 - Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 
 ## Glossary
