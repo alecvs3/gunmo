@@ -490,7 +490,7 @@ client (was about 51; budget 60).
 - Client object count rose about 3% over the 90 s soak (within the limit); the 10-minute soak is
   the real check.
 
-## M7 step 1: wave report ✅ (in review, issue #84)
+## M7 step 1: wave report ✅ (merged, issue #84)
 
 A measuring tool for the rest of M7: one command prints the whole wave difficulty curve.
 
@@ -511,7 +511,7 @@ No network format change (protocol stays 10).
 - Godot prints "ObjectDB instances leaked" at exit for any `-s` script in this project (an
   empty one too); the `.ps1` hides it. Same engine shutdown-order noise as the GUT runs.
 
-## Gun and bullet redesign (in review, issue #85)
+## Gun and bullet redesign ✅ (merged, issue #85)
 
 The pistol, SMG, shotgun and rifle were only the small guns painted into each character picture, and
 every bullet was the same pale-yellow bar that was hard to see on the concrete floor. Looks
@@ -526,3 +526,16 @@ only: no numbers, shop or ladder changes.
 ### Known limitations
 
 - **Not verified:** how it looks in a multiplayer game.
+
+## M7 step 2: enemy behaviours as parts ✅ (issue #88)
+
+An enemy type is now a combination of parts instead of code. No behaviour change.
+
+| Feature | Status | Where |
+|---|---|---|
+| `EnemyData.movement` (where it walks: `EnemyMovement.goal(own, target)`) and `EnemyData.attack` (`EnemyAttack.wants_to_attack()` pure + `perform()` on the host) | Done, tested | `enemies/behaviours/`, `enemies/enemy_data.gd` |
+| `ChaseMovement` (shared `enemies/behaviours/data/chase.tres`) and `MeleeAttack` (damage, interval, knockback; was `contact_*` on `EnemyData`) | Done, tested | `enemies/behaviours/` |
+| Grunt, runner and brute are chase + melee with their old numbers (a test pins them) | Done, tested | `enemies/data/*.tres` |
+| The data check fails on an `EnemyData` without movement or attack | Done | `tests/test_project_consistency.gd` |
+
+No network format change (protocol stays 10); clients never run the behaviours. Wave report unchanged.

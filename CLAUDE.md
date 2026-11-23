@@ -31,7 +31,8 @@ weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, rockets (Explosion)
 shared/          WindowRules (window modes, min size, UI scales), Groups
 upgrades/        ShopCatalog, UpgradeData (stats), PlayerStats (each gun's per-level amounts),
                  ShopRules
-enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres
+enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, behaviours/
+                 (movement + attack parts an EnemyData combines)
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings
 ui/*             menus, HUD, scoreboard, shop, results, F3 overlay

@@ -1,7 +1,8 @@
 class_name EnemyData
 extends Resource
 ## Tuning for one enemy type. Real values live in enemies/data/*.tres; one scene
-## (enemies/chaser.tscn) plays any of them.
+## (enemies/chaser.tscn) plays any of them. What it does is a combination of parts: a movement
+## behaviour (where it walks) and an attack behaviour (how it hurts players).
 
 @export var display_name: String = ""
 ## Tint on the sprite (white = the picture's own colors).
@@ -13,14 +14,14 @@ extends Resource
 @export_range(0.0, 2000.0) var move_speed: float = 1.0
 ## Seconds between path updates towards its target (lower = reacts sooner, costs more).
 @export_range(0.05, 5.0) var repath_interval: float = 1.0
-## Damage per touch.
-@export_range(0, 1000) var contact_damage: int = 1
-## Seconds between touches.
-@export_range(0.05, 10.0) var contact_interval: float = 1.0
+
+@export_group("Behaviours")
+## Where it walks (ChaseMovement...). Shared .tres files live in enemies/behaviours/data/.
+@export var movement: EnemyMovement
+## How it attacks (MeleeAttack...), usually its own sub-resource with this type's numbers.
+@export var attack: EnemyAttack
 
 @export_group("Knockback")
-## Push given to a player it touches (px/s, away from the enemy).
-@export_range(0.0, 3000.0) var contact_knockback: float = 0.0
 ## How fast a push on this enemy dies down (px/s lost per second).
 @export_range(0.0, 20000.0) var knockback_friction: float = 2000.0
 ## Share of a push kept when it drives the enemy into a wall (0..1).
