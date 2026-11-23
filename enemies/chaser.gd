@@ -1,7 +1,8 @@
 class_name ChaserEnemy
 extends CharacterBody2D
-## Chases the nearest living player and damages and pushes away players it touches.
-## One scene for every chaser type: the EnemyData decides speed, health, color and so on.
+## One scene for every enemy type. It targets the nearest living player; its EnemyData decides
+## the numbers (speed, health, color...) and the behaviours: where it walks (movement) and how
+## it hurts players (attack).
 ## The AI runs only on the host; clients show its snapshots, interpolated (NetEntity).
 
 ## Where clients may load enemy data from (the path arrives from the host at spawn).
@@ -20,7 +21,7 @@ var data_path: String = ""
 ## The wave's modifiers (ModifierCatalog bitmask); set before spawning, synced once.
 var modifier_mask: int = 0
 
-var _contact_cooldown_left: float = 0.0
+var _attack_cooldown_left: float = 0.0
 var _repath_left: float = 0.0
 var _speed: float = 0.0
 var _regen_per_second: float = 0.0
@@ -56,8 +57,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_regenerate(delta)
-	_move(delta)
-	_deal_contact_damage(delta)
+	var target: Node2D = _find_nearest_target()
+	_move(target, delta)
+	_attack(target, delta)
 
 
 ## Every peer turns the sprite smoothly towards the facing (where it walks, plus flinches).
@@ -83,11 +85,12 @@ func apply_net_state(state: NetState) -> void:
 	visible = true
 
 
-func _move(delta: float) -> void:
-	var target: Node2D = _find_nearest_target()
+func _move(target: Node2D, delta: float) -> void:
 	var chase: Vector2 = Vector2.ZERO
 	if target != null:
-		chase = _direction_towards(target.global_position, delta) * _speed
+		var goal: Vector2 = enemy_data.movement.goal(global_position, target.global_position)
+		if global_position.distance_squared_to(goal) > 1.0:
+			chase = _direction_towards(goal, delta) * _speed
 	velocity = chase + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -124,17 +127,26 @@ func _find_nearest_target() -> Node2D:
 	return nearest
 
 
-func _deal_contact_damage(delta: float) -> void:
-	_contact_cooldown_left = maxf(_contact_cooldown_left - delta, 0.0)
-	if _contact_cooldown_left > 0.0:
+func _attack(target: Node2D, delta: float) -> void:
+	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
+	var attack: EnemyAttack = enemy_data.attack
+	var distance: float = INF
+	if target != null:
+		distance = global_position.distance_to(target.global_position)
+	if not attack.wants_to_attack(_attack_cooldown_left, distance, target != null):
 		return
+	if attack.perform(self, target, _touching_hitboxes()):
+		_attack_cooldown_left = attack.interval
+
+
+## Player hitboxes in the contact area.
+func _touching_hitboxes() -> Array[HitboxComponent]:
+	var touching: Array[HitboxComponent] = []
 	for area in _contact_area.get_overlapping_areas():
 		var hitbox := area as HitboxComponent
-		if hitbox == null:
-			continue
-		var away: Vector2 = global_position.direction_to(hitbox.center())
-		hitbox.hit(enemy_data.contact_damage, 0, away * enemy_data.contact_knockback)
-		_contact_cooldown_left = enemy_data.contact_interval
+		if hitbox != null:
+			touching.append(hitbox)
+	return touching
 
 
 func _on_died(killer_peer_id: int) -> void:

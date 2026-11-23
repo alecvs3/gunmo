@@ -60,6 +60,8 @@ func _problems(resource: Resource) -> Array[String]:
 	elif resource is EnemyData:
 		var enemy := resource as EnemyData
 		_need(problems, enemy.cost > 0 and enemy.spawn_weight > 0.0, "cost/spawn_weight")
+		_need(problems, enemy.max_health > 0, "max_health")
+		_need(problems, enemy.movement != null and enemy.attack != null, "no movement/attack")
 	elif resource is UpgradeData:
 		var upgrade := resource as UpgradeData
 		var weapon_stat: bool = UpgradeData.is_weapon_stat(upgrade.stat)

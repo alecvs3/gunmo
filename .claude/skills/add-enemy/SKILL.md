@@ -7,12 +7,14 @@ description: Add a new enemy type to wave mode. Use when asked to add, create or
 
 Area: `enemies/`, `modes/waves/` (no fixed owner for now; say what you're changing).
 
-## A new chaser type (data only)
-One scene, `enemies/chaser.tscn`, plays every `EnemyData`.
+## A new enemy type (data only)
+One scene, `enemies/chaser.tscn`, plays every `EnemyData`. An enemy type is a combination of
+a **movement** behaviour (`enemies/behaviours/`, e.g. `data/chase.tres`) and an **attack**
+behaviour (e.g. a `MeleeAttack` sub-resource with its damage, interval and knockback).
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
    closest type (grunt, runner, brute) and change its numbers: `display_name`, `color`,
-   `visual_scale`, `max_health`, `move_speed`, `repath_interval`, `contact_damage`,
-   `contact_interval`, knockback, and the Waves group (`cost`, `first_wave`, `spawn_weight`,
+   `visual_scale`, `max_health`, `move_speed`, `repath_interval`, the Behaviours group
+   (`movement`, `attack`), knockback, and the Waves group (`cost`, `first_wave`, `spawn_weight`,
    `bounty`). It **must** live in `enemies/data/`: clients only load enemy data from
    `Chaser.DATA_FOLDER`.
 2. **Let the waves buy it:** add it to `enemy_types` in `modes/waves/data/default_waves.tres`
@@ -21,14 +23,15 @@ One scene, `enemies/chaser.tscn`, plays every `EnemyData`.
    play differently. Add to it. If wave budgets change, check `tests/modes/waves/test_wave_budget.gd`.
 4. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR.
 
-## A new behaviour (ranged, splitting, exploding...)
-- Make a new scene and script in `enemies/`, built from the shared components (Health, Hitbox,
-  Knockback; `WeaponComponent` if it shoots). Give it a `NetEntity` (kind `ENEMY`) and
-  `capture_net_state()` / `apply_net_state()` like `enemies/chaser.gd`.
+## A new behaviour (keeps distance, ranged, ...)
+- **Movement:** extend `EnemyMovement` (`enemies/behaviours/enemy_movement.gd`) and override
+  `goal(own, target)`: the point to walk to (the enemy paths there). Pure, stateless.
+- **Attack:** extend `EnemyAttack` and override `wants_to_attack(cooldown_left, distance,
+  can_see)` (pure) and `perform(enemy, target, touching)` (host; return true to restart the
+  cooldown). Tuning goes in the behaviour's `@export`s, not in `EnemyData`.
+- Put a GUT test for its pure decisions in `tests/enemies/test_enemy_behaviours.gd`.
 - **AI runs only on the host** (rule 3). Clients only draw it.
-- New tuning goes in `EnemyData` as `@export`s.
-- Its shots go through EventBus `shot_fired` like a player's, so `ProjectileSystem` handles them.
-- Add the scene to the level's enemy `MultiplayerSpawner`, and keep that `.tscn` diff small.
+- Shots go through EventBus `shot_fired` like a player's, so `ProjectileSystem` handles them.
 - Death fires EventBus `enemy_killed`. Never call into the mode directly.
 - Plan first: this is bigger than a data change, so list the files and wait for an OK.
 

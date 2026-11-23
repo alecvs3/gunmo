@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (step 1 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–2 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -27,7 +27,7 @@ balance at the end, when everything that affects balance exists.
 - **Done when:** one command shows the whole difficulty curve. Every later step that changes
   balance pastes its before/after report into the PR.
 
-### 2. Enemy behaviours as parts
+### 2. Enemy behaviours as parts ✅ (#88)
 - **Adds:** `EnemyData` gets a movement behaviour and an attack behaviour (Resources), so an
   enemy type is a combination instead of new code. Today's grunt, runner and brute become
   combinations of "chase" + "melee". No behaviour change.
