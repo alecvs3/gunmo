@@ -323,7 +323,7 @@ out: they didn't fit the game's direction and weren't balanced. New guns are now
 a time. The shop keeps its scroll area; the Gun Game ladder is back to SMG → Rifle → Shotgun →
 Pistol, 3 kills each.
 
-## Foundations: refactors for clarity ✅ (in review, issue #44)
+## Foundations: refactors for clarity ✅ (merged, issue #44)
 
 Branch `refactor-clarity`. No behaviour or network format change (protocol stays 7).
 
@@ -340,7 +340,7 @@ fields (26 bytes; splitting it would change the network format for little gain).
 **Checked:** 292 GUT tests, lint, format, and all 18 smoke roles pass. Tests that called the
 changed functions now use the typed fields instead of Dictionary keys.
 
-## Foundations: guides for Claude ✅ (in review, issue #50)
+## Foundations: guides for Claude ✅ (merged, issue #50)
 
 Branch `ai-guides`. Makes the project quick for Claude (and new readers) to work in without
 reading everything first.
@@ -385,7 +385,7 @@ starts and hosts without errors.
 - Exclusive fullscreen has no menu option yet (it waits for the settings menu, #49).
 - The view box is 16:9. Windows within 12% of that shape are filled; on 21:9 thinner dark bars remain at the sides by design (fair in Gun Game).
 
-## Screen fill fix ✅ (in review, issue #75)
+## Screen fill fix ✅ (merged, issue #75)
 
 Alex's report after #74: a maximized window didn't fill (thin bars at the sides) and leaving
 fullscreen dropped back to a small window.
@@ -399,7 +399,7 @@ fullscreen dropped back to a small window.
 - Checked in a real window on a 1920x1080 monitor: windowed, maximized (filled, no bars),
   F11 fullscreen, back to maximized. Tests for the crop rule and the saved maximized state.
 
-## Rocket launcher (in review, issue #77)
+## Rocket launcher ✅ (merged, issue #77)
 
 The first gun added one at a time, after the builds work was taken out.
 
@@ -420,7 +420,7 @@ Protocol 9 (shots carry their projectile type; new blast event; the builds field
   after the rocket lands on their screen).
 - **Not verified:** how it looks and feels in a window.
 
-## Upgrades per gun (in review, issue #79)
+## Upgrades per gun ✅ (merged, issue #79)
 
 The gun upgrades used to add a percentage of the gun's number, rounded, so some levels added
 nothing (the Rocket Launcher's 3 rockets went 4, 4, 5, 5, 6). Now every gun says what one level
@@ -439,7 +439,7 @@ of each gun upgrade gives it.
 - The amounts are a first guess, roughly matching the old percentages.
 - A reload never gets shorter than 0.1 s.
 
-## Enemies face where they walk (in review, issue #81)
+## Enemies face where they walk ✅ (merged, issue #81)
 
 Enemies used to turn their picture towards wherever they moved. A bullet pushes them backwards,
 so they spun around, and because a half turn is a tie that Godot always settles the same way,
@@ -463,3 +463,30 @@ client (was about 51; budget 60).
 - On the host's own screen, the picture turns a few ticks before the (slightly delayed) body
   is drawn moving.
 - **Not verified:** how it looks in a window.
+
+## Hardening: client limits, garbage input, soak ✅ (in review, issue #47)
+
+- **Client limits:** the host lets each client send at most 120 command packets a second
+  (bursts of 40) and 8 requests a second (bursts of 16), and drops requests over 64 bytes, before
+  decoding anything (`RateLimiter`, numbers in `default_network_config.tres`). Normal play sends
+  60 a second, so it never hits the limit; a flooding client only loses its own extra packets.
+  Drops are logged at most once a second per client.
+- **Garbage input test** (`tests/shared/network/test_garbage_input.gd`): seeded random bytes into
+  input commands, join hellos, snapshots and shop requests. It found two real problems, both fixed:
+  - a huge (but finite) aim angle passed `InputCommand.sanitized()` as garbage, because `wrapf`
+    loses precision on huge numbers; aims beyond 1000 rad now become 0;
+  - a junk join hello made Godot log hundreds of decode errors; `Handshake.decode` now drops
+    anything that isn't a plain Dictionary of at most 1 KB before decoding it.
+- **Soak test:** smoke scenario **S** (opt-in, `-Smoke -Scenarios S`) runs the stress scene for 10
+  minutes and fails if memory, objects or nodes grow more than 15% between the first and last
+  quarter. 90 s run: nodes 913 → 914, memory 74.6 → 74.8 MB (host).
+- No network format change (protocol stays 10).
+- Also: `docs/ROADMAP.md` (the plan for what comes next), no fixed developer areas in
+  `CLAUDE.md`/`README.md` for now, and the six merged sections above marked merged.
+
+### Known limitations
+- A client over its limit is slowed down, not kicked.
+- The garbage test covers what clients send today; each new client decoder needs its own case.
+- Client object count rose about 3% over the 90 s soak (within the limit); the 10-minute soak is
+  the real check.
+

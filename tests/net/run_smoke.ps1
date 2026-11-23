@@ -9,11 +9,14 @@
 #      host input buffer; checked against shared/network/latency_budget.tres
 #   H  fairness: a client with 160 ms round trip vs 2 bots; bot hits must be where the
 #      client's own screen had it (fair dodging)
+#   S  soak (opt-in, only with -Only S): the stress scene for 10 minutes; memory, objects and
+#      nodes must not keep growing. Run it before a release or after big changes.
 # A-E only check behaviour, so they run at the same time (each on its own port). F, G and H
 # measure timing, so each runs alone afterwards: other processes would skew their numbers.
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 #   -Only A,E   just those scenarios (letters)
+#   -Only S -SoakSeconds 1800   a longer soak
 # or set the GODOT environment variable once and run it without -Godot.
 # Exit code 0 = every role passed. Logs go to %TEMP%\gunmo_net_smoke (or -LogDir).
 param(
@@ -21,7 +24,8 @@ param(
     [int]$Port = 7790,
     [int]$TimeoutSeconds = 120,
     [string]$LogDir = (Join-Path $env:TEMP "gunmo_net_smoke"),
-    [string[]]$Only = @()
+    [string[]]$Only = @(),
+    [int]$SoakSeconds = 600
 )
 
 if (-not $Godot -or -not (Test-Path $Godot)) {
@@ -61,15 +65,21 @@ $scenarios = @(
        Roles = @((Role "latencyhost"), (Role "latencyclient" -Late)) },
     @{ Id = "H"; Title = "fairness under 160 ms round trip (fair dodging)"; Alone = $true
        Script = "res://tests/net/fairness.gd"; Metrics = "FAIRNESS"
-       Roles = @((Role "fairhost"), (Role "fairclient" -Late)) }
+       Roles = @((Role "fairhost"), (Role "fairclient" -Late)) },
+    @{ Id = "S"; Title = "soak ($SoakSeconds s of stress, memory and node counts)"; Alone = $true
+       Script = "res://tests/net/stress.gd"; Metrics = "STRESS"; Optional = $true
+       Extra = "$SoakSeconds"; Timeout = $SoakSeconds + 120
+       Roles = @((Role "stresshost"), (Role "stressclient")) }
 )
 for ($i = 0; $i -lt $scenarios.Count; $i++) { $scenarios[$i].Port = $Port + $i }
 if ($Only.Count) { $scenarios = @($scenarios | Where-Object { $Only -contains $_.Id }) }
+else { $scenarios = @($scenarios | Where-Object { -not $_.Optional }) }
 
 function Start-Role($Scenario, $Role) {
     $arguments = @("--headless", "--path", "`"$projectRoot`"", "-s", $Scenario.Script, "--",
         $Role.Name, "$($Scenario.Port)")
     if ($Role.Sim) { $arguments += $Role.Sim }
+    if ($Scenario.Extra) { $arguments += $Scenario.Extra }
     Start-Process -FilePath $Godot -ArgumentList $arguments -NoNewWindow -PassThru `
         -RedirectStandardOutput (Join-Path $LogDir "$($Role.Name).log") `
         -RedirectStandardError (Join-Path $LogDir "$($Role.Name).err.log")
@@ -85,7 +95,9 @@ function Invoke-Batch($Batch) {
         if ($late -and $starting.Count) { Start-Sleep -Seconds 2 }
         foreach ($item in $starting) { $processes += Start-Role $item.Scenario $item.Role }
     }
-    $processes | Wait-Process -Timeout $TimeoutSeconds -ErrorAction SilentlyContinue
+    $timeout = ($Batch | ForEach-Object { if ($_.Timeout) { $_.Timeout } else { $TimeoutSeconds } } |
+        Measure-Object -Maximum).Maximum
+    $processes | Wait-Process -Timeout $timeout -ErrorAction SilentlyContinue
     $processes | Where-Object { -not $_.HasExited } | Stop-Process -Force
     return $watch.Elapsed.TotalSeconds
 }

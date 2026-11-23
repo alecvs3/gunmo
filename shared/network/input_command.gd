@@ -10,6 +10,8 @@ const ALL_BUTTONS: int = FIRE | RELOAD
 ## u32 sequence, 2 x f32 move, f64 aim, u8 buttons, f64 view tick, f64 client tick.
 const ENCODED_SIZE: int = 37
 const MAX_PER_PACKET: int = 16
+## Aims further than this from 0 (radians) are garbage, not a real mouse angle.
+const MAX_RAW_AIM: float = 1000.0
 
 var sequence: int = 0
 ## Movement direction, length 0..1.
@@ -34,7 +36,8 @@ func sanitized() -> InputCommand:
 	var clean := InputCommand.new()
 	clean.sequence = sequence
 	clean.move = move.limit_length(1.0) if move.is_finite() else Vector2.ZERO
-	clean.aim = wrapf(aim, -PI, PI) if is_finite(aim) else 0.0
+	# wrapf loses all precision on huge numbers, so those (never sent by a real client) become 0.
+	clean.aim = wrapf(aim, -PI, PI) if is_finite(aim) and absf(aim) < MAX_RAW_AIM else 0.0
 	clean.buttons = buttons & ALL_BUTTONS
 	clean.view_tick = view_tick if is_finite(view_tick) else 0.0
 	clean.client_tick = client_tick if is_finite(client_tick) else 0.0
