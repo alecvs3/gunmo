@@ -5,7 +5,7 @@ description: Add a wave modifier (a rule applied to every enemy of a wave, like 
 
 # Add a wave modifier
 
-Area: **Yusuf** (`modes/waves/`).
+Area: `modes/waves/` (no fixed owner for now; say what you're changing).
 
 ## Using the existing knobs (data only)
 1. **Create `modes/waves/data/modifiers/<name>.tres`** (a `WaveModifier`,
@@ -17,6 +17,8 @@ Area: **Yusuf** (`modes/waves/`).
 3. When modifiers start is set by `first_modifier_wave` / `double_modifier_wave` in
    `modes/waves/data/default_waves.tres`.
 4. **Tests:** `tests/modes/waves/test_modifier_catalog.gd` (combining, names, the default catalog).
+5. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR
+   (the Effective column shows armor; regeneration isn't in it).
 
 ## A new kind of effect
 Modifiers should create strategy by combining (CLAUDE.md: systems that combine, not scripted

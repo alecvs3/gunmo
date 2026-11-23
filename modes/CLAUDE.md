@@ -1,7 +1,7 @@
 # modes/: the rules of a match
 
-The base class `game_mode.gd` is **shared**. Waves (`wave_mode.gd`, `waves/`) is **Yusuf's**.
-Gun Game (`gun_game/`) is **Alex's**.
+No fixed owner for now (root `CLAUDE.md`, Ownership). The base class `game_mode.gd` is
+reviewed by both developers.
 
 ## How a mode works
 - One mode node lives under `Main/ModeContainer` on every peer. The host picks it from
@@ -22,7 +22,8 @@ Gun Game (`gun_game/`) is **Alex's**.
 | `waves/wave_flow.gd` | The wave mode's state machine |
 | `waves/wave_budget.gd` | How many points a wave may spend, and which enemies it buys |
 | `waves/wave_schedule.gd` | How waves grow (data in `waves/data/default_waves.tres`) |
-| `waves/modifier_catalog.gd` | Which modifiers a wave gets, sent as a one-byte mask |
+| `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
+| `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |
 | `gun_game/gun_game_ladder.gd` | Kills per tier, the last tier, who has won |
 
 Put new rules in a pure class like these and test it. The mode node should only wire it up.
@@ -44,3 +45,5 @@ ignores peers without a player, handles `REQUEST_READY` (1) and passes the rest 
 
 ## Tests
 `tests/modes/`, plus smoke scenarios C (wave loop), D (shop) and E (gun game).
+A change to wave balance (budgets, enemy numbers, modifiers) pastes `.\tools\wave_report.ps1`
+before and after into its PR.

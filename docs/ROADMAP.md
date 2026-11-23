@@ -6,8 +6,8 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 
 | Milestone | What | Status |
 |---|---|---|
-| Hardening | rate limits, garbage-input test, soak test (#47) | in review |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | next |
+| Hardening | rate limits, garbage-input test, soak test (#47) | merged |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (step 1 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -19,7 +19,7 @@ Each step lists what it adds, how it is tested, and when it is done. The order m
 measuring tools first, then the systems that combine, then the content built on them, then
 balance at the end, when everything that affects balance exists.
 
-### 1. Wave report (measuring tool)
+### 1. Wave report (measuring tool) ✅ (#84)
 - **Adds:** `tools/wave_report.ps1` + a headless script that prints, for waves 1–25: budget,
   enemies by type, total enemy health, modifiers, and peak enemies alive. Pure numbers, no window.
 - **Test:** a GUT test that the report's numbers match `WaveBudget`/`WaveSpawner` for a small

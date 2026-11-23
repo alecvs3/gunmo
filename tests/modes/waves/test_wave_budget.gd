@@ -96,3 +96,8 @@ func test_default_schedule_shape() -> void:
 	for wave in range(1, 26):
 		assert_gt(WaveBudget.budget(real, wave), previous, "budgets grow every wave")
 		previous = WaveBudget.budget(real, wave)
+
+
+func test_wave_seed_is_match_seed_and_wave() -> void:
+	assert_eq(WaveBudget.wave_seed(99, 7), hash([99, 7]), "same seed as before: replays unchanged")
+	assert_ne(WaveBudget.wave_seed(99, 7), WaveBudget.wave_seed(99, 8))

@@ -87,6 +87,7 @@ wave modifier, networked field, client request or game mode. Use one when it fit
 
 ## Commands
 - **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step. `-Smoke -Scenarios S` is the 10-minute soak test (opt-in: memory and node counts must not keep growing).
+- **Wave report:** `.\tools\wave_report.ps1` (`-Seed N`, `-Schedule res://...`) prints every wave's budget, enemies by type, health, peak alive and modifiers as a markdown table. Paste it before/after in any PR that changes wave balance.
 - Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 
 ## Glossary

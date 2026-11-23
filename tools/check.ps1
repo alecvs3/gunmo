@@ -24,27 +24,7 @@ $root = Split-Path -Parent $PSScriptRoot
 New-Item -ItemType Directory -Force $LogDir | Out-Null
 $results = [ordered]@{}
 
-function Find-Godot {
-    if ($Godot -and (Test-Path $Godot)) { return (Resolve-Path $Godot).Path }
-    if ($env:GODOT -and (Test-Path $env:GODOT)) { return $env:GODOT }
-    foreach ($name in @("godot_console", "godot")) {
-        $command = Get-Command $name -ErrorAction SilentlyContinue
-        if ($command) { return $command.Source }
-    }
-    $folders = @(
-        (Join-Path $env:LOCALAPPDATA "Programs\Godot"),
-        "C:\Tools\Godot",
-        (Join-Path $HOME "Godot"),
-        (Join-Path $HOME "Downloads")
-    )
-    foreach ($folder in $folders) {
-        if (-not (Test-Path $folder)) { continue }
-        $found = Get-ChildItem $folder -Recurse -Depth 2 -Filter "Godot_v4.7*_console.exe" `
-            -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($found) { return $found.FullName }
-    }
-    return $null
-}
+. (Join-Path $PSScriptRoot "find_godot.ps1")
 
 # gdlint/gdformat on PATH, or the same tools through Python (pip's Scripts folder is often
 # not on PATH on Windows).
@@ -126,7 +106,7 @@ function Step-Smoke([string]$Exe) {
     return @{ Ok = $ok; Detail = "$passed roles passed (logs: $smokeLogs)"; Lines = $failures }
 }
 
-$exe = Find-Godot
+$exe = Find-Godot $Godot
 $needsGodot = (Wants "import") -or (Wants "tests") -or (Wants "smoke")
 if ($needsGodot -and -not $exe) {
     Write-Host "Godot 4.7.2 (console exe) not found. Pass -Godot <path> or set GODOT." -ForegroundColor Red

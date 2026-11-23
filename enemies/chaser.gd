@@ -150,7 +150,7 @@ func _apply_modifiers(combined: WaveModifier) -> void:
 		tinted = enemy_data.color.lerp(combined.color, 0.45)
 	_body.modulate = tinted
 	_body.scale = Vector2.ONE * enemy_data.visual_scale
-	_health.max_health = maxi(roundi(enemy_data.max_health * combined.health_multiplier), 1)
+	_health.max_health = combined.scaled_health(enemy_data.max_health)
 	_health.damage_taken_multiplier = combined.damage_taken_multiplier
 	_speed = enemy_data.move_speed * combined.speed_multiplier
 	_regen_per_second = combined.regen_per_second
