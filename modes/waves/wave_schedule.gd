@@ -14,6 +14,11 @@ extends Resource
 @export_range(0.5, 3.0) var budget_curve: float = 1.0
 ## Every enemy type the waves may buy.
 @export var enemy_types: Array[EnemyData] = []
+## Share of the budget for each EnemyData.Role (frontline, ranged, swarm, support) in wave 1
+## and in the last wave, blended in between. A role with no type available yet passes its share
+## on to the others. Empty = everything frontline.
+@export var shares_first: PackedFloat32Array = []
+@export var shares_last: PackedFloat32Array = []
 ## Seconds between spawns in wave 1, and in the last wave (blended in between).
 @export_range(0.05, 10.0) var first_spawn_interval: float = 1.0
 @export_range(0.05, 10.0) var last_spawn_interval: float = 1.0
@@ -29,7 +34,20 @@ extends Resource
 
 
 func spawn_interval(wave: int) -> float:
-	var progress: float = 0.0
-	if total_waves > 1:
-		progress = clampf(float(wave - 1) / (total_waves - 1), 0.0, 1.0)
-	return lerpf(first_spawn_interval, last_spawn_interval, progress)
+	return lerpf(first_spawn_interval, last_spawn_interval, progress(wave))
+
+
+## 0 in wave 1, 1 in the last wave.
+func progress(wave: int) -> float:
+	if total_waves <= 1:
+		return 0.0
+	return clampf(float(wave - 1) / (total_waves - 1), 0.0, 1.0)
+
+
+## This wave's share for `role` before roles without types are taken out.
+func share(role: int, wave: int) -> float:
+	if shares_first.size() <= role and shares_last.size() <= role:
+		return 1.0 if role == EnemyData.Role.FRONTLINE else 0.0
+	var first: float = shares_first[role] if role < shares_first.size() else 0.0
+	var last: float = shares_last[role] if role < shares_last.size() else first
+	return lerpf(first, last, progress(wave))

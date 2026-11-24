@@ -19,4 +19,5 @@ max_alive = 40
 min_spawn_distance = 0.0
 first_modifier_wave = 99
 double_modifier_wave = 99
+shares_first = PackedFloat32Array(0.4, 0.3, 0.3, 0)
 enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_grunt"), ExtResource("3_shooter"), ExtResource("4_tank"), ExtResource("6_swarmer")])

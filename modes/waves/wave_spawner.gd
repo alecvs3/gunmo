@@ -73,15 +73,21 @@ func _ready() -> void:
 
 
 ## Plans the wave (the same seed gives the same enemies) and starts releasing it. Every enemy
-## gets the wave's modifiers (ModifierCatalog bitmask).
+## gets the wave's modifiers (ModifierCatalog bitmask); `threat` is how much tougher they make
+## each enemy (ModifierCatalog.threat), so the wave buys fewer.
 func start_wave(
-	level: Level, schedule: WaveSchedule, wave: int, seed_value: int, modifier_mask: int
+	level: Level,
+	schedule: WaveSchedule,
+	wave: int,
+	seed_value: int,
+	modifier_mask: int,
+	threat: float = 1.0
 ) -> void:
 	_level = level
 	_modifier_mask = modifier_mask
 	_schedule = schedule
 	_rng.seed = seed_value
-	_queue = WaveBudget.plan(schedule, wave, _rng)
+	_queue = WaveBudget.plan(schedule, wave, _rng, threat)
 	_interval = schedule.spawn_interval(wave)
 	_time_left = 0.0
 

@@ -21,6 +21,11 @@ class Row:
 	var effective_health: int = 0
 	var modifier_mask: int = 0
 	var modifiers: String = ""
+	## How much tougher the modifiers make each enemy (ModifierCatalog.threat).
+	var threat_factor: float = 1.0
+	## The difficulty on paper: points of enemies bought times threat_factor. The curve that must
+	## rise every wave (the budget minus what could not be spent).
+	var threat: float = 0.0
 	## Most enemies alive at once if nobody kills anything: the schedule's cap, not a prediction.
 	var peak_alive: int = 0
 	## Seconds from the first spawn to the last when max_alive never holds one back.
@@ -42,8 +47,9 @@ static func row(
 	result.budget = WaveBudget.budget(schedule, wave)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = WaveBudget.wave_seed(match_seed, wave)
-	var planned: Array[EnemyData] = WaveBudget.plan(schedule, wave, rng)
 	result.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
+	result.threat_factor = catalog.threat(result.modifier_mask)
+	var planned: Array[EnemyData] = WaveBudget.plan(schedule, wave, rng, result.threat_factor)
 	result.modifiers = catalog.names(result.modifier_mask)
 	var combined: WaveModifier = catalog.combined(result.modifier_mask)
 	var effective: float = 0.0
@@ -55,6 +61,8 @@ static func row(
 			effective += health / (combined.damage_taken_multiplier * each.damage_taken)
 	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
+	for type in planned:
+		result.threat += type.cost * result.threat_factor
 	result.peak_alive = mini(planned.size(), schedule.max_alive)
 	result.spawn_seconds = maxi(planned.size() - 1, 0) * schedule.spawn_interval(wave)
 	return result
@@ -75,7 +83,7 @@ static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
 	for type in schedule.enemy_types:
 		if type != null and not names.has(type.display_name):
 			names.append(type.display_name)
-	var header := PackedStringArray(["Wave", "Budget", "Enemies"])
+	var header := PackedStringArray(["Wave", "Budget", "Threat", "Enemies"])
 	header.append_array(names)
 	header.append_array(["Health", "Effective", "Peak alive", "Spawn s", "Modifiers"])
 	var lines := PackedStringArray([_line(header), _line(_rule(header.size()))])
@@ -85,7 +93,9 @@ static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
 
 
 static func _cells(each: Row, names: PackedStringArray) -> PackedStringArray:
-	var cells := PackedStringArray(["%d" % each.wave, "%.1f" % each.budget, "%d" % each.enemies])
+	var cells := PackedStringArray(
+		["%d" % each.wave, "%.1f" % each.budget, "%.1f" % each.threat, "%d" % each.enemies]
+	)
 	for name in names:
 		cells.append("%d" % each.counts.get(name, 0))
 	(

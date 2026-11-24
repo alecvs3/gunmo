@@ -1,5 +1,7 @@
 extends GutTest
 
+const DEFAULT_SCHEDULE: String = "res://modes/waves/data/default_waves.tres"
+
 var schedule: WaveSchedule
 var cheap: EnemyData
 var pricey: EnemyData
@@ -85,13 +87,13 @@ func test_spawn_interval_blends_across_waves() -> void:
 
 
 func test_default_schedule_shape() -> void:
-	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	assert_eq(real.total_waves, 25)
 	assert_eq(real.enemy_types.size(), 8)
 	var first: int = WaveBudget.plan(real, 1, _rng(1)).size()
-	var last: int = WaveBudget.plan(real, 25, _rng(1)).size()
+	var last: int = WaveBudget.plan(real, 25, _rng(1), 2.0).size()
 	assert_between(first, 4, 8, "wave 1 is a handful of grunts")
-	assert_between(last, 35, 90, "wave 25 is a crowd")
+	assert_between(last, 30, 90, "wave 25 is a crowd")
 	var previous: float = 0.0
 	for wave in range(1, 26):
 		assert_gt(WaveBudget.budget(real, wave), previous, "budgets grow every wave")
@@ -112,3 +114,78 @@ func test_group_types_are_bought_together() -> void:
 	assert_eq(plan.size(), 10, "whole groups while the points last")
 	schedule.base_budget = 1.0
 	assert_eq(WaveBudget.plan(schedule, 1, _rng(1)).size(), 2, "a partial group at the end")
+
+
+func test_role_shares_blend_and_skip_roles_without_types() -> void:
+	schedule.shares_first = PackedFloat32Array([1.0, 0.0, 0.0, 0.0])
+	schedule.shares_last = PackedFloat32Array([0.5, 0.3, 0.2, 0.0])
+	var ranged: EnemyData = _type(2.0, 1, 1.0)
+	ranged.role = EnemyData.Role.RANGED
+	schedule.enemy_types.assign([cheap, ranged])
+	var types: Array[EnemyData] = WaveBudget.available(schedule, 25)
+	var last: PackedFloat32Array = WaveBudget.role_shares(schedule, 25, types)
+	assert_almost_eq(last[EnemyData.Role.FRONTLINE], 0.5 / 0.8, 1e-4, "no swarm type: its share")
+	assert_almost_eq(last[EnemyData.Role.RANGED], 0.3 / 0.8, 1e-4, "goes to the others")
+	assert_eq(last[EnemyData.Role.SWARM], 0.0)
+	var first: PackedFloat32Array = WaveBudget.role_shares(schedule, 1, types)
+	assert_almost_eq(first[EnemyData.Role.FRONTLINE], 1.0, 1e-4)
+
+
+func test_no_shares_means_everything_frontline() -> void:
+	var shares: PackedFloat32Array = WaveBudget.role_shares(
+		schedule, 3, WaveBudget.available(schedule, 3)
+	)
+	assert_eq(shares[EnemyData.Role.FRONTLINE], 1.0)
+
+
+func test_roles_get_their_share_of_the_points() -> void:
+	schedule.base_budget = 200.0
+	schedule.shares_first = PackedFloat32Array([0.5, 0.5, 0.0, 0.0])
+	var ranged: EnemyData = _type(2.0, 1, 1.0)
+	ranged.role = EnemyData.Role.RANGED
+	schedule.enemy_types.assign([cheap, ranged])
+	var plan: Array[EnemyData] = WaveBudget.plan(schedule, 1, _rng(5))
+	assert_eq(plan.count(ranged), 50, "100 ranged points / 2")
+	assert_eq(plan.count(cheap), 100)
+	assert_ne(plan.slice(0, 50).count(ranged), 0, "shuffled, not all frontline first")
+
+
+func test_a_threatening_wave_buys_fewer() -> void:
+	var plain: int = WaveBudget.plan(schedule, 10, _rng(2)).size()
+	var tough: Array[EnemyData] = WaveBudget.plan(schedule, 10, _rng(2), 2.0)
+	assert_lt(tough.size(), plain)
+	assert_lte(_cost(tough), WaveBudget.budget(schedule, 10) / 2.0 + 0.0001)
+
+
+func test_default_curve_rises_every_wave_without_spikes() -> void:
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
+	var catalog: ModifierCatalog = ModifierCatalog.load_default()
+	for seed_value in 20:
+		var previous: float = 0.0
+		for row in WaveReport.build(real, catalog, seed_value):
+			var label: String = "seed %d wave %d" % [seed_value, row.wave]
+			assert_gt(row.threat, previous, label + " rises")
+			assert_gt(row.threat, row.budget - 3.0, label + " spends its budget (no dips)")
+			previous = row.threat
+	var step: float = 0.0
+	for wave in range(2, 26):
+		var grew: float = WaveBudget.budget(real, wave) - WaveBudget.budget(real, wave - 1)
+		assert_gte(grew, step, "the budget's growth never slows (wave %d)" % wave)
+		step = grew
+
+
+func test_late_default_waves_have_every_role() -> void:
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
+	var catalog: ModifierCatalog = ModifierCatalog.load_default()
+	for seed_value in 10:
+		for row in WaveReport.build(real, catalog, seed_value).slice(19):
+			for name in ["Shooter", "Swarmer", "Support"]:
+				assert_gt(
+					row.counts.get(name, 0), 0, "seed %d wave %d %s" % [seed_value, row.wave, name]
+				)
+
+
+func test_a_strong_threat_still_buys_one_enemy() -> void:
+	schedule.base_budget = 4.0
+	schedule.enemy_types.assign([pricey])
+	assert_eq(WaveBudget.plan(schedule, 1, _rng(1), 3.0).size(), 1, "4 / 3 < 4, but one is bought")

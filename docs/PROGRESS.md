@@ -616,7 +616,7 @@ No network format change (the split children are normal enemy spawns).
   needs people playing (the roadmap's "done when"); on paper a Support adds about 12% of the
   nearby enemies' health every 1.5 s.
 
-## M7 step 6: modifiers that stack ✅ (issue #96)
+## M7 step 6: modifiers that stack ✅ (merged, issue #96)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -632,3 +632,24 @@ No network format change: the mask is still one byte (5 of 8 modifiers used).
 - The modifiers only change health, speed, armor and regeneration; new kinds of effect need
   code (recipe `add-wave-modifier`).
 - **Not verified:** how a 3-modifier banner reads in a window.
+
+## M7 step 7: the wave curve to 25 ✅ (issue #98)
+
+| Feature | Status | Where |
+|---|---|---|
+| Every enemy has a role (`EnemyData.role`: frontline, ranged, swarm, support) | Done | `enemies/enemy_data.gd`, `enemies/data/*.tres` |
+| **Composition rules:** the schedule gives each role a share of the budget in wave 1 (`shares_first`: all frontline) and the last wave (`shares_last`: 50% frontline, 25% ranged, 10% swarm, 15% support), blended in between; a role with no type yet passes its share on. Roles buy in turn, frontline last (it soaks up what the others couldn't spend); the picks are shuffled (groups kept together) so roles arrive mixed | Done, tested | `modes/waves/wave_budget.gd`, `wave_schedule.gd` |
+| **Modifiers cost budget:** a wave buys budget ÷ threat, where threat (`ModifierCatalog.threat`) is how much tougher its modifiers make each enemy (health ÷ damage taken × speed and regeneration terms). Armored waves get fewer, tougher enemies instead of a spike; a wave always buys at least one enemy | Done, tested | `modes/waves/modifier_catalog.gd`, `wave_mode.gd`, `wave_spawner.gd` |
+| **The budget curve:** 6 + 1.9 × (wave − 1)^1.35, from 6 points in wave 1 to 144 in wave 25 (was 91), so late waves still fill the field after paying for 2–3 modifiers | Done | `modes/waves/data/default_waves.tres` |
+| The wave report has a **Threat** column (points bought × threat): the curve on paper. A test checks it rises every wave and stays within 3 points of the budget (no dips or spikes) over 20 seeds, and that waves 20–25 have Shooters, Swarmers and Supports | Done, tested | `modes/waves/wave_report.gd`, `tests/modes/waves/test_wave_budget.gd` |
+| `max_alive` stays **40**: at 50 the stress client downloads 59.5 KB/s (budget 60); at 45 the host tick p95 was 8.3–9.0 ms (budget 10) on Alex's PC, too close for CI | Measured | `tests/net/stress.gd` |
+
+**Measured:** smoke F at 40 with the real mix (grunt, shooter, tank, swarmer by shares): host
+tick p95 4.2 ms, client download 52.8 KB/s. Soak S (10 min): see the PR.
+
+### Known limitations
+- Threat counts points (the costs are the designers' judgement of danger), not a simulation of
+  how hard a wave plays. Effective health still swings between waves with the modifiers.
+- Swarmers are cheap, so their 10% share is still 15–24 of a late wave's 40.
+- A bigger `max_alive` needs smaller enemy snapshots (bandwidth is the limit at 50).
+- **Not verified:** how the curve plays (step 15's playtests).

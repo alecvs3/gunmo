@@ -19,6 +19,7 @@ heal_share = 0.12
 [resource]
 script = ExtResource("1_edata")
 display_name = "Support"
+role = 3
 color = Color(1, 0.9, 0.4, 1)
 visual_scale = 1.1
 max_health = 90
