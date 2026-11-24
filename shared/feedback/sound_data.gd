@@ -9,6 +9,8 @@ const DEFAULT_PATH: String = "res://shared/feedback/data/default_sounds.tres"
 @export var enemy_hit: SoundCue
 @export var enemy_big_hit: SoundCue
 @export var enemy_death: SoundCue
+## Bosses play this instead of enemy_death.
+@export var boss_death: SoundCue
 @export var blast: SoundCue
 @export_group("You")
 @export var player_hurt: SoundCue

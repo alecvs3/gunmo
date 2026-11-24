@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
 [ext_resource type="PackedScene" path="res://weapons/models/rifle_model.tscn" id="2_model"]
+[ext_resource type="Resource" path="res://shared/feedback/data/guns/rifle_shot.tres" id="90_sound"]
 
 [resource]
 script = ExtResource("1_wdata")
@@ -26,3 +27,4 @@ reload_per_level = 0.18
 knockback_per_level = 40.0
 held_model = ExtResource("2_model")
 projectile = 3
+fire_sound = ExtResource("90_sound")

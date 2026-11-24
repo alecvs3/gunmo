@@ -41,3 +41,6 @@ signal match_restart_requested
 signal damage_seen(at: Vector2, amount: int, big: bool)
 ## Every peer, looks only: an explosion of `radius` was shown at `at` (camera shake).
 signal blast_shown(at: Vector2, radius: float)
+## Every peer, sounds only: a bullet (a Shot) appeared here, once per bullet (predicted on the
+## shooter's own peer, real on the host, remote elsewhere). The FeedbackSystem plays the gun.
+signal shot_shown(shot: RefCounted)

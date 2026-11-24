@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="SoundCue" format=3]
+
+[ext_resource type="Script" path="res://shared/feedback/sound_cue.gd" id="1_cue"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/rifle_1.mp3" id="2_rifle_1"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/rifle_2.mp3" id="3_rifle_2"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/rifle_3.mp3" id="4_rifle_3"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_shot"]
+random_pitch = 1.04
+streams_count = 3
+stream_0/stream = ExtResource("2_rifle_1")
+stream_0/weight = 1.0
+stream_1/stream = ExtResource("3_rifle_2")
+stream_1/weight = 1.0
+stream_2/stream = ExtResource("4_rifle_3")
+stream_2/weight = 1.0
+
+[resource]
+script = ExtResource("1_cue")
+stream = SubResource("AudioStreamRandomizer_shot")
+volume_db = -7.0
+max_at_once = 2

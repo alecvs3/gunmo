@@ -1,10 +1,11 @@
 class_name FeedbackSystem
 extends Node
-## The level's "game feel" effects, on every peer. Looks only.
+## The level's "game feel" effects and world sounds, on every peer. Looks and sounds only.
 ## - Damage numbers: any HitFeedback asks through EventBus.damage_seen.
 ## - Death bursts: the host sees EventBus.enemy_killed, shows the burst and tells every client
 ##   where (EVENT_DEATH). Clients never guess from an enemy disappearing, because a match reset
 ##   removes enemies too.
+## - Gunshots: EventBus.shot_shown, once per trigger pull, the shooter's gun's fire_sound.
 
 ## NetChannel event topic (ProjectileSystem uses 1).
 const TOPIC: int = 2
@@ -20,25 +21,36 @@ const MAX_BURST_SCALE: float = 10.0
 var _sound := SoundPlayback.new()
 
 
-static func encode_death(at: Vector2, color: Color, size_scale: float) -> PackedByteArray:
+static func encode_death(
+	at: Vector2, color: Color, size_scale: float, boss: bool
+) -> PackedByteArray:
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u8(EVENT_DEATH)
 	NetCodec.put_vector2(buffer, at)
 	buffer.put_u32(color.to_rgba32())
 	buffer.put_float(size_scale)
+	buffer.put_u8(1 if boss else 0)
 	return buffer.data_array
 
 
-## Decodes an EVENT_DEATH payload (after its kind byte) into [at, color, scale], or [] if bad.
+## Decodes an EVENT_DEATH payload (after its kind byte) into [at, color, scale, boss], or [] if
+## bad.
 static func decode_death(buffer: StreamPeerBuffer) -> Array:
-	if buffer.get_available_bytes() < 16:
+	if buffer.get_available_bytes() < 17:
 		return []
 	var at: Vector2 = NetCodec.get_vector2(buffer)
 	var color := Color.hex(buffer.get_u32())
 	var size_scale: float = buffer.get_float()
+	var boss: bool = buffer.get_u8() == 1
 	if not at.is_finite() or not is_finite(size_scale) or size_scale <= 0.0:
 		return []
-	return [at, color, minf(size_scale, MAX_BURST_SCALE)]
+	return [at, color, minf(size_scale, MAX_BURST_SCALE), boss]
+
+
+## Whether a shot is the first bullet of its trigger pull (a shotgun fires several pellets but
+## should bang once). Enemies' shots make no gun sound.
+static func plays_gunshot(shooter_id: int, shot_id: int) -> bool:
+	return not Shot.is_enemy_shooter(shooter_id) and shot_id % Shot.MAX_PELLETS == 0
 
 
 func _ready() -> void:
@@ -49,6 +61,7 @@ func _ready() -> void:
 	add_child(_sound)
 	EventBus.damage_seen.connect(_show_number)
 	EventBus.blast_shown.connect(_on_blast_shown)
+	EventBus.shot_shown.connect(_on_shot_shown)
 	EventBus.local_player_hurt.connect(_on_local_player_hurt.unbind(1))
 	if multiplayer.is_server():
 		EventBus.enemy_killed.connect(_on_enemy_killed)
@@ -66,18 +79,27 @@ func _show_number(at: Vector2, amount: int, big: bool) -> void:
 	_sound.play_at(sounds.enemy_big_hit if big else sounds.enemy_hit, at)
 
 
-func _show_burst(at: Vector2, color: Color, size_scale: float) -> void:
+func _show_burst(at: Vector2, color: Color, size_scale: float, boss: bool) -> void:
 	var burst := DeathBurst.new()
 	burst.data = data
 	burst.color = color
 	burst.size_scale = size_scale
 	burst.position = at
 	effects_root.add_child(burst)
-	_sound.play_at(sounds.enemy_death, at)
+	_sound.play_at(sounds.boss_death if boss else sounds.enemy_death, at)
 
 
 func _on_blast_shown(at: Vector2, _radius: float) -> void:
 	_sound.play_at(sounds.blast, at)
+
+
+func _on_shot_shown(shot_ref: RefCounted) -> void:
+	var shot := shot_ref as Shot
+	if shot == null or not plays_gunshot(shot.shooter_id, shot.shot_id):
+		return
+	var shooter: Player = Player.find_by_id(get_tree(), shot.shooter_id)
+	if shooter != null:
+		_sound.play_at(shooter.get_loadout().current_weapon().fire_sound, shot.origin)
 
 
 func _on_local_player_hurt() -> void:
@@ -90,10 +112,10 @@ func _on_enemy_killed(enemy: Node2D, _killer_peer_id: int) -> void:
 	if dying == null:
 		return
 	var at: Vector2 = dying.drawn_position()
-	_show_burst(at, dying.burst_color(), dying.enemy_data.body_scale)
-	var payload: PackedByteArray = encode_death(
-		at, dying.burst_color(), dying.enemy_data.body_scale
-	)
+	var boss: bool = dying.enemy_data.is_boss()
+	var scale_now: float = dying.enemy_data.body_scale
+	_show_burst(at, dying.burst_color(), scale_now, boss)
+	var payload: PackedByteArray = encode_death(at, dying.burst_color(), scale_now, boss)
 	for peer_id in multiplayer.get_peers():
 		NetworkManager.channel.send_event(peer_id, TOPIC, payload)
 
@@ -106,4 +128,4 @@ func _on_event_received(topic: int, payload: PackedByteArray) -> void:
 		return
 	var death: Array = decode_death(buffer)
 	if not death.is_empty():
-		_show_burst(death[0], death[1], death[2])
+		_show_burst(death[0], death[1], death[2], death[3])

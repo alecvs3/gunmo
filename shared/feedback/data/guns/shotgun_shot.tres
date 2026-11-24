@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SoundCue" format=3]
+
+[ext_resource type="Script" path="res://shared/feedback/sound_cue.gd" id="1_cue"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/shotgun_1.mp3" id="2_shotgun_1"]
+
+[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_shot"]
+random_pitch = 1.05
+streams_count = 1
+stream_0/stream = ExtResource("2_shotgun_1")
+stream_0/weight = 1.0
+
+[resource]
+script = ExtResource("1_cue")
+stream = SubResource("AudioStreamRandomizer_shot")
+volume_db = -5.0
+max_at_once = 2

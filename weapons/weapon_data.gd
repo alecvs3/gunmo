@@ -54,6 +54,11 @@ enum Projectile { BULLET, ROCKET, PELLET, RIFLE_ROUND, ENEMY_BOLT }
 @export var held_model: PackedScene
 @export var projectile: Projectile = Projectile.BULLET
 
+@export_group("Sound")
+## Played once per trigger pull (not per pellet) where the shot starts, on every peer.
+## None = silent. Several guns may share one (a SoundCue .tres).
+@export var fire_sound: SoundCue
+
 @export_group("Explosion")
 ## Where the shot lands (a hit, a wall or the end of its range), everyone else within this
 ## radius (px) takes blast_damage and is pushed away. 0 = no explosion.

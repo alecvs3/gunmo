@@ -1,5 +1,6 @@
 extends GutTest
-## The sound picks load, every cue has something to play, and the per-cue cap works.
+## The sound picks load, every cue and every shop gun has something to play, and the per-cue
+## cap works.
 
 
 func test_every_cue_has_a_sound() -> void:
@@ -8,6 +9,7 @@ func test_every_cue_has_a_sound() -> void:
 	assert_null(sounds.enemy_big_hit, "big hits too")
 	var cues: Array[SoundCue] = [
 		sounds.enemy_death,
+		sounds.boss_death,
 		sounds.blast,
 		sounds.player_hurt,
 		sounds.click,
@@ -37,3 +39,17 @@ func test_cap_per_cue() -> void:
 	assert_true(SoundPlayback.has_room(cue, 1))
 	assert_false(SoundPlayback.has_room(cue, 2))
 	assert_false(SoundPlayback.has_room(null, 0))
+
+
+func test_every_shop_gun_has_a_fire_sound() -> void:
+	for weapon in ShopCatalog.load_default().weapons:
+		var cue: SoundCue = weapon.fire_sound
+		assert_not_null(cue, weapon.display_name + " has a fire sound")
+		if cue != null:
+			var randomizer := cue.stream as AudioStreamRandomizer
+			assert_not_null(randomizer, weapon.display_name)
+			if randomizer != null:
+				for i in randomizer.streams_count:
+					assert_not_null(
+						randomizer.get_stream(i), "%s variant %d" % [weapon.display_name, i]
+					)

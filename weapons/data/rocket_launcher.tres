@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
 [ext_resource type="PackedScene" path="res://weapons/models/rocket_launcher_tube.tscn" id="2_tube"]
+[ext_resource type="Resource" path="res://shared/feedback/data/guns/rocket_launch.tres" id="90_sound"]
 
 [resource]
 script = ExtResource("1_wdata")
@@ -29,3 +30,4 @@ held_model = ExtResource("2_tube")
 projectile = 1
 blast_radius = 90.0
 blast_damage = 40
+fire_sound = ExtResource("90_sound")

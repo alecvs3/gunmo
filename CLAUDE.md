@@ -27,7 +27,8 @@ shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback,
                  DisplayDelay: the parts players, bots and enemies are built from
 shared/feedback/ looks and sounds only: HitFeedback (hit flash, damage numbers), FeedbackSystem (numbers,
                  death bursts, world sounds), FeedbackData (tuning, camera shake), SoundData +
-                 SoundPlayback (which sound for each moment; files in assets/kenney_sounds/)
+                 SoundPlayback (which sound for each moment; files in assets/kenney_sounds/ and
+                 assets/pixabay_sounds/; each gun's WeaponData.fire_sound)
 player/*         Player scene: input, movement (PlayerMotor), prediction, snapshot (PlayerNetSync)
 weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, rockets (Explosion), fair dodging
                  (TimelineHits)
