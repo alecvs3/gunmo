@@ -923,3 +923,21 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 ### Known limitations
 - The UI layout test checks each scene on its own, so it can't catch two scenes using the same corner.
 - **Not verified:** seen in the running game.
+
+## Pets & pacing 1: call the next wave early ✅ (issue #126)
+
+Instead of a speed-up button (a shooter is played every second, and the netcode runs at a fixed
+60 ticks), early waves get a choice:
+
+| Feature | Status | Where |
+|---|---|---|
+| Once a wave has spawned everything, a prompt appears: **G** votes to start the next wave at once, on top of the enemies still alive. Everyone must vote; bots vote with the humans | Done, tested | `modes/waves/early_call.gd`, `modes/wave_mode.gd`, `WaveFlow.call_early`, `project.godot` (`call_wave`) |
+| **The reward:** the called-away wave's clear bonus plus 6 credits per enemy still alive and 3 per second of break skipped, to everyone standing | Done, tested | `MatchSettings.early_call_bonus_*`, `modes/data/default_match.tres` |
+| **The catch:** the shop only opens in breaks, so calling early means not shopping: free money in waves 1–5, a gamble later | By design | |
+| HUD: "G: call the next wave early for bonus credits (1/2)" during the wave (`call_open`, `call_votes` in the match state; protocol 17) | Done, tested | `ui/hud.gd`, `shared/network/states/match_net_state.gd` |
+| Faster start: first break 30 → 20 s, breaks 20 → 15 s, wave 1 spawns every 0.8 s (was 1.2) | Data | `default_match.tres`, `default_waves.tres` |
+| Smoke **C**: the human of the bot co-op run votes every wave early; at least one must start early | Done | `tests/net/wave_smoke.gd` |
+
+### Known limitations
+- Not the last wave, and not before the current wave has spawned everything.
+- **Not verified:** how it feels in a window.

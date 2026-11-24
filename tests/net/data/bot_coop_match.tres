@@ -20,4 +20,6 @@ revive_health_share = 0.5
 starting_credits = 500
 wave_clear_bonus = 50
 wave_clear_bonus_per_wave = 10
+early_call_bonus_per_enemy = 6
+early_call_bonus_per_second = 3
 wave_schedule = ExtResource("2_waves")

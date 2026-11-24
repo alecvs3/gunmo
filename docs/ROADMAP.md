@@ -8,6 +8,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
 | **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | steps 1–15 merged; **step 15 playtests by Alex + Yusuf still to do** |
+| **Pets & pacing** | call waves early, pets (Healer, Wizard, Soldier), a balance pass | in progress |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |

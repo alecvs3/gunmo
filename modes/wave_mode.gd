@@ -10,11 +10,18 @@ extends GameMode
 
 ## NetChannel request topic: [kind (ShopRules.KIND_*), index].
 const REQUEST_BUY: int = 2
+## NetChannel request topic: [1 = vote to call the next wave early, 0 = take it back].
+const REQUEST_CALL: int = 3
 ## Bots buy at most one thing this often while the shop is open (ticks).
 const BOT_SHOP_TICKS: int = 30
 
+## This peer's own vote (the HUD shows it).
+var local_call_vote: bool = false
+
 var _flow := WaveFlow.new()
 var _ready_peers: Dictionary = {}
+## Peers voting to call the next wave early (this wave only).
+var _call_peers: Dictionary = {}
 var _match_seed: int = 0
 var _modifier_mask: int = 0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
@@ -45,6 +52,8 @@ func _physics_process(delta: float) -> void:
 	var wave_done: bool = _spawner.is_finished() and level.enemy_count() == 0
 	var ready: int = _count_ready(players)
 	_handle(_flow.update(NetworkManager.clock.tick, players.size(), living, ready, wave_done))
+	if call_open() and EarlyCall.passes(_count_votes(players, _call_peers), players.size()):
+		_handle(_flow.call_early())
 	_bots_shop(players)
 	_refresh_state(players.size(), living, ready)
 
@@ -75,19 +84,12 @@ func _start() -> void:
 
 func _handle(event: WaveFlow.Event) -> void:
 	match event:
+		WaveFlow.Event.EARLY_CALLED:
+			_pay_early_call()
+			_start_wave()
 		WaveFlow.Event.WAVE_STARTED:
 			_ready_peers.clear()
-			var schedule: WaveSchedule = settings.wave_schedule
-			_modifier_mask = _modifiers.pick_for_wave(schedule, _match_seed, _flow.wave)
-			var seed_value: int = WaveBudget.wave_seed(_match_seed, _flow.wave)
-			_spawner.start_wave(
-				level,
-				schedule,
-				_flow.wave,
-				seed_value,
-				_modifier_mask,
-				_modifiers.threat(_modifier_mask)
-			)
+			_start_wave()
 		WaveFlow.Event.WAVE_CLEARED:
 			_ready_peers.clear()
 			_downed.clear()
@@ -96,6 +98,64 @@ func _handle(event: WaveFlow.Event) -> void:
 				_revive(false)
 		WaveFlow.Event.VICTORY, WaveFlow.Event.DEFEAT:
 			_spawner.stop()
+
+
+## The current wave's modifiers and enemies (the same seed gives the same wave).
+func _start_wave() -> void:
+	_call_peers.clear()
+	_set_local_call_vote(false)
+	var schedule: WaveSchedule = settings.wave_schedule
+	_modifier_mask = _modifiers.pick_for_wave(schedule, _match_seed, _flow.wave)
+	var seed_value: int = WaveBudget.wave_seed(_match_seed, _flow.wave)
+	_spawner.start_wave(
+		level, schedule, _flow.wave, seed_value, _modifier_mask, _modifiers.threat(_modifier_mask)
+	)
+
+
+## Whether the next wave may be called early right now.
+func call_open() -> bool:
+	if not multiplayer.is_server():
+		return state.call_open
+	var active: bool = _flow.phase == GameMode.Phase.ACTIVE
+	return EarlyCall.can_call(active, _flow.wave, _flow.total_waves, _spawner.is_finished())
+
+
+## Vote to call the next wave early (or take it back). The host applies it; a client asks.
+func set_call_vote(vote: bool) -> void:
+	_set_local_call_vote(vote)
+	if multiplayer.is_server():
+		_on_call_vote(multiplayer.get_unique_id(), vote)
+	else:
+		NetworkManager.channel.send_request(REQUEST_CALL, PackedByteArray([1 if vote else 0]))
+
+
+func _set_local_call_vote(vote: bool) -> void:
+	local_call_vote = vote
+	EventBus.local_call_vote_changed.emit(vote)
+
+
+func _on_call_vote(peer_id: int, vote: bool) -> void:
+	if vote and call_open():
+		_call_peers[peer_id] = true
+	else:
+		_call_peers.erase(peer_id)
+
+
+func _on_input(event: InputEvent) -> bool:
+	if event.is_action_pressed("call_wave") and call_open():
+		set_call_vote(not local_call_vote)
+		return true
+	return false
+
+
+## Calling early: the called-away wave's clear bonus plus the early bonus, to everyone standing.
+func _pay_early_call() -> void:
+	_pay_wave_bonus_for(_flow.wave - 1)
+	var bonus: int = EarlyCall.bonus(level.enemy_count(), settings.break_seconds, settings)
+	for player in level.players():
+		if player.is_alive:
+			player.get_wallet().add(bonus)
+	NetLog.write("wave %d called early: +%d credits each" % [_flow.wave, bonus])
 
 
 ## Brings back the players who are down (or, with `everyone`, resets all of them).
@@ -171,7 +231,11 @@ func _give_starting_kit(player: Player) -> void:
 
 
 func _pay_wave_bonus() -> void:
-	var bonus: int = settings.wave_clear_bonus + settings.wave_clear_bonus_per_wave * _flow.wave
+	_pay_wave_bonus_for(_flow.wave)
+
+
+func _pay_wave_bonus_for(wave: int) -> void:
+	var bonus: int = settings.wave_clear_bonus + settings.wave_clear_bonus_per_wave * wave
 	for player in level.players():
 		if player.is_alive:
 			player.get_wallet().add(bonus)
@@ -198,6 +262,8 @@ func _on_shop_purchase_requested(kind: int, index: int) -> void:
 func _on_request(peer_id: int, topic: int, data: PackedByteArray) -> void:
 	if topic == REQUEST_BUY and data.size() == 2:
 		_buy(peer_id, data[0], data[1])
+	elif topic == REQUEST_CALL and data.size() == 1:
+		_on_call_vote(peer_id, data[0] == 1)
 
 
 ## Host: the rules decide; only then are credits taken and the item applied.
@@ -252,17 +318,22 @@ func _count_living(players: Array[Player]) -> int:
 ## Bots are ready whenever every human is (they never hold a break up), but a lobby of bots
 ## alone waits for its timer.
 func _count_ready(players: Array[Player]) -> int:
+	return _count_votes(players, _ready_peers)
+
+
+## Humans in `peers`, plus every bot once all humans are in (WaveFlow.ready_with_bots).
+func _count_votes(players: Array[Player], peers: Dictionary) -> int:
 	var humans: int = 0
-	var humans_ready: int = 0
+	var humans_in: int = 0
 	var bots: int = 0
 	for player in players:
 		if player.is_bot:
 			bots += 1
 		else:
 			humans += 1
-			if _ready_peers.has(player.peer_id):
-				humans_ready += 1
-	return WaveFlow.ready_with_bots(humans, humans_ready, bots)
+			if peers.has(player.peer_id):
+				humans_in += 1
+	return WaveFlow.ready_with_bots(humans, humans_in, bots)
 
 
 func _refresh_state(player_count: int, living: int, ready: int) -> void:
@@ -277,4 +348,6 @@ func _refresh_state(player_count: int, living: int, ready: int) -> void:
 	state.living_count = living
 	state.ready_count = ready
 	state.modifier_mask = _modifier_mask if _flow.phase == GameMode.Phase.ACTIVE else 0
+	state.call_open = call_open()
+	state.call_votes = _count_votes(level.players(), _call_peers) if state.call_open else 0
 	publish_state()

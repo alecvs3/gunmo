@@ -9,8 +9,8 @@
 script = ExtResource("1_match")
 map = ExtResource("90_map")
 mode_scene = ExtResource("3_mode")
-first_break_seconds = 30.0
-break_seconds = 20.0
+first_break_seconds = 20.0
+break_seconds = 15.0
 revive_at_break = true
 bleed_out_seconds = 20.0
 revive_seconds = 3.0
@@ -20,4 +20,6 @@ late_joiners_spectate = true
 starting_credits = 0
 wave_clear_bonus = 50
 wave_clear_bonus_per_wave = 10
+early_call_bonus_per_enemy = 6
+early_call_bonus_per_second = 3
 wave_schedule = ExtResource("2_ukfch")

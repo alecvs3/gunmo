@@ -33,6 +33,10 @@ extends Resource
 ## Credits for every player still standing when a wave is cleared: base + per_wave × wave.
 @export_range(0, 100000) var wave_clear_bonus: int = 0
 @export_range(0, 100000) var wave_clear_bonus_per_wave: int = 0
+## Calling the next wave early pays every standing player this much per enemy still alive,
+## and this much per second of break skipped (on top of the wave's clear bonus).
+@export_range(0, 1000) var early_call_bonus_per_enemy: int = 0
+@export_range(0, 1000) var early_call_bonus_per_second: int = 0
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
 

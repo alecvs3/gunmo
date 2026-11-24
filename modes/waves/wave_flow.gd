@@ -7,9 +7,10 @@ extends RefCounted
 ##   ACTIVE --(all players down)--> DEFEAT
 ##   ACTIVE --(wave done; last wave)--> VICTORY
 ##   ACTIVE --(wave done)--> BREAK --(everyone ready, or the break ends)--> ACTIVE (next wave)
+##   ACTIVE --(the players call the next wave early: call_early)--> ACTIVE (next wave)
 ## The lobby timer only starts once there is a player. Victory and defeat wait for a restart.
 
-enum Event { NONE, WAVE_STARTED, WAVE_CLEARED, VICTORY, DEFEAT }
+enum Event { NONE, WAVE_STARTED, WAVE_CLEARED, VICTORY, DEFEAT, EARLY_CALLED }
 
 var phase: int = GameMode.Phase.LOBBY
 var wave: int = 0
@@ -69,6 +70,14 @@ func _update_wave(now: int, players: int, living: int, wave_done: bool) -> Event
 	phase = GameMode.Phase.BREAK
 	phase_end_tick = now + _break_ticks
 	return Event.WAVE_CLEARED
+
+
+## The players called the next wave while this one is still on (EarlyCall says when).
+func call_early() -> Event:
+	if phase != GameMode.Phase.ACTIVE or wave >= total_waves:
+		return Event.NONE
+	wave += 1
+	return Event.EARLY_CALLED
 
 
 ## How many players count as ready: the humans who are, plus every bot once all humans are
