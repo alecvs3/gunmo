@@ -878,7 +878,7 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - No sounds yet (next issue), and no setting to turn screen shake off.
 - A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
   where it last saw the enemy.
-- **Not verified:** how it feels in a window and in a 2-player match.
+- Tried in a window by Yusuf (test arena). **Not verified:** a 2-player match, and the new maps by eye.
 
 ## Sounds: hits, kills, explosions, shop and banners ✅ (issue #114)
 
@@ -897,9 +897,9 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 
 ### Known limitations
 - No sound on hits yet (to decide once the guns are heard together; idea: a quiet tick for your own hits).
-- The files are levelled to the same loudness; each gun's `volume_db` (in its `.tres`) is a first
-  guess for how loud it should be against the others.
+- The files are levelled to the same loudness; each gun's `volume_db` (in its `.tres`) sets how
+  loud it is against the others (Yusuf turned the rifle and shotgun down 6 dB by ear).
 - Gold "big hit" numbers were too common at 30% of max health (one pistol shot is 33% of a grunt);
   now 50% of the enemy's starting health (#109).
 - No volume setting; everything plays on the Master bus.
-- **Not verified:** how it sounds in a window (the volumes are first guesses).
+- Tried in a window by Yusuf (every gun, explosions). **Not verified:** a 2-player match, boss deaths.
