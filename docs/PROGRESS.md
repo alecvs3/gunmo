@@ -590,7 +590,7 @@ No network format change (clients load the new types from `enemies/data/` like t
 - All enemies use the zombie picture, told apart by tint and size.
 - **Not verified:** how the three play in a window.
 
-## M7 step 5: enemy roster, part 2: Splitter and Support ✅ (issue #94)
+## M7 step 5: enemy roster, part 2: Splitter and Support ✅ (merged, issue #94)
 
 Enemies that change other enemies, so the fight becomes about what to kill first.
 
@@ -615,3 +615,20 @@ No network format change (the split children are normal enemy spawns).
 - **Not verified:** that a wave with a Support is noticeably harder unless it is focused. That
   needs people playing (the roadmap's "done when"); on paper a Support adds about 12% of the
   nearby enemies' health every 1.5 s.
+
+## M7 step 6: modifiers that stack ✅ (issue #96)
+
+| Feature | Status | Where |
+|---|---|---|
+| One modifier from wave 6, two from 16, **three from 21** (`triple_modifier_wave`) | Done, tested | `modes/waves/modifier_catalog.gd`, `wave_schedule.gd`, `default_waves.tres` |
+| Two new modifiers: **Tough** (×1.4 health) and **Frenzied** (×1.2 speed, takes ×1.15 damage) | Done | `modes/waves/data/modifiers/` |
+| Rules for which combine: `WaveModifier.conflicts_with` (Frenzied never with Fast); the pick skips conflicting ones (and picks fewer if nothing fits). Without conflicts it picks exactly as before | Done, tested | `modes/waves/wave_modifier.gd`, `modifier_catalog.gd` |
+| Caps however many stack: health ≤ ×2.5, speed ≤ ×1.8, damage taken ≥ ×0.4, regeneration ≤ 8%/s (on the catalog) | Done, tested | `modes/waves/data/modifier_catalog.tres` |
+| The HUD's wave banner names every modifier of the wave ("Wave 21 / 25 · Armored · Tough · Frenzied") | Already there (M3) | `ui/hud.gd` |
+
+No network format change: the mask is still one byte (5 of 8 modifiers used).
+
+### Known limitations
+- The modifiers only change health, speed, armor and regeneration; new kinds of effect need
+  code (recipe `add-wave-modifier`).
+- **Not verified:** how a 3-modifier banner reads in a window.

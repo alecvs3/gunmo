@@ -21,10 +21,11 @@ extends Resource
 @export_range(1, 500) var max_alive: int = 1
 ## Enemies spawn at least this far (px) from every living player when a point allows it.
 @export_range(0.0, 5000.0) var min_spawn_distance: float = 0.0
-## First wave with a modifier (armored, fast...), and first wave with two at once.
+## First wave with a modifier (armored, fast...), first with two at once, first with three.
 ## Above total_waves = never.
 @export_range(1, 256) var first_modifier_wave: int = 256
 @export_range(1, 256) var double_modifier_wave: int = 256
+@export_range(1, 256) var triple_modifier_wave: int = 256
 
 
 func spawn_interval(wave: int) -> float:

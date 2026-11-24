@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–5 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–6 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -57,7 +57,7 @@ balance at the end, when everything that affects balance exists.
   cleared) and for the heal/shield amounts and range; smoke **C** with a schedule that uses both.
 - **Done when:** a wave with a Support is noticeably harder unless the Support is focused.
 
-### 6. Modifiers that stack
+### 6. Modifiers that stack ✅ (#96)
 - **Adds:** late waves get 2–3 modifiers at once (armored + regenerating + fast), with rules for
   which combine; the HUD shows the wave's modifiers when it starts.
 - **Test:** GUT for stacking math (order doesn't matter, caps hold) and for which waves get how

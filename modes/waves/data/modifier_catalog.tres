@@ -5,7 +5,13 @@
 [ext_resource type="Resource" path="res://modes/waves/data/modifiers/fast.tres" id="3_fast"]
 [ext_resource type="Resource" path="res://modes/waves/data/modifiers/regenerating.tres" id="4_regen"]
 [ext_resource type="Script" path="res://modes/waves/modifier_catalog.gd" id="5_catalog"]
+[ext_resource type="Resource" path="res://modes/waves/data/modifiers/tough.tres" id="6_tough"]
+[ext_resource type="Resource" path="res://modes/waves/data/modifiers/frenzied.tres" id="7_frenzied"]
 
 [resource]
 script = ExtResource("5_catalog")
-modifiers = Array[ExtResource("1_mod")]([ExtResource("2_armored"), ExtResource("3_fast"), ExtResource("4_regen")])
+max_health_multiplier = 2.5
+max_speed_multiplier = 1.8
+min_damage_taken_multiplier = 0.4
+max_regen_per_second = 0.08
+modifiers = Array[ExtResource("1_mod")]([ExtResource("2_armored"), ExtResource("3_fast"), ExtResource("4_regen"), ExtResource("6_tough"), ExtResource("7_frenzied")])
