@@ -1,8 +1,8 @@
 Sounds from Pixabay (https://pixabay.com/sound-effects/), Pixabay Content License:
 free for commercial use, no credit required; do not resell the raw files on their own.
-Picked by Yusuf (2026-11-24). Each .wav here is the original .mp3 trimmed in Godot: silence at
-the start cut, long tails shortened with a fade, made mono, and loudness evened out (the
-originals are not in the repo). smg_1 is only the first shot of the burst.
+Picked by Yusuf (2026-11-24). Each .wav here is the original .mp3 decoded in Godot and trimmed:
+silence at the start cut, long tails shortened with a fade, loudness evened out, stereo kept
+(the originals are not in the repo). smg_1 is only the first shot of the burst.
 Which file came from where:
 
 pistol_1 <- eaglaxle-gun-shot-1-530788.mp3
