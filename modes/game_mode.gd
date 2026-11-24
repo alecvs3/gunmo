@@ -50,6 +50,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ready") and can_ready_up():
 		set_local_ready(not local_ready)
 		get_viewport().set_input_as_handled()
+	elif _on_input(event):
+		get_viewport().set_input_as_handled()
+
+
+## Hook: a mode's own keys (true = it used the event).
+func _on_input(_event: InputEvent) -> bool:
+	return false
 
 
 func can_ready_up() -> bool:

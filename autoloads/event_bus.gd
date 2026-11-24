@@ -29,6 +29,8 @@ signal match_state_changed(state: RefCounted)
 signal local_player_hurt(from_direction: Vector2)
 ## This peer: we pressed or un-pressed ready.
 signal local_ready_changed(is_ready: bool)
+## This peer (Waves): we voted (or took back our vote) to call the next wave early.
+signal local_call_vote_changed(voted: bool)
 ## This peer: while our player is down we watch this player (0 = nobody / back to ourselves).
 signal spectating_changed(peer_id: int)
 ## This peer's shop: the player clicked buy (kind = ShopRules.KIND_*). The mode turns it into

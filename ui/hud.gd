@@ -14,6 +14,7 @@ var _state: MatchNetState = null
 var _previous_phase: int = -1
 var _previous_wave: int = 0
 var _local_ready: bool = false
+var _local_call: bool = false
 var _spectating: int = 0
 var _banner_left: float = 0.0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
@@ -35,7 +36,19 @@ var _sound := SoundPlayback.new()
 
 
 ## The lines under the wave title: countdown or enemies left, then the ready status.
-static func match_lines(state: MatchNetState, now_tick: float, local_ready: bool) -> Array[String]:
+## The early-call prompt during a wave ("" when calling isn't open).
+static func call_line(state: MatchNetState, voted: bool) -> String:
+	if not state.call_open:
+		return ""
+	var counts: String = "%d/%d" % [state.call_votes, state.player_count]
+	if voted:
+		return "Calling the next wave early (%s) · G to cancel" % counts
+	return "G: call the next wave early for bonus credits (%s)" % counts
+
+
+static func match_lines(
+	state: MatchNetState, now_tick: float, local_ready: bool, local_call: bool = false
+) -> Array[String]:
 	match state.phase:
 		GameMode.Phase.LOBBY, GameMode.Phase.BREAK:
 			var seconds: float = state.seconds_left(now_tick)
@@ -47,7 +60,7 @@ static func match_lines(state: MatchNetState, now_tick: float, local_ready: bool
 				return [timer, "Ready! (%s) · F to cancel" % counts]
 			return [timer, "Press F when ready (%s)" % counts]
 		GameMode.Phase.ACTIVE:
-			return ["Enemies left: %d" % state.enemies_left, ""]
+			return ["Enemies left: %d" % state.enemies_left, call_line(state, local_call)]
 	return ["", ""]
 
 
@@ -79,6 +92,7 @@ func _ready() -> void:
 	add_child(_sound)
 	EventBus.match_state_changed.connect(_on_match_state_changed)
 	EventBus.local_ready_changed.connect(func(is_ready: bool) -> void: _local_ready = is_ready)
+	EventBus.local_call_vote_changed.connect(func(voted: bool) -> void: _local_call = voted)
 	EventBus.spectating_changed.connect(func(peer_id: int) -> void: _spectating = peer_id)
 	NetworkManager.session_ended.connect(_on_session_ended.unbind(1))
 
@@ -178,7 +192,7 @@ func _downed_teammate_near(player: Player) -> Player:
 func _show_match() -> void:
 	_wave_label.text = wave_title(_state)
 	var lines: Array[String] = match_lines(
-		_state, NetworkManager.clock.server_tick_now(), _local_ready
+		_state, NetworkManager.clock.server_tick_now(), _local_ready, _local_call
 	)
 	_info_label.text = lines[0]
 	_ready_label.text = lines[1]

@@ -90,8 +90,8 @@ func test_reset_returns_to_the_lobby() -> void:
 
 func test_default_match_settings() -> void:
 	var settings: MatchSettings = load("res://modes/data/default_match.tres")
-	assert_eq(settings.first_break_seconds, 30.0)
-	assert_eq(settings.break_seconds, 20.0)
+	assert_eq(settings.first_break_seconds, 20.0)
+	assert_eq(settings.break_seconds, 15.0)
 	assert_not_null(settings.wave_schedule)
 	assert_eq(settings.wave_schedule.total_waves, 25)
 

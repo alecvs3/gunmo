@@ -1,6 +1,7 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the whole wave loop with a host and a client, using a quick 3-wave
-## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support, wave 3 a
+## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support (walking in,
+## so the stand-still players can reach it behind cover), wave 3 a
 ## 2-phase boss whose death ends the match, so those run over the network too). Both sides:
 ##   1. ready up (the 20 s lobby must be skipped)       2. shoot through both waves: VICTORY
 ##   3. host presses "Play again": back to the LOBBY    4. stand still: DEFEAT
@@ -11,7 +12,8 @@ extends "res://tests/net/smoke_script.gd"
 ## down and come back.
 ## Role botwavehost (its own port, + BOT_PORT_OFFSET): 1 human host who never fires and can't be
 ## hurt, plus 3 bots, must clear a quick 3-wave schedule. The host downs a bot once; another
-## bot must revive it. The bots must have spent credits between waves.
+## bot must revive it. The bots must have spent credits between waves. The human votes to
+## call every wave early once it can: at least one wave must start early (no break before it).
 ## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient|botwavehost> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
@@ -287,6 +289,9 @@ func _run_bot_coop() -> void:
 	var downed_one: bool = false
 	var revived_by_bot: bool = false
 	var victim: Node2D = null
+	var early_calls: int = 0
+	var last_wave: int = 0
+	var last_phase: int = -1
 	var time_left: float = 75.0
 	while time_left > 0.0 and not _is_phase("VICTORY"):
 		var own: Node2D = _own_player()
@@ -297,6 +302,13 @@ func _run_bot_coop() -> void:
 		if mode != null and (_is_phase("LOBBY") or _is_phase("BREAK")):
 			if not mode.get("local_ready"):
 				mode.call("set_local_ready", true)
+		if mode != null and _state != null and _state.call_open and not mode.get("local_call_vote"):
+			mode.call("set_call_vote", true)
+		if _state != null and _state.wave > last_wave:
+			early_calls += 1 if last_phase == _phase["ACTIVE"] and last_wave > 0 else 0
+			last_wave = _state.wave
+		if _state != null:
+			last_phase = _state.phase
 		if not downed_one and _is_phase("ACTIVE") and _bots().size() == 3:
 			victim = _bots()[0]
 			victim.get_node("HealthComponent").take_damage(100000, 0)
@@ -309,6 +321,8 @@ func _run_bot_coop() -> void:
 	_check(downed_one, "never downed a bot")
 	_check(revived_by_bot, "no bot revived the downed bot during the wave")
 	_check(_bots_shopped(), "no bot spent credits in the shop")
+	_check(early_calls >= 1, "no wave was called early")
+	_info("waves called early: %d" % early_calls)
 	_info("bots cleared the schedule, revived a teammate and shopped")
 	net.leave()
 	await create_timer(0.5).timeout
