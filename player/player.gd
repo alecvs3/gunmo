@@ -237,6 +237,11 @@ func make_spectator() -> void:
 	_set_alive(false)
 
 
+## Where the held gun's barrel ends, relative to the body, before turning by the aim.
+func muzzle_offset() -> Vector2:
+	return _look.muzzle_for(_weapon.weapon_data.pose)
+
+
 func is_downed() -> bool:
 	return down_left > 0
 

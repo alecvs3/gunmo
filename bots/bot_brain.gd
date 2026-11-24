@@ -127,3 +127,71 @@ static func follow_path(
 	if index >= path.size():
 		return [Vector2.ZERO, index]
 	return [(path[index] - from).normalized(), index]
+
+
+## A bullet a bot might dodge: where it is now, its direction (unit) and speed (px/s).
+class Threat:
+	var position: Vector2
+	var direction: Vector2
+	var speed: float
+
+	func _init(at: Vector2, heading: Vector2, pixels_per_second: float) -> void:
+		position = at
+		direction = heading
+		speed = pixels_per_second
+
+
+## Which way to sidestep the bullets about to hit a body of `radius` at `from` within
+## `horizon` seconds (away from each bullet's line, sooner ones count more), or ZERO.
+static func dodge(from: Vector2, threats: Array[Threat], radius: float, horizon: float) -> Vector2:
+	var away := Vector2.ZERO
+	for threat in threats:
+		var offset: Vector2 = from - threat.position
+		var along: float = offset.dot(threat.direction)
+		if along <= 0.0 or threat.speed <= 0.0:
+			continue
+		var seconds: float = along / threat.speed
+		var side: Vector2 = offset - threat.direction * along
+		if seconds > horizon or side.length() > radius:
+			continue
+		var push: Vector2 = (
+			side.normalized() if side.length() > 0.5 else threat.direction.orthogonal()
+		)
+		away += push / maxf(seconds, 0.05)
+	return away.normalized() if away.length() > 0.0 else Vector2.ZERO
+
+
+## The aim (radians) that puts a shot from a barrel at `muzzle` (relative to the body at
+## `from`, unturned) through `target`, not just the body's centre. A barrel `muzzle.y` to the
+## side needs a slightly turned aim; from closer than that it just aims at the target.
+static func barrel_aim(from: Vector2, muzzle: Vector2, target: Vector2) -> float:
+	var offset: Vector2 = target - from
+	var centre_angle: float = offset.angle()
+	if offset.length() <= absf(muzzle.y) + 1.0:
+		return centre_angle
+	return centre_angle - asin(muzzle.y / offset.length())
+
+
+## Cover: of `points`, the nearest one the threat can't see (`exposed[i]` false), or INF.
+static func cover_point(from: Vector2, points: Array[Vector2], exposed: Array[bool]) -> Vector2:
+	var best := Vector2.INF
+	var best_distance: float = INF
+	for i in points.size():
+		if i < exposed.size() and exposed[i]:
+			continue
+		var distance: float = from.distance_to(points[i])
+		if distance < best_distance:
+			best = points[i]
+			best_distance = distance
+	return best
+
+
+## Flanking: instead of walking straight at `target`, a point beside it, `angle` radians round
+## from the bot's side (`side` +1 or -1 picks which way), `distance` from it.
+static func flank_point(
+	from: Vector2, target: Vector2, side: float, angle: float, distance: float
+) -> Vector2:
+	var outward: Vector2 = target.direction_to(from)
+	if outward.is_zero_approx():
+		outward = Vector2.RIGHT
+	return target + outward.rotated(angle * signf(side)) * distance

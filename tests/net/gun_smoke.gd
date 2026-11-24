@@ -9,15 +9,24 @@ extends "res://tests/net/smoke_script.gd"
 ##      and the results screen names the winner next to a scoreboard of all 4 players;
 ##      the client saw rockets explode (the host's blasts reach it)
 ##   4. the host restarts: both sides see the match running again with every tier back at 0
-## Usage: -s res://tests/net/gun_smoke.gd -- <gunhost|gunclient> <port>
+## Role botduel (its own port, + DUEL_PORT_OFFSET): a dedicated server where a Hard bot and a
+## Normal bot fight each other with SMGs for DUEL_SECONDS; it prints each bot's kills, shots and
+## hit rate ("DUEL METRIC" lines) and fails unless the Hard bot has more kills.
+## Usage: -s res://tests/net/gun_smoke.gd -- <gunhost|gunclient|botduel> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
-const WATCHDOG_SECONDS: float = 115.0
+const WATCHDOG_SECONDS: float = 140.0
 const MATCH_PATH: String = "res://tests/net/data/quick_gun_game.tres"
 const HOST_NAME: String = "SmokeHost"
 const CLIENT_NAME: String = "SmokeClient"
 ## The humans hold fire until a bot has killed someone, at most this long.
 const HOLD_FIRE_SECONDS: float = 25.0
+const DUEL_MATCH_PATH: String = "res://tests/net/data/bot_duel_match.tres"
+const DUEL_PORT_OFFSET: int = 50
+const DUEL_SECONDS: float = 45.0
+## Bot 1 takes the first profile (Hard), bot 2 the second (Normal).
+const HARD_BOT: int = -1
+const NORMAL_BOT: int = -2
 
 var _state: RefCounted = null
 var _winner_id: int = 0
@@ -31,7 +40,10 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.get_node("EventBus").match_state_changed.connect(_on_state)
-	if _role == "gunhost":
+	if _role == "botduel":
+		_port += DUEL_PORT_OFFSET
+		await _run_duel()
+	elif _role == "gunhost":
 		await _run_host()
 	else:
 		await _run_client()
@@ -50,7 +62,7 @@ func _run_host() -> void:
 	await _hold_fire(HOLD_FIRE_SECONDS)
 	_info("bot kills while the humans held fire: %d" % _bot_kills())
 	_check(_bot_kills() > 0, "the bots never killed anyone")
-	await _fight_until_winner(70.0)
+	await _fight_until_winner(95.0)
 	_info("winner id %d" % _winner_id)
 	await create_timer(1.0).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
@@ -71,7 +83,7 @@ func _run_client() -> void:
 	var projectiles: Node = _own_player().get_parent().get_parent().get_node("Projectiles")
 	projectiles.child_entered_tree.connect(_on_projectile_added)
 	await _hold_fire(HOLD_FIRE_SECONDS)
-	await _fight_until_winner(75.0)
+	await _fight_until_winner(100.0)
 	_info("winner id %d, %d rocket blasts seen" % [_winner_id, _blasts_seen])
 	_check(_blasts_seen > 0, "no rocket blast reached the client")
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 10.0)
@@ -212,3 +224,42 @@ func _players() -> Array[Node2D]:
 
 func _player_by_id(peer_id: int) -> Node:
 	return root.get_node_or_null("Main/LevelContainer/TestArena/Players/%d" % peer_id)
+
+
+## botduel: Hard vs Normal, counting kills, shots and hits per bot.
+func _run_duel() -> void:
+	var net: Node = root.get_node("NetworkManager")
+	root.get_node("Main").call("_load_match_settings", DUEL_MATCH_PATH)
+	_check(net.host(_port, true) == OK, "dedicated host() failed")
+	await _wait_until(func() -> bool: return _players().size() == 2, 10.0)
+	_check(_players().size() == 2, "expected 2 bots")
+	var kills: Dictionary = {HARD_BOT: 0, NORMAL_BOT: 0}
+	var shots: Dictionary = {HARD_BOT: 0, NORMAL_BOT: 0}
+	var hits: Dictionary = {HARD_BOT: 0, NORMAL_BOT: 0}
+	var bus: Node = root.get_node("EventBus")
+	bus.player_killed.connect(
+		func(_victim: Node2D, killer: int) -> void:
+			if kills.has(killer):
+				kills[killer] += 1
+	)
+	bus.shot_fired.connect(
+		func(shot: RefCounted) -> void:
+			if shots.has(shot.get("shooter_id")):
+				shots[shot.get("shooter_id")] += 1
+	)
+	for player in _players():
+		player.get_node("HealthComponent").damaged.connect(
+			func(_amount: int, source: int) -> void:
+				if hits.has(source):
+					hits[source] += 1
+		)
+	await create_timer(DUEL_SECONDS).timeout
+	for bot: int in [HARD_BOT, NORMAL_BOT]:
+		var label: String = "hard" if bot == HARD_BOT else "normal"
+		print("DUEL METRIC %s_kills %d" % [label, kills[bot]])
+		print("DUEL METRIC %s_shots %d" % [label, shots[bot]])
+		print("DUEL METRIC %s_hit_rate %.3f" % [label, hits[bot] / maxf(shots[bot], 1.0)])
+	_check(kills[HARD_BOT] + kills[NORMAL_BOT] >= 3, "the bots barely fought")
+	_check(kills[HARD_BOT] > kills[NORMAL_BOT], "the Hard bot did not beat the Normal bot")
+	net.leave()
+	await create_timer(0.5).timeout

@@ -56,7 +56,7 @@ $scenarios = @(
        Roles = @((Role "shophost"), (Role "shopclient")) },
     @{ Id = "E"; Title = "Gun Game with bots (names, ladder, winner, restart)"; Alone = $false
        Script = "res://tests/net/gun_smoke.gd"; Metrics = ""
-       Roles = @((Role "gunhost"), (Role "gunclient")) },
+       Roles = @((Role "gunhost"), (Role "gunclient"), (Role "botduel")) },
     @{ Id = "F"; Title = "stress (8 players vs 40 enemies, performance budget)"; Alone = $true
        Script = "res://tests/net/stress.gd"; Metrics = "STRESS"
        Roles = @((Role "stresshost"), (Role "stressclient")) },
