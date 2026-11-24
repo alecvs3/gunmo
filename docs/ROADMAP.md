@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–14 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | steps 1–15 merged; **step 15 playtests by Alex + Yusuf still to do** |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -119,7 +119,7 @@ balance at the end, when everything that affects balance exists.
 - **Test:** the map check; smoke **C** and **E** run on each new map.
 - **Done when:** both maps are playable in both modes.
 
-### 15. Balance and playtest pass
+### 15. Balance and playtest pass (paper pass ✅ #118; playtests open)
 - **Adds:** tuning only (`.tres` files): enemy numbers, costs, modifiers, boss health, credits.
 - **Test:** wave report, soak **S**, and two real playtests (Alex + Yusuf) of a full run to wave
   25, notes in the PR.

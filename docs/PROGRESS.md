@@ -801,7 +801,7 @@ longer: smoke E now allows 95 s for a winner (was 70).
 - No map picker yet (M6); a map is chosen in the match settings `.tres` or with `--match`.
 - **Not verified:** nothing visible changed.
 
-## M7 step 14: two new maps ✅ (issue #116)
+## M7 step 14: two new maps ✅ (merged, issue #116)
 
 Both added without code: a level scene, a `MapData` `.tres`, and a line in Main's `LevelSpawner`.
 
@@ -824,3 +824,34 @@ The test arena keeps scenarios A, B, D, F, G and H.
 - Both maps reuse the concrete floor (tinted) and plank walls; real art is M10.
 - No picker yet (M6): choose a map in the match settings `.tres`.
 - **Not verified:** how they play in a window (sight lines, whether the chokepoints feel right).
+
+## M7 step 15: balance pass, on paper ⚠️ (issue #118; playtests still to do)
+
+Tuning only (`.tres`). Without people playing, this pass works from the numbers: the wave
+report, the economy (bounties are about 10 credits per budget point, plus the wave bonus), and
+a model of two players' damage as they buy the SMG and upgrades (70% of shots landing,
+magazine and reload counted).
+
+| Change | Why |
+|---|---|
+| Regenerating: 5% of max health per second → **1.5%**; the stacking cap 8% → **3%** | On a boss it was unbeatable: the Warden at wave 20 with Fast · Regenerating healed about 276/s against about 232 damage/s from two well-upgraded players. On normal enemies 1.5% still matters for Tanks and Splitters |
+| Overlord (wave 25) 9000 → **6500** health | With wave 25's three modifiers (Armored · Tough · Frenzied) it was about 24,000 effective health: about 94 s of nonstop focused fire before its summons and rings |
+| Warden (wave 20) 5200 → **7000** health | With regeneration fixed it fell in about 36 s, shorter than wave 10's boss feels relative to the players' growth |
+
+**Boss fights on paper (seed 1's modifiers, 2 players, focused fire):** Brood Mother about 25 s,
+Warden about 61 s, Overlord about 68 s, plus the time lost to dodging rings and fighting summons.
+
+**Economy check:** by wave 10 a player has about 2,000 credits (an SMG and about 8 upgrade
+levels); everything is close to maxed by wave 22. Left as it is.
+
+**Checked:** wave report before and after (only regeneration waves and boss waves change), all
+smoke scenarios, the 10-minute soak (numbers in the PR).
+
+### Not done: the playtests
+The roadmap's test for this step is two real playtests by Alex and Yusuf of a full run to wave
+25, and its "done when" is "winnable by 2 players who play well, lost by ones who don't". Neither
+can be checked without people. Things to watch for when you play:
+- whether waves 6–9 (the first modifiers, Shooters and Swarmers) are a difficulty jump;
+- whether the Support is focused and whether it should heal less (12% every 1.5 s);
+- the bosses' telegraphs: is the ring readable in time;
+- bots' shopping: they buy the Rocket Launcher (the dearest gun), which is weak against single targets.

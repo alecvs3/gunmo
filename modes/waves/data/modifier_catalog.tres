@@ -13,5 +13,5 @@ script = ExtResource("5_catalog")
 max_health_multiplier = 2.5
 max_speed_multiplier = 1.8
 min_damage_taken_multiplier = 0.4
-max_regen_per_second = 0.08
+max_regen_per_second = 0.03
 modifiers = Array[ExtResource("1_mod")]([ExtResource("2_armored"), ExtResource("3_fast"), ExtResource("4_regen"), ExtResource("6_tough"), ExtResource("7_frenzied")])
