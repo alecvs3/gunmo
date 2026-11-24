@@ -1068,3 +1068,40 @@ judge the 10 ms budget (see the PR).
 ### Not done
 - The playtests: whether pets feel worth their price, whether any is a must-pick, and whether
   calling early feels good.
+
+## Bosses no longer out-heal the players ✅ (issue #140)
+
+The Warden on wave 20 was close to unkillable. Support pulses (12% of max health every 1.5 s)
+and Regenerating (1.5% a second) heal a *share* of max health, and a boss has a lot of it: with
+two supports and Regenerating (wave report, seed 4) the Warden healed about 1,225 HP/s, more
+than a whole team of maxed-out players deals.
+
+| Feature | Status | Where |
+|---|---|---|
+| `EnemyData.heal_received`: the healing an enemy gets is multiplied by it (default 1.0, so normal enemies heal as before). The support pulse and Regenerating both use it | Done, tested | `enemies/enemy_data.gd`, `enemies/chaser.gd` |
+| All three bosses get 10% (`heal_received = 0.1`). That worst-case Warden now heals about 120 HP/s, and only about 10 HP/s once its supports are dead, so killing supports first still pays off. The Overlord's worst case (wave 25, seed 7) drops from about 1,590 to 160 HP/s | Data, tested | `enemies/data/bosses/*.tres` |
+| A test fails if a boss could heal more than 2.5% of its max health a second in the worst case (2 supports beside it, regeneration and health at the modifier catalog's caps; it was 19%). Another runs a real Warden and checks both kinds of healing | Done | `tests/enemies/test_bosses.gd` |
+
+### Known limitations
+- The wave report doesn't include healing, so its numbers don't change.
+- **Not verified:** a real wave-20 or wave-25 fight in a window.
+
+
+## Joining no longer fails the latency check ✅
+
+Since the pets landed, smoke **G** failed on main: the client's smoothing buffer sat at about
+95–140 ms instead of 35–60. The cause was not the network. Joining a match freezes the client
+for one frame while it loads (about 180 ms locally), and the snapshots read after that frame
+arrive all at once. The jitter meter took that for 165 ms of network jitter, the buffer jumped
+to about 210 ms, and it shrinks slowly, so it was still too high when the test measured.
+
+| Feature | Status | Where |
+|---|---|---|
+| A client frame longer than `NetworkConfig.local_stall_seconds` (0.1 s) drops the jitter measured so far, so a local freeze never counts as network jitter | Done, tested | `shared/network/net_clock.gd`, `default_network_config.tres` |
+
+Smoke G locally: 3 of 3 failed before (buffer 20–38 ms over what the jitter needs), 3 of 3 pass
+after (about 0 ms over, p95 about 60 ms).
+
+### Known limitations
+- The join freeze itself is still there (about 180 ms). It is only a frame, but it grows as
+  more scripts and data load at join.

@@ -10,7 +10,8 @@ Area: `modes/waves/` (no fixed owner for now; say what you're changing).
 ## Using the existing knobs (data only)
 1. **Create `modes/waves/data/modifiers/<name>.tres`** (a `WaveModifier`,
    `modes/waves/wave_modifier.gd`): `display_name`, `color` (enemies are tinted toward it),
-   `health_multiplier`, `speed_multiplier`, `damage_taken_multiplier`, `regen_per_second`,
+   `health_multiplier`, `speed_multiplier`, `damage_taken_multiplier`, `regen_per_second`
+   (times each enemy's `heal_received`, so bosses barely regenerate),
    and `conflicts_with` (display names it never shares a wave with, e.g. Frenzied and Fast).
 2. **Append it to `modifiers`** in `modes/waves/data/modifier_catalog.tres`. Active modifiers
    travel as a one-byte mask by index, so append and never reorder. There's room for 8

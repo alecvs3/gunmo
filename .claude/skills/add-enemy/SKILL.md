@@ -17,6 +17,7 @@ a range and a lead).
    closest type (grunt, runner, brute, shooter, tank, swarmer) and change its numbers:
    `display_name`, `role` (frontline / ranged / swarm / support: the schedule gives each role a
    share of the budget), `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
+   `heal_received` (how much healing it gets; 1.0 for normal enemies),
    `move_speed`, `repath_interval`, the Behaviours group
    (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
    group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`).
@@ -37,6 +38,9 @@ threshold, a movement, an attack, a speed multiplier; first phase at 1.0, then l
 `windup` (telegraph: every peer sees a ring fill before it fires). `VolleyAttack` fires fans or
 rings, `SummonAttack` calls enemies. `ends_wave_on_death` makes its death end the wave (the
 final boss). The HUD's boss bar (`ui/boss_bar.gd`) finds it through `Groups.BOSSES`.
+Give it a low `heal_received` (the bosses use 0.1): support pulses and Regenerating heal a
+share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` in
+`tests/enemies/test_bosses.gd`, which checks this.
 
 ## A new behaviour (keeps distance, ranged, ...)
 - **Movement:** extend `EnemyMovement` (`enemies/behaviours/enemy_movement.gd`) and override

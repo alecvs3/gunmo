@@ -1,8 +1,8 @@
 class_name HealPulseAttack
 extends EnemyAttack
 ## A support enemy's "attack": every `interval` it heals the wounded enemies within `radius`
-## (itself included) by `heal_share` of their max health. It never hurts players, so killing
-## it first is the counter.
+## (itself included) by `heal_share` of their max health, times their heal_received (bosses
+## take little). It never hurts players, so killing it first is the counter.
 
 @export_range(0.0, 2000.0) var radius: float = 220.0
 ## Share of each enemy's max health healed per pulse (0.15 = 15%).

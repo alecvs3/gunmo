@@ -88,7 +88,7 @@ machine), and hard caps on top. Every stage:
 | Your aim | The gun follows the mouse every rendered frame | 1 frame |
 | Your movement and shots | Predicted on your PC; `OwnPlayerDrawing` draws you one tick of motion ahead of the physics-interpolated body (`PlayerData.draw_ahead`) | 1 tick to respond |
 | Display | Adaptive V-Sync, 2 swapchain images, agile input flushing (checked by a test) | 1–2 frames |
-| Others on a client | One-way latency (followed directly) + a buffer of one snapshot interval + 1.25 × measured snapshot jitter + 8 ms (35–250 ms). Only the buffer is rate-limited: it grows fast when snapshots get uneven or drawing runs dry, shrinks slowly | latency + 35–55 ms |
+| Others on a client | One-way latency (followed directly) + a buffer of one snapshot interval + 1.25 × measured snapshot jitter + 8 ms (35–250 ms). Only the buffer is rate-limited: it grows fast when snapshots get uneven or drawing runs dry, shrinks slowly. A client frame longer than `local_stall_seconds` (a loading freeze) drops the measured jitter, since snapshots read after it arrive bunched up by us, not the network | latency + 35–55 ms |
 | Others on the host | `DisplayDelay` draws everyone but the host's own player `host_view_delay_ticks` (2) back, so bunched-up inputs don't show; the host's shots are checked at that same moment | 33 ms |
 | Inputs reaching the host | `CommandQueue` holds nothing back unless that player's inputs actually stall; then 1, at most 2 ticks, given back after 5 calm seconds | 0–1 tick |
 | Sending and receiving | `NetChannel` reads packets at the start of every physics tick and sends at its end, never waiting for the rendered frame | 0 frames |

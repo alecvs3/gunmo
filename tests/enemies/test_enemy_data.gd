@@ -67,3 +67,13 @@ func test_splitter_and_support() -> void:
 	var support: EnemyData = _load("support")
 	assert_true(support.attack is HealPulseAttack, "support heals")
 	assert_true(support.movement is KeepDistanceMovement, "support hangs back")
+
+
+func test_received_heal_scales_and_rounds() -> void:
+	var data := EnemyData.new()
+	assert_eq(data.received_heal(714), 714, "heals fully by default")
+	data.heal_received = 0.1
+	assert_eq(data.received_heal(714), 71)
+	assert_eq(data.received_heal(9), 1, "rounds to the nearest point")
+	data.heal_received = 0.0
+	assert_eq(data.received_heal(714), 0, "0 = never heals")

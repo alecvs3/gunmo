@@ -26,6 +26,7 @@ smoothing_margin = 0.008
 delay_raise_rate = 0.15
 delay_lower_rate = 0.02
 dry_boost_decay = 0.05
+local_stall_seconds = 0.1
 clock_snap_ticks = 10.0
 clock_correction = 0.1
 command_redundancy = 4

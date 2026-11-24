@@ -12,7 +12,7 @@ extends Resource
 @export_range(0.1, 10.0) var speed_multiplier: float = 1.0
 ## Damage enemies take is multiplied by this (0.6 = they take 40% less).
 @export_range(0.05, 10.0) var damage_taken_multiplier: float = 1.0
-## Share of max health healed per second (0.05 = 5%).
+## Share of max health healed per second (0.05 = 5%), times each enemy's heal_received.
 @export_range(0.0, 1.0) var regen_per_second: float = 0.0
 ## display_names of modifiers that never share a wave with this one (either side may list it).
 @export var conflicts_with: PackedStringArray = []
