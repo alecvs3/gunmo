@@ -784,7 +784,7 @@ longer: smoke E now allows 95 s for a winner (was 70).
 - The kill feed is Gun Game only (Waves has no feed of enemy kills).
 - **Not verified:** the kill feed's look and the characters in a window.
 
-## M7 step 13: maps, the framework ✅ (issue #113)
+## M7 step 13: maps, the framework ✅ (merged, issue #113)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -800,3 +800,27 @@ longer: smoke E now allows 95 s for a winner (was 70).
 ### Known limitations
 - No map picker yet (M6); a map is chosen in the match settings `.tres` or with `--match`.
 - **Not verified:** nothing visible changed.
+
+## M7 step 14: two new maps ✅ (issue #116)
+
+Both added without code: a level scene, a `MapData` `.tres`, and a line in Main's `LevelSpawner`.
+
+| Map | For | Layout |
+|---|---|---|
+| **Outpost** (2400×1500) | Co-op first | Players start in a walled central hall reached only through three 160–180 px gaps (chokepoints); open yards west and east with pillars, where enemies arrive from six spawn zones at the edges. Points of interest just inside each gap and behind cover |
+| **The Pit** (1400×1000) | Free-for-all first | Compact and symmetric: a centre block, four low walls and two side pillars for cover; ten respawn points all round, four starts in the corners |
+
+| Check | Result |
+|---|---|
+| Map check (on the mesh, not in a wall, every point reaches every other) | Both pass (`tests/levels/test_map_check.gd` runs on every map in `levels/data/`) |
+| Smoke **C** (waves) | Main wave run (Splitter, Support, boss, revive) on **The Pit**; 1 human + 3 bots clear the quick schedule on **Outpost** |
+| Smoke **E** (Gun Game) | Main match (host, client, 2 bots: winner, kill feed, restart) on **The Pit**; Hard-vs-Normal bot duel on **Outpost** |
+
+The test arena keeps scenarios A, B, D, F, G and H.
+
+### Known limitations
+- On Outpost a Support that hangs back behind the hall's walls has to be hunted down: the smoke
+  test's players (who stand still) couldn't clear it there, so its main wave run is on The Pit.
+- Both maps reuse the concrete floor (tinted) and plank walls; real art is M10.
+- No picker yet (M6): choose a map in the match settings `.tres`.
+- **Not verified:** how they play in a window (sight lines, whether the chokepoints feel right).
