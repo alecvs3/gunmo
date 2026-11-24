@@ -702,7 +702,7 @@ Also: `project.godot` gets the `revive` input action (E).
 - Reviving doesn't stop you moving or shooting; walking out of range interrupts it.
 - **Not verified:** how it feels in a window; the ring and the prompts' look.
 
-## M7 step 10: bots in co-op ✅ (issue #105)
+## M7 step 10: bots in co-op ✅ (merged, issue #105)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -740,3 +740,32 @@ checks it. No network format change.
 ### Known limitations
 - No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
 - Tried in a window by Yusuf. **Not verified:** a 2-player match.
+
+## M7 step 11: smarter bots ✅ (issue #107)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Aim from the barrel:** the aim is turned so the shot from the barrel (about 10 px to the gun side) passes through the target, not the body's centre | Done, tested | `bots/bot_brain.gd` `barrel_aim`, `player/player.gd` `muzzle_offset` |
+| **Dodge:** bullets that will pass within 30 px in the next 0.3–0.4 s make it sidestep away from their line, blended into its move by `dodge` (Easy 0, Normal 0.2, Hard 0.5) | Done, tested | `BotBrain.dodge`, `bots/bot_controller.gd`, `Groups.BULLETS` |
+| **Cover:** below `cover_health` (Normal 25%, Hard 40%) under fire it runs to the nearest respawn point the threat can't see for 2–2.5 s (then not again for 8 s), still shooting | Done, tested | `BotBrain.cover_point` |
+| **Goals instead of roaming:** with nobody in sight it hunts the nearest opponent (`hunts`), coming in `flank_degrees` round from the side (Normal 25°, Hard 45°, switching sides after cover) | Done, tested | `BotBrain.flank_point` |
+| Smoke **E** gets a `botduel` role: a Hard bot vs a Normal bot with SMGs for 45 s on a dedicated server; fails unless Hard has more kills | Done | `tests/net/gun_smoke.gd`, `tests/net/data/bot_duel_match.tres` |
+
+**Measured (3 duels each, 45 s, SMG vs SMG):**
+
+| | Hard kills : Normal kills | Hard hit rate | Normal hit rate |
+|---|---|---|---|
+| Before | 5:3, 6:3, 5:3 | 41–50% | 28–36% |
+| After | 5:2, 5:2, 4:1 | 39–49% | 9–24% |
+
+Hard beat Normal in every duel before and after; now by a wider margin, mostly because
+Normal's shots get dodged. A first version had Hard dodge at 0.8: two Hard bots then barely hit
+each other and smoke E stopped finding a winner, so it is 0.5. Gun Game matches take a little
+longer: smoke E now allows 95 s for a winner (was 70).
+
+### Known limitations
+- Cover means the level's respawn points (maps with real points of interest come in step 13).
+- Hunting uses what the host knows (every opponent's position), not what the bot could see.
+- Bots dodge on the host's timeline; against a lagged human's bullets that is a little early.
+- `bot_controller.gd` is long (about 370 lines); a split into senses and actions would help.
+- **Not verified:** how they feel to fight in a window.

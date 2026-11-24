@@ -30,3 +30,16 @@ extends Resource
 ## Goes to revive a downed teammate this close (px), and holds revive within `revive_reach`.
 @export_range(0.0, 5000.0) var revive_seek_distance: float = 900.0
 @export_range(10.0, 200.0) var revive_reach: float = 45.0
+
+@export_group("Smarts")
+## How hard it sidesteps bullets about to hit it (0 = never, 1 = drops everything to dodge).
+@export_range(0.0, 1.0) var dodge: float = 0.0
+## Bullets arriving within this many seconds are worth dodging.
+@export_range(0.05, 2.0) var dodge_horizon: float = 0.5
+## Below this share of its health it breaks off to cover for cover_seconds (0 = never).
+@export_range(0.0, 1.0) var cover_health: float = 0.0
+@export_range(0.5, 10.0) var cover_seconds: float = 2.5
+## Hunting someone out of sight, it comes in this many degrees round from the side.
+@export_range(0.0, 90.0) var flank_degrees: float = 0.0
+## Out of sight, it walks towards the nearest opponent (it knows the map) instead of roaming.
+@export var hunts: bool = false
