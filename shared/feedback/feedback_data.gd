@@ -19,8 +19,9 @@ const DEFAULT_PATH: String = "res://shared/feedback/data/default_feedback.tres"
 @export_range(0.0, 50.0) var number_spread: float = 10.0
 @export_range(6, 64) var number_size: int = 16
 @export var number_color: Color = Color(1, 1, 1)
-## A hit taking at least this share of the enemy's max health is a "big hit".
-@export_range(0.01, 1.0) var big_hit_share: float = 0.3
+## A hit taking at least this share of the enemy's starting (max) health is a "big hit" (gold).
+## Health it lost counts, so a big shot that finishes off a nearly dead enemy is not big.
+@export_range(0.01, 1.0) var big_hit_share: float = 0.5
 @export_range(6, 96) var big_number_size: int = 26
 @export var big_number_color: Color = Color(1, 0.82, 0.25)
 

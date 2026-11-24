@@ -4,3 +4,4 @@
 
 [resource]
 script = ExtResource("1_data")
+big_hit_share = 0.5

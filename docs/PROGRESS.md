@@ -863,7 +863,7 @@ can be checked without people. Things to watch for when you play:
 | Feature | Status | Where |
 |---|---|---|
 | **Hit flash:** enemies and players flash bright when they lose health (healing and respawns don't). Every peer watches the health the host decided, so it needs no network data | Done, tested | `shared/feedback/hit_feedback.gd`, `enemies/chaser.tscn`, `player/player.tscn` |
-| **Damage numbers** pop from enemies, rise and fade; hits in the same frame add up. A hit taking 30%+ of the enemy's max health is a **big hit**: bigger and gold (a crit look, no randomness) | Done, tested | `shared/feedback/damage_number.gd`, `feedback_system.gd` |
+| **Damage numbers** pop from enemies, rise and fade; hits in the same frame add up. A hit taking 50%+ of the enemy's starting health (Yusuf's rule; the health it actually lost counts) is a **big hit**: bigger and gold (a crit look, no randomness) | Done, tested | `shared/feedback/damage_number.gd`, `feedback_system.gd` |
 | **Death bursts:** a dying enemy bursts into pieces in its colour (wave modifier tint included), bigger for bosses. The host sends every client one small event (where, colour, size), so a match reset never sets off bursts | Done, tested | `shared/feedback/feedback_system.gd`, `death_burst.gd`, `levels/test_arena.tscn` |
 | **Screen shake** when your player is hit and when an explosion goes off near you (fades with distance) | Done, tested | `player/player_camera.gd` |
 | All tuning in one Resource | Done | `shared/feedback/data/default_feedback.tres` (`FeedbackData`) |

@@ -24,6 +24,14 @@ func test_big_hits_are_a_share_of_max_health() -> void:
 	assert_false(data.is_big_hit(100, 1000), "bosses need much bigger hits")
 
 
+func test_default_big_hit_is_half_the_starting_health() -> void:
+	var tuned: FeedbackData = FeedbackData.load_default()
+	assert_false(tuned.is_big_hit(20, 60), "a pistol shot on a grunt (33%)")
+	assert_true(tuned.is_big_hit(30, 60), "half a grunt")
+	assert_true(tuned.is_big_hit(55, 60), "a rifle shot on a grunt")
+	assert_false(tuned.is_big_hit(10, 60), "finishing a grunt with 10 health left")
+
+
 func test_flash_fades_to_normal() -> void:
 	assert_almost_eq(HitFeedback.flash_weight(0.1, 0.1, 0.8), 0.8, 0.001, "starts white")
 	assert_eq(HitFeedback.flash_weight(0.0, 0.1, 0.8), 0.0, "ends at normal")
