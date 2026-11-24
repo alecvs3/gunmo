@@ -64,6 +64,17 @@ func test_the_check_catches_a_missing_system() -> void:
 	assert_eq(MapCheck.missing_systems(arena), PackedStringArray(["no FeedbackSystem"]))
 
 
+func test_the_check_catches_bullets_drawn_over_characters() -> void:
+	var arena: Level = load(MAPS_FOLDER + "test_arena.tres").scene.instantiate()
+	add_child_autofree(arena)
+	assert_eq(MapCheck.draw_order_problems(arena), PackedStringArray())
+	arena.move_child(arena.get_node("Projectiles"), -1)
+	assert_eq(
+		MapCheck.draw_order_problems(arena),
+		PackedStringArray(["Projectiles draws over Players", "Projectiles draws over Enemies"])
+	)
+
+
 func test_match_settings_pick_a_map() -> void:
 	for path in ["res://modes/data/default_match.tres", "res://modes/data/gun_game_match.tres"]:
 		var settings: MatchSettings = load(path)

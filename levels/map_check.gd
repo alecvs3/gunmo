@@ -1,7 +1,8 @@
 class_name MapCheck
 extends RefCounted
 ## The automatic check every map must pass (tests/levels/test_map_check.gd): the level has the
-## systems every map needs (bullets, game-feel effects), and every spawn point (player starts,
+## systems every map needs (bullets, game-feel effects), bullets draw under the characters, and
+## every spawn point (player starts,
 ## respawns, enemy spawns, bot points of interest) stands on the navigation mesh, not inside a
 ## wall, and can walk to every other one. Needs the level in the tree with its navigation synced.
 
@@ -46,9 +47,25 @@ static func missing_systems(level: Level) -> PackedStringArray:
 	return missing
 
 
+## Bullets must draw under the characters, so a fired bullet doesn't cover the gun it leaves
+## (#129): the projectiles root comes before Players and Enemies in the level.
+static func draw_order_problems(level: Level) -> PackedStringArray:
+	var found := PackedStringArray()
+	for child in level.get_children():
+		var system := child as ProjectileSystem
+		if system == null or system.projectiles_root == null:
+			continue
+		var bullets_at: int = system.projectiles_root.get_index()
+		for root: Node2D in [level.players_root, level.enemies_root]:
+			if root != null and root.get_index() < bullets_at:
+				found.append("%s draws over %s" % [system.projectiles_root.name, root.name])
+	return found
+
+
 ## What is wrong with the map (empty = it passes).
 static func problems(level: Level) -> PackedStringArray:
 	var found: PackedStringArray = missing_systems(level)
+	found.append_array(draw_order_problems(level))
 	var all: Dictionary = points(level)
 	if all.is_empty() or level.player_spawn_points.get_child_count() == 0:
 		found.append("no spawn points")
