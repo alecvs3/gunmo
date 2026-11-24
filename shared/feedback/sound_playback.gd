@@ -2,16 +2,10 @@ class_name SoundPlayback
 extends Node
 ## Plays SoundCues: `play_at` in the world (louder and centred when near the camera), `play`
 ## for interface sounds. Each play gets its own short-lived player, at most `max_at_once` per
-## cue; a cue with `max_seconds` fades out and stops early. Silent on a headless peer
-## (dedicated server, tests).
-
-## How long the early stop fades (seconds), so it doesn't click.
-const CUT_FADE: float = 0.04
+## cue. Silent on a headless peer (dedicated server, tests).
 
 ## Cue -> how many of it are playing now.
 var _playing: Dictionary[SoundCue, int] = {}
-## Player -> its cue, while it plays (so it is counted down exactly once).
-var _active: Dictionary[Node, SoundCue] = {}
 
 
 ## Whether one more of `cue` may start while `playing` already are.
@@ -49,19 +43,9 @@ func play(cue: SoundCue) -> void:
 
 func _track(finished: Signal, player: Node, cue: SoundCue) -> void:
 	_playing[cue] = _playing.get(cue, 0) + 1
-	_active[player] = cue
-	finished.connect(_done.bind(player))
-	if cue.max_seconds > 0.0:
-		var tween: Tween = player.create_tween()
-		tween.tween_interval(cue.max_seconds)
-		tween.tween_property(player, "volume_db", -60.0, CUT_FADE)
-		tween.tween_callback(_done.bind(player))
+	finished.connect(_on_finished.bind(player, cue))
 
 
-func _done(player: Node) -> void:
-	if not _active.has(player):
-		return
-	var cue: SoundCue = _active[player]
-	_active.erase(player)
+func _on_finished(player: Node, cue: SoundCue) -> void:
 	_playing[cue] = maxi(_playing.get(cue, 1) - 1, 0)
 	player.queue_free()

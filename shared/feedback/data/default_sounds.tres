@@ -21,9 +21,9 @@
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_003.ogg" id="20_impactSoft_heavy_003"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_004.ogg" id="21_impactSoft_heavy_004"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/open_001.ogg" id="29_open_001"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/explosion_1.mp3" id="80_explosion_1"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/explosion_2.mp3" id="81_explosion_2"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/boss_death_1.mp3" id="82_boss_death_1"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/explosion_1.wav" id="80_explosion_1"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/explosion_2.wav" id="81_explosion_2"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/boss_death_1.wav" id="82_boss_death_1"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_enemy_death"]
 random_pitch = 1.15

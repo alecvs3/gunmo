@@ -1,25 +1,22 @@
 [gd_resource type="Resource" script_class="SoundCue" format=3]
 
 [ext_resource type="Script" path="res://shared/feedback/sound_cue.gd" id="1_cue"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_1.mp3" id="2_pistol_1"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_2.mp3" id="3_pistol_2"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_3.mp3" id="4_pistol_3"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_4.mp3" id="5_pistol_4"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_5.mp3" id="6_pistol_5"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_1.wav" id="2_pistol_1"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_3.wav" id="3_pistol_3"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_4.wav" id="4_pistol_4"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/pistol_5.wav" id="5_pistol_5"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_shot"]
 random_pitch = 1.06
-streams_count = 5
+streams_count = 4
 stream_0/stream = ExtResource("2_pistol_1")
 stream_0/weight = 1.0
-stream_1/stream = ExtResource("3_pistol_2")
+stream_1/stream = ExtResource("3_pistol_3")
 stream_1/weight = 1.0
-stream_2/stream = ExtResource("4_pistol_3")
+stream_2/stream = ExtResource("4_pistol_4")
 stream_2/weight = 1.0
-stream_3/stream = ExtResource("5_pistol_4")
+stream_3/stream = ExtResource("5_pistol_5")
 stream_3/weight = 1.0
-stream_4/stream = ExtResource("6_pistol_5")
-stream_4/weight = 1.0
 
 [resource]
 script = ExtResource("1_cue")

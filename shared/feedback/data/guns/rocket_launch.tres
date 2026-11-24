@@ -1,7 +1,7 @@
 [gd_resource type="Resource" script_class="SoundCue" format=3]
 
 [ext_resource type="Script" path="res://shared/feedback/sound_cue.gd" id="1_cue"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/rocket_launch_1.mp3" id="2_rocket_launch_1"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/rocket_launch_1.wav" id="2_rocket_launch_1"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_shot"]
 random_pitch = 1.04
