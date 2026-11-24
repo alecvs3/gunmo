@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        commit: [872b7d2, 0654072, ba5d633, 71c300c, 4ad4acf, 63136d4, 720b8e2, c6e947a, bad8060, 27fcc0f]
+        commit: ["872b7d26bc0ac351a8ac339ccab154e9dc1dff2e", "0654072587b91ee7475fa671cf6572fcce1caf5d", "ba5d6330f11d446375b706fcfe90e29ce1d2f3af", "71c300c140615da629a4510279dbf217509b66f9", "4ad4acfdd621bac16cbbc0b3fd4baccc3b4f4963", "63136d430ca134c564392985917624049de2f02e", "720b8e2fbcb79369d6fc42b8fa1c7a6941f26e08", "c6e947ab1171298154acd6f0adb3d4404df7aee3", "bad8060fa317be4707831d4e016b711eb8d1a9a2", "27fcc0f9f59ffe0edbd04bb922f96de8a1e2c907"]
     env:
       GODOT_VERSION: 4.7.2-stable
     steps:
