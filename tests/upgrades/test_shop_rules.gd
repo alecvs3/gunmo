@@ -39,15 +39,17 @@ func test_weapon_allowed_and_refusals() -> void:
 	assert_eq(ShopRules.check_weapon(true, catalog, 0, 1, 0), "", "switching back to a free gun")
 
 
-func test_button_labels() -> void:
-	assert_eq(ShopPanel.weapon_label(catalog.weapons[1], false), "Rifle · 400")
-	assert_eq(ShopPanel.weapon_label(catalog.weapons[1], true), "Rifle (equipped)")
-	catalog.weapons[0].display_name = "Pistol"
-	assert_eq(ShopPanel.weapon_label(catalog.weapons[0], false), "Pistol · free")
+func test_card_and_row_text() -> void:
+	assert_eq(ShopWeaponCard.price_text(catalog.weapons[1], false), "400")
+	assert_eq(ShopWeaponCard.price_text(catalog.weapons[1], true), "Equipped")
+	assert_eq(ShopWeaponCard.price_text(catalog.weapons[0], false), "Free")
 	var gun := WeaponData.new()
 	gun.damage_per_level = 4
-	assert_eq(ShopPanel.upgrade_label(catalog.upgrades[0], 1, gun), "Damage 1/2 · +4 dmg · 200")
-	assert_eq(ShopPanel.upgrade_label(catalog.upgrades[0], 2, gun), "Damage 2/2 (max)")
+	var damage: UpgradeData = catalog.upgrades[0]
+	assert_eq(ShopUpgradeRow.buy_text(damage, 1), "200")
+	assert_eq(ShopUpgradeRow.buy_text(damage, 2), "MAX")
+	assert_eq(ShopUpgradeRow.gain_line(damage, 1, gun), "Next: +4 dmg")
+	assert_eq(ShopUpgradeRow.gain_line(damage, 2, gun), "Fully upgraded")
 
 
 func test_gain_text_follows_the_held_gun() -> void:

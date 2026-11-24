@@ -2,78 +2,144 @@
 
 [ext_resource type="Script" path="res://ui/shop_panel.gd" id="1_shop"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_panel"]
-bg_color = Color(0.08, 0.09, 0.11, 0.88)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-content_margin_left = 12.0
-content_margin_top = 10.0
-content_margin_right = 12.0
-content_margin_bottom = 10.0
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_window"]
+bg_color = Color(0.08, 0.09, 0.11, 0.82)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.85, 0.35, 0.35)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 12.0
+content_margin_right = 16.0
+content_margin_bottom = 12.0
 
-[node name="ShopPanel" type="PanelContainer"]
-anchors_preset = 11
-anchor_left = 1.0
+[node name="ShopPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -292.0
-offset_top = 48.0
-offset_right = -12.0
-offset_bottom = -12.0
-grow_horizontal = 0
+grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+mouse_filter = 2
 script = ExtResource("1_shop")
 
-[node name="Box" type="VBoxContainer" parent="."]
-layout_mode = 2
-theme_override_constants/separation = 6
+[node name="Hint" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -136.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = 44.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 18
+text = "B: Shop"
+horizontal_alignment = 2
 
-[node name="Title" type="Label" parent="Box"]
+[node name="Dim" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.4)
+
+[node name="Window" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.08
+anchor_top = 0.07
+anchor_right = 0.92
+anchor_bottom = 0.93
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_window")
+
+[node name="Box" type="VBoxContainer" parent="Window"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="Window/Box"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Window/Box/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 24
 text = "Shop"
 
-[node name="ShopCredits" type="Label" parent="Box"]
+[node name="ShopCredits" type="Label" parent="Window/Box/Header"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.85, 0.35, 1)
+theme_override_font_sizes/font_size = 20
 text = "0 credits"
 
-[node name="Scroll" type="ScrollContainer" parent="Box"]
-custom_minimum_size = Vector2(0, 120)
-size_flags_vertical = 3
+[node name="Body" type="HBoxContainer" parent="Window/Box"]
 layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="WeaponsColumn" type="VBoxContainer" parent="Window/Box/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.2
+
+[node name="WeaponsTitle" type="Label" parent="Window/Box/Body/WeaponsColumn"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
+text = "Guns"
+
+[node name="WeaponsScroll" type="ScrollContainer" parent="Window/Box/Body/WeaponsColumn"]
+layout_mode = 2
+size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="Lists" type="VBoxContainer" parent="Box/Scroll"]
+[node name="Weapons" type="HFlowContainer" parent="Window/Box/Body/WeaponsColumn/WeaponsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+
+[node name="UpgradesColumn" type="VBoxContainer" parent="Window/Box/Body"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UpgradesTitle" type="Label" parent="Window/Box/Body/UpgradesColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
+text = "Upgrades"
+clip_text = true
+
+[node name="UpgradesScroll" type="ScrollContainer" parent="Window/Box/Body/UpgradesColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Upgrades" type="VBoxContainer" parent="Window/Box/Body/UpgradesColumn/UpgradesScroll"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="WeaponsTitle" type="Label" parent="Box/Scroll/Lists"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
-text = "Weapons (replace yours, upgrades carry over)"
-autowrap_mode = 3
-
-[node name="Weapons" type="VBoxContainer" parent="Box/Scroll/Lists"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="UpgradesTitle" type="Label" parent="Box/Scroll/Lists"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
-text = "Upgrades"
-
-[node name="Upgrades" type="VBoxContainer" parent="Box/Scroll/Lists"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="Hint" type="Label" parent="Box"]
+[node name="Footer" type="Label" parent="Window/Box"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.58, 0.62, 1)
 theme_override_font_sizes/font_size = 12
-text = "Open between waves · B to hide"
+text = "Upgrades stay when you change guns · B or Esc to close"
+autowrap_mode = 3

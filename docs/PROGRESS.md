@@ -724,3 +724,19 @@ No network format change.
 - Bots don't dodge, use cover or aim from the barrel yet (step 11).
 - Their shopping ignores what suits their style; the Rocket Launcher counts as "dearer, so better".
 - **Not verified:** whether they feel like useful teammates in a window.
+
+## Shop rework: the see-through shop ✅ (issue #103)
+
+| Feature | Status | Where |
+|---|---|---|
+| The shop is a big see-through window over the game. While it's open (lobby, breaks) a gold "B: Shop" hint shows top right; **B** opens it, **B**, **Esc** or a click outside closes it. A new lobby or break starts with it closed | Done | `ui/shop_panel.*` |
+| **Gun cards:** each gun's own drawn model (`WeaponData.held_model`) shown big, its name and price (Free / Equipped); the gun you hold has a blue frame, guns you can't afford are dimmed | Done, tested | `ui/shop_weapon_card.*`, `ui/shop_gun_picture.gd` |
+| **Upgrade rows** for the gun you hold: level dots (gold = bought), what the next level gives, a buy button with the price (MAX at the cap) | Done, tested | `ui/shop_upgrade_row.*`, `ui/shop_pips.gd` |
+| **Buy feedback:** when the host confirms a purchase (your weapon or a level actually changes), that card swells and settles, or the new dot pops. A refused request pops nothing | Done, tested | `ui/shop_seen.gd` |
+
+Nothing about buying changed: the buttons still only send `shop_purchase_requested` and the host
+checks it. No network format change.
+
+### Known limitations
+- No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
+- Tried in a window by Yusuf. **Not verified:** a 2-player match.

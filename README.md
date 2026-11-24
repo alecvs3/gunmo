@@ -46,7 +46,7 @@ Add `--net-sim 100,20,5` to any instance to fake 100 ms lag, ±20 ms jitter and 
 few seconds and reports whether the view moves evenly every frame.
 
 **Waves:** press **F** to ready up (the lobby and breaks end early when everyone is ready).
-Kills and cleared waves earn credits; the shop opens in the lobby and between waves (**B** hides it).
+Kills and cleared waves earn credits; the shop is open in the lobby and between waves (a "B: Shop" hint shows; **B** opens it, **B** or **Esc** closes it).
 `-- --match res://tests/net/data/quick_match.tres` hosts a quick 2-wave match for testing.
 **Gun Game:** pick it in the menu before hosting, with how many players to fill up to with bots.
 Every kill counts toward your current gun; enough kills move you to the next one, and the first
