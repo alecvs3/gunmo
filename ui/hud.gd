@@ -46,6 +46,14 @@ static func call_line(state: MatchNetState, voted: bool) -> String:
 	return "G: call the next wave early for bonus credits (%s)" % counts
 
 
+## Two HUD lines under each other, leaving out an empty one (during a wave: the modifiers,
+## then the early-call prompt, so neither hides the other).
+static func stack_lines(first: String, second: String) -> String:
+	if first == "" or second == "":
+		return first + second
+	return first + "\n" + second
+
+
 static func match_lines(
 	state: MatchNetState, now_tick: float, local_ready: bool, local_call: bool = false
 ) -> Array[String]:
@@ -197,7 +205,7 @@ func _show_match() -> void:
 	_info_label.text = lines[0]
 	_ready_label.text = lines[1]
 	if _state.phase == GameMode.Phase.ACTIVE:
-		_ready_label.text = _modifiers.names(_state.modifier_mask)
+		_ready_label.text = stack_lines(_modifiers.names(_state.modifier_mask), lines[1])
 
 
 func _show_gun_game(player: Player) -> void:

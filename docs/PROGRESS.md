@@ -1064,7 +1064,6 @@ than a whole team of maxed-out players deals.
 - The wave report doesn't include healing, so its numbers don't change.
 - **Not verified:** a real wave-20 or wave-25 fight in a window.
 
-
 ## Joining no longer fails the latency check ✅
 
 Since the pets landed, smoke **G** failed on main: the client's smoothing buffer sat at about
@@ -1097,3 +1096,17 @@ after a warning. When one of them died during the warning, the loop put it into 
 
 ### Known limitations
 - A match can't be saved or resumed, so a crash loses the run.
+
+## The early-call prompt shows again ✅ (issue #142)
+
+The "G: call the next wave early" prompt from #126 never appeared: during a wave the HUD wrote
+it and then overwrote the same label with the wave's modifier names, so G worked but nobody
+knew it was there.
+
+| Feature | Status | Where |
+|---|---|---|
+| During a wave the label under the enemy count shows the modifiers, then the early-call prompt on the next line (either one alone when the other is empty) | Done, tested | `ui/hud.gd` (`Hud.stack_lines`), `tests/ui/test_hud_text.gd` |
+
+### Known limitations
+- Checked in a window (host, solo). **Not verified:** how the two lines look with long modifier
+  lists.
