@@ -1,4 +1,4 @@
-# Temporary: an A/B of smoke scenario G (latency) on the same machine. Each job checks out the
+# Temporary (base = #131, test = the Healer commit): an A/B of smoke scenario G (latency) on the same machine. Each job checks out the
 # code from before today (base) and the code under test (main, with one variant change) side by
 # side and alternates G runs between them, so the machine's speed cancels out.
 name: bisect-g
@@ -14,18 +14,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [control, no_effects, no_panel, no_follower, none, pets_131]
+        variant: [control, chaser, mode, level, data, all]
     env:
       GODOT_VERSION: 4.7.2-stable
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 0654072587b91ee7475fa671cf6572fcce1caf5d
+          ref: 4ad4acfdd621bac16cbbc0b3fd4baccc3b4f4963
+          fetch-depth: 0
           path: base
           lfs: true
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.variant == 'pets_131' && '4ad4acfdd621bac16cbbc0b3fd4baccc3b4f4963' || '27fcc0f9f59ffe0edbd04bb922f96de8a1e2c907' }}
+          ref: 720b8e2fbcb79369d6fc42b8fa1c7a6941f26e08
+          fetch-depth: 0
           path: test
           lfs: true
       - name: Download Godot
@@ -34,20 +36,16 @@ jobs:
           Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$($env:GODOT_VERSION)/$zip" -OutFile $zip
           Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
           "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
-      - name: Variant
+      - name: Variant (revert parts of the Healer commit to #131)
         working-directory: test
         run: |
           $v = "${{ matrix.variant }}"
-          if ($v -eq "no_effects" -or $v -eq "none") {
-            (Get-Content levels/level.gd -Raw).Replace("`tadd_child(PetEffects.new())`n", "") | Set-Content levels/level.gd -NoNewline
-          }
-          if ($v -eq "no_panel" -or $v -eq "none") {
-            (Get-Content main.tscn -Raw).Replace('[node name="PetPanel" parent="UI" instance=ExtResource("12_pets")]', '') | Set-Content main.tscn -NoNewline
-          }
-          if ($v -eq "no_follower" -or $v -eq "none") {
-            (Get-Content player/player.gd -Raw).Replace("`tadd_child(PetFollower.new())`n", "") | Set-Content player/player.gd -NoNewline
-          }
-          git diff --stat
+          $base = "4ad4acfdd621bac16cbbc0b3fd4baccc3b4f4963"
+          if ($v -eq "chaser" -or $v -eq "all") { git checkout $base -- enemies/chaser.gd }
+          if ($v -eq "mode" -or $v -eq "all") { git checkout $base -- modes/wave_mode.gd modes/waves/downed_players.gd modes/waves/wave_spawner.gd }
+          if ($v -eq "level" -or $v -eq "all") { git checkout $base -- levels/level.gd }
+          if ($v -eq "data" -or $v -eq "all") { git checkout $base -- pets/data/healer.tres }
+          git status --short
       - name: Import both
         run: |
           .\base\tools\check.ps1 -Only import -LogDir "$env:RUNNER_TEMP\ib"
