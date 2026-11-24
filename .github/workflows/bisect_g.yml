@@ -1,4 +1,4 @@
-# Temporary (base = #131, test = the Healer commit): an A/B of smoke scenario G (latency) on the same machine. Each job checks out the
+# Temporary (base = #131, test = main with PetPowers parts off): an A/B of smoke scenario G (latency) on the same machine. Each job checks out the
 # code from before today (base) and the code under test (main, with one variant change) side by
 # side and alternates G runs between them, so the machine's speed cancels out.
 name: bisect-g
@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [control, chaser, mode, level, data, all]
+        variant: [control, no_tick, no_wizard_tick, no_soldier_tick, no_powers_node]
     env:
       GODOT_VERSION: 4.7.2-stable
     steps:
@@ -26,7 +26,7 @@ jobs:
           lfs: true
       - uses: actions/checkout@v4
         with:
-          ref: 720b8e2fbcb79369d6fc42b8fa1c7a6941f26e08
+          ref: 27fcc0f9f59ffe0edbd04bb922f96de8a1e2c907
           fetch-depth: 0
           path: test
           lfs: true
@@ -36,16 +36,18 @@ jobs:
           Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$($env:GODOT_VERSION)/$zip" -OutFile $zip
           Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
           "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
-      - name: Variant (revert parts of the Healer commit to #131)
+      - name: Variant (current main, PetPowers parts switched off)
         working-directory: test
         run: |
           $v = "${{ matrix.variant }}"
-          $base = "4ad4acfdd621bac16cbbc0b3fd4baccc3b4f4963"
-          if ($v -eq "chaser" -or $v -eq "all") { git checkout $base -- enemies/chaser.gd }
-          if ($v -eq "mode" -or $v -eq "all") { git checkout $base -- modes/wave_mode.gd modes/waves/downed_players.gd modes/waves/wave_spawner.gd }
-          if ($v -eq "level" -or $v -eq "all") { git checkout $base -- levels/level.gd }
-          if ($v -eq "data" -or $v -eq "all") { git checkout $base -- pets/data/healer.tres }
-          git status --short
+          $f = "pets/pet_powers.gd"
+          $t = Get-Content $f -Raw
+          if ($v -eq "no_tick") { $t = $t.Replace("func _physics_process(_delta: float) -> void:`n", "func _physics_process(_delta: float) -> void:`n`treturn`n") }
+          if ($v -eq "no_wizard_tick") { $t = $t.Replace("`t_wizard.tick(players, NetworkManager.clock.tick)`n", "") }
+          if ($v -eq "no_soldier_tick") { $t = $t.Replace("`t_soldier.tick(players, NetworkManager.clock.tick)`n", "") }
+          if ($v -eq "no_powers_node") { $t = $t.Replace("func _ready() -> void:`n", "func _ready() -> void:`n`tset_physics_process(false)`n`tset_process(false)`n") }
+          Set-Content $f $t -NoNewline
+          git diff
       - name: Import both
         run: |
           .\base\tools\check.ps1 -Only import -LogDir "$env:RUNNER_TEMP\ib"
