@@ -76,8 +76,8 @@ func test_summon_waits_for_room() -> void:
 func test_telegraph_byte_fills_over_the_windup() -> void:
 	assert_eq(EnemyNetState.to_telegraph(0.0, 1.0), 0, "not winding up")
 	assert_eq(EnemyNetState.to_telegraph(1.0, 1.0), 1, "just started")
-	assert_eq(EnemyNetState.to_telegraph(0.5, 1.0), 128)
-	assert_eq(EnemyNetState.to_telegraph(0.001, 1.0), 255, "about to fire")
+	assert_eq(EnemyNetState.to_telegraph(0.5, 1.0), 32)
+	assert_eq(EnemyNetState.to_telegraph(0.001, 1.0), 63, "about to fire")
 	assert_eq(EnemyNetState.to_telegraph(0.5, 0.0), 0, "no windup")
 
 

@@ -13,10 +13,12 @@ var _wave_health: int = 0
 var _mended: Dictionary = {}
 var _guarded: Dictionary = {}
 var _siphoned: Dictionary = {}
+var _wizard: WizardPowers
 
 
 func _init(level: Level) -> void:
 	_level = level
+	_wizard = WizardPowers.new(level)
 
 
 ## The Healer data and tier a player has (tier 0 = no Healer).
@@ -49,12 +51,17 @@ func _ready() -> void:
 	EventBus.enemy_damaged.connect(_on_enemy_damaged)
 
 
+func _physics_process(_delta: float) -> void:
+	_wizard.tick(_level.players(), NetworkManager.clock.tick)
+
+
 func on_wave_started(planned_health: int) -> void:
 	_dealt = 0
 	_wave_health = planned_health
 	_mended.clear()
 	_guarded.clear()
 	_siphoned.clear()
+	_wizard.clear()
 
 
 ## Wave's End: the strongest Healer on the team heals everyone standing (Healers don't stack).
@@ -83,12 +90,13 @@ func save_from_going_down(player: Player) -> bool:
 	return true
 
 
-func _on_enemy_damaged(_enemy: Node2D, amount: int, source_id: int) -> void:
+func _on_enemy_damaged(enemy: Node2D, amount: int, source_id: int) -> void:
 	var source: Player = _level.player(source_id) if source_id != 0 else null
 	if source == null:
 		return
 	_dealt += amount
 	_siphon(source, amount)
+	_wizard.on_hit(source, enemy as ChaserEnemy, amount, NetworkManager.clock.tick)
 	var any_healer: HealerData = _healer_data_any()
 	if any_healer != null and HealerRules.mending_ready(any_healer, _dealt, _wave_health):
 		_mend_everyone()

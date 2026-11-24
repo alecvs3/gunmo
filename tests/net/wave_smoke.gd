@@ -8,7 +8,8 @@ extends "res://tests/net/smoke_script.gd"
 ## Each side records the phases it sees (the client through replication) and checks them.
 ## The host also checks a Splitter split, that its children had to die before wave 1 cleared,
 ## and that the boss reached its second phase and was killed. The host gives the client a
-## tier-2 Healer pet: the client must see its heals (pet effects from the host).
+## tier-2 Healer pet: the client must see its heals (pet effects from the host). The host gets
+## a tier-5 Wizard: the client must see its lightning and runes.
 ## In the second run the host downs the client and revives it (holding revive next to it);
 ## the client must see itself go down and come back.
 ## Role botwavehost (its own port, + BOT_PORT_OFFSET): 1 human host who never fires and can't be
@@ -42,6 +43,8 @@ var _saw_self_downed: bool = false
 var _saw_self_revived: bool = false
 ## Client: heal effects seen (EventBus pet_effect_shown, kind 0 = PetEffects.Kind.HEAL).
 var _heals_seen: int = 0
+## Client: Wizard effects seen (PetEffects.Kind ARC = 1, RUNE = 2).
+var _spells_seen: int = 0
 var _kills: int = 0
 ## Host: kills seen when wave 1 ended (a split's children must die too).
 var _kills_by_wave_two: int = -1
@@ -91,6 +94,8 @@ func _run_host() -> void:
 	await create_timer(1.0).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
 	await _wait_until(func() -> bool: return _is_phase("LOBBY"), 5.0)
+	# A restart clears every loadout, pets too; enemies reach the players in this run.
+	_give_client_a_healer()
 	await _play_until(_phase["ACTIVE"], false, 10.0)
 	await _down_and_revive_client()
 	await _play_until(_phase["DEFEAT"], false, 60.0)
@@ -107,6 +112,7 @@ func _run_client() -> void:
 	root.get_node("EventBus").pet_effect_shown.connect(
 		func(kind: int, _at: PackedVector2Array, _r: float, _s: float) -> void:
 			_heals_seen += 1 if kind == 0 else 0
+			_spells_seen += 1 if kind == 1 or kind == 2 else 0
 	)
 	await _wait_until(func() -> bool: return _own_player() != null and _state != null, 15.0)
 	await _play_until(_phase["VICTORY"], true, 55.0)
@@ -116,6 +122,7 @@ func _run_client() -> void:
 	_check(_saw_last_wave_hud, "the HUD never showed 'Wave 3 / 3'")
 	_check(_saw_self_downed, "never saw our own player downed")
 	_check(_heals_seen > 0, "never saw the Healer pet heal")
+	_check(_spells_seen > 0, "never saw the Wizard's lightning or runes")
 	_check(_saw_self_revived, "never saw our own player revived")
 	_check(_saw_results, "the results screen never appeared")
 	await _wait_until(func() -> bool: return not _end_reason.is_empty(), 15.0)
@@ -356,9 +363,12 @@ func _bots_shopped() -> bool:
 	return false
 
 
-## Host: the client's loadout gets a tier-2 Healer (Mending + Wave's End).
+## Host: the client's loadout gets a tier-2 Healer (Mending + Wave's End), ours a tier-5 Wizard.
 func _give_client_a_healer() -> void:
 	for player: Node in root.get_node(_level_path() + "/Players").get_children():
 		if player.name != "1" and not player.get("is_bot"):
 			player.get_node("PlayerLoadout").call("buy_pet_tier", 0)
 			player.get_node("PlayerLoadout").call("buy_pet_tier", 0)
+		elif player.name == "1":
+			for i in 5:
+				player.get_node("PlayerLoadout").call("buy_pet_tier", 1)

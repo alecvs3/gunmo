@@ -13,6 +13,7 @@ the Pets window (`ui/pet_panel.gd`, P). Every tier adds an ability and strengthe
 | `pet_powers.gd` | Host only: runs the abilities. WaveMode tells it when waves start and clear; it reads EventBus `enemy_damaged` |
 | `pet_effects.gd` | Every peer (a child of each Level): draws what pets do. The host calls `PetEffects.broadcast()` (event topic 4) |
 | `healer_data.gd`, `healer_rules.gd` | The Healer's numbers and its five tiers as pure rules |
+| `wizard_data.gd`, `wizard_rules.gd`, `wizard_powers.gd` | The Wizard: numbers, pure rules, and the host side (arcs, runes, hexes, tempest) |
 
 ## Rules that aren't obvious
 - **Ownership lives on the loadout:** `PlayerLoadout.pet_index` / `pet_tier`, bought with
@@ -23,6 +24,10 @@ the Pets window (`ui/pet_panel.gd`, P). Every tier adds an ability and strengthe
 - Pets are Waves only: only the Waves shop sells them, so a Gun Game loadout never has one.
 - Ability numbers belong in the pet's data (`.tres`), never in code (rule 6): each kind has its
   own data class (`HealerData extends PetData`) and a pure rules class that reads it.
+- **Pet damage goes through the enemy's hitbox with the owner as the source**, so kills and
+  bounties go to the owner; `WizardPowers` ignores its own damage so arcs never arc again.
+- Enemies' **status** (slowed, hexed: `enemies/enemy_status.gd`) is decided on the host; clients
+  get two flags packed into the telegraph byte of the enemy snapshot.
 - **Team effects don't stack:** with two Healers, Wave's End heals by the stronger one, once.
 
 ## Tests

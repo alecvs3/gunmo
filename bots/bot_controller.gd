@@ -25,6 +25,8 @@ const DODGE_LOOK_DISTANCE: float = 500.0
 const DODGE_RADIUS: float = 30.0
 ## After taking cover it won't again for this long (s).
 const COVER_COOLDOWN: float = 8.0
+## A Wizard's hexed enemy counts this much more dangerous (bots focus it).
+const HEXED_DANGER: float = 2.0
 
 @export var profile: BotProfile
 
@@ -126,7 +128,10 @@ func _pick_target() -> HitboxComponent:
 ## a player.
 static func _danger_of(hitbox: HitboxComponent) -> float:
 	var enemy := hitbox.get_parent() as ChaserEnemy
-	return enemy.enemy_data.cost if enemy != null else 1.0
+	if enemy == null:
+		return 1.0
+	var hexed: bool = enemy.status.is_hexed(NetworkManager.clock.tick)
+	return enemy.enemy_data.cost * (HEXED_DANGER if hexed else 1.0)
 
 
 ## Living players on our own team (co-op), not us.

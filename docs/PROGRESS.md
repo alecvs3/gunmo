@@ -972,7 +972,7 @@ The abilities themselves come in the next three steps. Until then a pet does not
   pet in the world only in code.
 - Swapping pets loses the old pet's tiers (the menu warns first).
 
-## Pets & pacing 3: the Healer ✅ (issue #132)
+## Pets & pacing 3: the Healer ✅ (merged, issue #132)
 
 | Tier | What it does | Where |
 |---|---|---|
@@ -995,3 +995,28 @@ see its heals arrive.
 ### Known limitations
 - Mending measures against the wave's planned enemy health (before modifiers and splits).
 - **Not verified:** how the heals look and feel in a window.
+
+## Pets & pacing 4: enemy status and the Wizard ✅ (issue #134)
+
+| Tier | What it does |
+|---|---|
+| 1 Arc Spark | A hit has a 15% chance (at most once a second) to arc lightning to 2 enemies within 140 px, for 40% of the hit (20% and 3 jumps from tier 2) |
+| 2 Frost Rune | Every 8 s a rune lands where enemies are thickest within 450 px of you: 35% slower for 3 s (every 6 s from tier 4) |
+| 3 Conduction | Arcs deal 25% more to slowed enemies, and a slowed first enemy passes the arc on once more |
+| 4 Hex | Every 12 s it marks the toughest enemy within 600 px (a boss first): +20% damage from everyone for 5 s, arcs start from it, bots focus it (every 7 s from tier 5) |
+| 5 Tempest | Every 25 s, after a 1 s warning ring, bolts strike up to 6 enemies within 400 px for 8% of their max health (2% on bosses) |
+
+| System | Where |
+|---|---|
+| `EnemyStatus`: slowed and hexed, the stronger effect and later end kept; the host's chaser moves slower and takes more damage | `enemies/enemy_status.gd`, `enemies/chaser.gd` |
+| Every peer sees it: slowed enemies look frosty, hexed ones wear a purple diamond. The two flags share the telegraph's byte (telegraph is now 6 bits), so the snapshot stays 8 bytes per enemy; protocol 20 | `shared/network/states/enemy_net_state.gd`, `enemies/enemy_telegraph.gd` |
+| Pure rules and host powers; Wizard damage goes through the enemy's hitbox in the owner's name (kills and bounties are theirs) and never arcs again | `pets/wizard_rules.gd`, `pets/wizard_powers.gd`, `pets/data/wizard.tres` |
+
+**Tests:** `tests/pets/test_wizard.gd` (status stacking and expiry, the packed byte, every tier's
+rule, the chain, the rune's spot, the hex target, tempest damage); smoke **C**: the host has a
+tier-5 Wizard and the client must see its lightning or runes. Smoke F download 57.8 KB/s
+(budget 60; it varies run to run, but it's getting close).
+
+### Known limitations
+- Hex and runes don't check line of sight (they reach through walls).
+- **Not verified:** how the lightning, runes and marks look in a window.
