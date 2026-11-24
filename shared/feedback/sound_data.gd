@@ -1,6 +1,7 @@
 class_name SoundData
 extends Resource
 ## Which sound plays for each moment, and how loud. Sounds only: nothing here changes gameplay.
+## A cue left empty is silent (normal enemy hits are, for now: only big hits make a sound).
 
 const DEFAULT_PATH: String = "res://shared/feedback/data/default_sounds.tres"
 

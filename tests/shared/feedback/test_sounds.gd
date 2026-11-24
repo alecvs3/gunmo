@@ -4,8 +4,8 @@ extends GutTest
 
 func test_every_cue_has_a_sound() -> void:
 	var sounds: SoundData = SoundData.load_default()
+	assert_null(sounds.enemy_hit, "normal hits are silent for now")
 	var cues: Array[SoundCue] = [
-		sounds.enemy_hit,
 		sounds.enemy_big_hit,
 		sounds.enemy_death,
 		sounds.blast,
