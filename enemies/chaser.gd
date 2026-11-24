@@ -282,9 +282,9 @@ func is_wounded() -> bool:
 	return _health.current_health < _health.max_health
 
 
-## Host: heal `amount` points (support enemies).
+## Host: heal `amount` points (support enemies), less if it resists healing (heal_received).
 func heal(amount: int) -> void:
-	_health.heal(amount)
+	_health.heal(enemy_data.received_heal(amount))
 
 
 func max_health() -> int:
@@ -303,7 +303,7 @@ func _apply_modifiers(combined: WaveModifier) -> void:
 	_base_damage_taken = combined.damage_taken_multiplier * enemy_data.damage_taken
 	_health.damage_taken_multiplier = _base_damage_taken
 	_speed = enemy_data.move_speed * combined.speed_multiplier
-	_regen_per_second = combined.regen_per_second
+	_regen_per_second = combined.regen_per_second * enemy_data.heal_received
 
 
 ## Host: heal a share of max health per second (whole points; the rest carries over).

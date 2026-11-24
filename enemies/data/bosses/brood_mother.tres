@@ -69,6 +69,7 @@ visual_scale = 2.2
 body_scale = 2.0
 max_health = 2400
 damage_taken = 1.0
+heal_received = 0.1
 move_speed = 75.0
 repath_interval = 0.3
 knockback_friction = 3000.0
