@@ -18,6 +18,14 @@ extends Resource
 @export var revive_at_break: bool = false
 ## Someone joining mid-wave watches until the next break instead of dropping in.
 @export var late_joiners_spectate: bool = false
+## Co-op: a player at 0 health goes down for this long (a teammate can revive them) before
+## they are out until the break. 0 = no downed state: out at once.
+@export_range(0.0, 120.0) var bleed_out_seconds: float = 0.0
+## Holding revive this long next to a downed teammate brings them back.
+@export_range(0.1, 30.0) var revive_seconds: float = 3.0
+@export_range(10.0, 500.0) var revive_range: float = 70.0
+## Share of max health a revived player comes back with.
+@export_range(0.05, 1.0) var revive_health_share: float = 0.3
 ## Credits each player starts the match with.
 @export_range(0, 1000000) var starting_credits: int = 0
 ## Credits for every player still standing when a wave is cleared: base + per_wave × wave.

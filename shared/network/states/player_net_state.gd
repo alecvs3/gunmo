@@ -8,12 +8,13 @@ const FLAG_ALIVE: int = 1
 const FLAG_PROTECTED: int = 2
 ## 3 vectors (24) + f64 aim + u16 health + u16 ammo + 2 x f64 timers + u8 flags + u8 teleports
 ## + u32 last command + u8 weapon index + u32 credits + 16 upgrade levels + i32 team
-## + 2 x u16 kills/deaths + 2 x u8 tier/tier kills + u16 max health.
-const SIZE: int = 91
+## + 2 x u16 kills/deaths + 2 x u8 tier/tier kills + u16 max health + 2 x u8 downed.
+const SIZE: int = 93
 ## The public form, for everyone but the player's owner: f32 position + f32 aim + u16 health
-## + u16 max health + u8 flags + u8 teleports + u8 weapon + i32 team + 2 x u16 + 2 x u8 score.
-## Not sent to others: velocities, ammo, weapon timers, last command, credits, upgrades.
-const PUBLIC_SIZE: int = 29
+## + u16 max health + u8 flags + u8 teleports + u8 weapon + i32 team + 2 x u16 + 2 x u8 score
+## + 2 x u8 downed. Not sent to others: velocities, ammo, weapon timers, last command, credits,
+## upgrades.
+const PUBLIC_SIZE: int = 31
 
 var position: Vector2 = Vector2.ZERO
 var move_velocity: Vector2 = Vector2.ZERO
@@ -43,6 +44,10 @@ var kills: int = 0
 var deaths: int = 0
 var tier: int = 0
 var tier_kills: int = 0
+## Co-op downed: bleed-out time left as a share (1..255; 0 = not downed), and how full a
+## teammate's revive is (0..255).
+var down_left: int = 0
+var revive_progress: int = 0
 
 
 func _init() -> void:
@@ -72,6 +77,8 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(clampi(tier, 0, 255))
 	buffer.put_u8(clampi(tier_kills, 0, 255))
 	buffer.put_u16(clampi(max_health, 0, 65535))
+	buffer.put_u8(clampi(down_left, 0, 255))
+	buffer.put_u8(clampi(revive_progress, 0, 255))
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -97,6 +104,8 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	tier = buffer.get_u8()
 	tier_kills = buffer.get_u8()
 	max_health = buffer.get_u16()
+	down_left = buffer.get_u8()
+	revive_progress = buffer.get_u8()
 
 
 func byte_size() -> int:
@@ -116,6 +125,8 @@ func encode_public(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u16(clampi(deaths, 0, 65535))
 	buffer.put_u8(clampi(tier, 0, 255))
 	buffer.put_u8(clampi(tier_kills, 0, 255))
+	buffer.put_u8(clampi(down_left, 0, 255))
+	buffer.put_u8(clampi(revive_progress, 0, 255))
 
 
 func decode_public(buffer: StreamPeerBuffer) -> void:
@@ -133,6 +144,8 @@ func decode_public(buffer: StreamPeerBuffer) -> void:
 	deaths = buffer.get_u16()
 	tier = buffer.get_u8()
 	tier_kills = buffer.get_u8()
+	down_left = buffer.get_u8()
+	revive_progress = buffer.get_u8()
 
 
 func public_byte_size() -> int:
@@ -174,4 +187,6 @@ func copy() -> PlayerNetState:
 	duplicate.deaths = deaths
 	duplicate.tier = tier
 	duplicate.tier_kills = tier_kills
+	duplicate.down_left = down_left
+	duplicate.revive_progress = revive_progress
 	return duplicate

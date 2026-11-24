@@ -31,6 +31,8 @@ func capture() -> PlayerNetState:
 	state.reload_left = weapon.reload_left
 	state.alive = player.is_alive
 	state.protected = player.is_protected
+	state.down_left = player.down_left
+	state.revive_progress = player.revive_progress
 	state.team_id = player.team_id
 	state.kills = score.kills
 	state.deaths = score.deaths
@@ -78,6 +80,8 @@ func restore(state: PlayerNetState) -> void:
 ## Clients: the parts of a snapshot every peer shows the same way.
 func _apply_shared(state: PlayerNetState) -> void:
 	player.is_protected = state.protected
+	player.down_left = state.down_left
+	player.revive_progress = state.revive_progress
 	if player.team_id != state.team_id:
 		player.team_id = state.team_id
 	score.apply_replicated(state.kills, state.deaths, state.tier, state.tier_kills)
