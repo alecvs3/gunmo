@@ -39,10 +39,13 @@ func update(players: Array[Player], delta: float) -> void:
 			_downed.erase(peer_id)
 			continue
 		var downed: ReviveRules.Downed = _downed[peer_id]
-		var reviving: bool = _has_reviver(players, player)
-		match ReviveRules.step(downed, delta, reviving, _settings.revive_seconds):
+		var reviver: Player = _reviver(players, player)
+		var speed: float = PetPowers.revive_speed(reviver)
+		match ReviveRules.step(downed, delta * speed, reviver != null, _settings.revive_seconds):
 			ReviveRules.Result.REVIVED:
-				player.revive_here(_settings.revive_health_share)
+				var share: float = _settings.revive_health_share + PetPowers.revive_bonus(reviver)
+				player.revive_here(minf(share, 1.0))
+				PetPowers.show_heal(player)
 				_downed.erase(peer_id)
 			ReviveRules.Result.BLED_OUT:
 				player.bleed_out()
@@ -56,8 +59,8 @@ func update(players: Array[Player], delta: float) -> void:
 				)
 
 
-## A living teammate next to `downed`, holding revive.
-func _has_reviver(players: Array[Player], downed: Player) -> bool:
+## A living teammate next to `downed`, holding revive (null = nobody).
+func _reviver(players: Array[Player], downed: Player) -> Player:
 	for player in players:
 		if player == downed or not player.is_alive:
 			continue
@@ -65,8 +68,8 @@ func _has_reviver(players: Array[Player], downed: Player) -> bool:
 			continue
 		var reach: float = _settings.revive_range
 		if ReviveRules.in_range(player.global_position, downed.global_position, reach):
-			return true
-	return false
+			return player
+	return null
 
 
 static func _find(players: Array[Player], peer_id: int) -> Player:

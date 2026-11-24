@@ -67,6 +67,10 @@ func _ready() -> void:
 		return
 	_health.reset()
 	_health.died.connect(_on_died)
+	_health.damaged.connect(
+		func(amount: int, source_id: int) -> void:
+			EventBus.enemy_damaged.emit(self, amount, source_id)
+	)
 	add_to_group(Groups.ENEMIES)
 	_facing.configure(enemy_data.flinch_degrees, enemy_data.flinch_recovery)
 	_knockback.pushed.connect(_facing.flinch_from)

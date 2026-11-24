@@ -935,7 +935,7 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - Bullets also pass under other players and enemies they fly past (Yusuf chose this over cutting off the back of each new bullet).
 - **Not verified:** seen in the running game.
 
-## Pets & pacing 1: call the next wave early ✅ (issue #126)
+## Pets & pacing 1: call the next wave early ✅ (merged, issue #126)
 
 Instead of a speed-up button (a shooter is played every second, and the netcode runs at a fixed
 60 ticks), early waves get a choice:
@@ -953,7 +953,7 @@ Instead of a speed-up button (a shooter is played every second, and the netcode 
 - Not the last wave, and not before the current wave has spawned everything.
 - **Not verified:** how it feels in a window.
 
-## Pets & pacing 2: pets and the Pets menu ✅ (issue #128)
+## Pets & pacing 2: pets and the Pets menu ✅ (merged, issue #128)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -971,3 +971,27 @@ The abilities themselves come in the next three steps. Until then a pet does not
 - **Not verified in a running match:** the menu was checked in a rendered screenshot, and the
   pet in the world only in code.
 - Swapping pets loses the old pet's tiers (the menu warns first).
+
+## Pets & pacing 3: the Healer ✅ (issue #132)
+
+| Tier | What it does | Where |
+|---|---|---|
+| 1 Mending | Once the team has dealt half of the wave's planned enemy health, heals you 12% of your max health (15% from tier 2). Once a wave | `pets/healer_rules.gd`, `pets/pet_powers.gd` |
+| 2 Wave's End | When a wave is cleared (or called early), everyone standing heals 8% (10% from tier 3). Two Healers don't stack: the stronger one heals, once | same |
+| 3 Triage | Players you revive come back with +20% health, and your revives fill 25% faster | `modes/waves/downed_players.gd` |
+| 4 Siphon | 2% of the damage you deal heals you, at most 10% of your max health a wave (15% at tier 5) | `pets/pet_powers.gd` |
+| 5 Guardian | The first time each wave you'd go down, you stay up at 20% instead | `modes/wave_mode.gd` |
+
+Every number is in `pets/data/healer.tres` (`HealerData`).
+
+**Shared pieces for every pet:** EventBus `enemy_damaged` (who hit which enemy for how much),
+`PetPowers` (host only, created by WaveMode), and `PetEffects` (every peer's level draws pet
+effects the host announces, event topic 4; protocol 19). Heals show as a green ring and cross.
+
+**Tests:** `tests/pets/test_healer.gd` (every tier's rule, the caps, the effect decoder against
+200 random packets); smoke **C**: the host gives the client a tier-2 Healer and the client must
+see its heals arrive.
+
+### Known limitations
+- Mending measures against the wave's planned enemy health (before modifiers and splits).
+- **Not verified:** how the heals look and feel in a window.

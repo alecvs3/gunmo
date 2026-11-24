@@ -245,6 +245,15 @@ func make_spectator() -> void:
 	_set_alive(false)
 
 
+## Host: heal `amount` points (pets).
+func heal(amount: int) -> void:
+	_health.heal(amount)
+
+
+func max_health() -> int:
+	return _health.max_health
+
+
 ## Where the held gun's barrel ends, relative to the body, before turning by the aim.
 func muzzle_offset() -> Vector2:
 	return _look.muzzle_for(_weapon.weapon_data.pose)
