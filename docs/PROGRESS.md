@@ -770,7 +770,7 @@ longer: smoke E now allows 95 s for a winner (was 70).
 - `bot_controller.gd` is long (about 370 lines); a split into senses and actions would help.
 - **Not verified:** how they feel to fight in a window.
 
-## M7 step 12: Gun Game polish ✅ (issue #111)
+## M7 step 12: Gun Game polish ✅ (merged, issue #111)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -783,3 +783,20 @@ longer: smoke E now allows 95 s for a winner (was 70).
 ### Known limitations
 - The kill feed is Gun Game only (Waves has no feed of enemy kills).
 - **Not verified:** the kill feed's look and the characters in a window.
+
+## M7 step 13: maps, the framework ✅ (issue #113)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Maps as data:** `MapData` (name, level scene, which modes it suits) in `levels/data/*.tres`; `MatchSettings.map` picks one (the lobby picker is M6) and Main loads its scene | Done | `levels/map_data.gd`, `levels/data/test_arena.tres`, `modes/match_settings.gd`, `main.gd` |
+| A level holds every kind of spawn point: player starts (co-op), respawns (free-for-all), enemy spawn zones, and new **bot points of interest** (cover behind the pillars), which bots use for hunting and cover | Done | `levels/level.gd`, `levels/test_arena.tscn` |
+| **Map check** for every map: every point is on the navigation mesh (within 40 px), not inside a wall, and can walk to and from every other one | Done, tested | `levels/map_check.gd`, `tests/levels/test_map_check.gd` |
+| Smoke scripts find the loaded level instead of naming `TestArena`, so they run on any map | Done | `tests/net/smoke_script.gd` (`_level_path()`) and the scenarios |
+
+**Adding a map without code:** make a level scene like `test_arena.tscn` (walls in the
+`navigation_obstacles` group, the four point groups), add it to Main's `LevelSpawner`, and add a
+`MapData` `.tres` in `levels/data/`. The map check runs on it automatically.
+
+### Known limitations
+- No map picker yet (M6); a map is chosen in the match settings `.tres` or with `--match`.
+- **Not verified:** nothing visible changed.
