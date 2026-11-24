@@ -38,14 +38,17 @@ static func available(schedule: WaveSchedule, wave: int) -> Array[EnemyData]:
 ## role (weighted by spawn_weight); what a role cannot spend passes to the next (frontline
 ## last), and anything left buys from every type. A group type is bought as a group (as many
 ## of it as the points still allow). The picks are shuffled, groups kept together, so the roles
-## arrive mixed.
+## arrive mixed. A boss wave's boss comes first and is paid for first.
 static func plan(
 	schedule: WaveSchedule, wave: int, rng: RandomNumberGenerator, threat: float = 1.0
 ) -> Array[EnemyData]:
 	var types: Array[EnemyData] = available(schedule, wave)
 	var shares: PackedFloat32Array = role_shares(schedule, wave, types)
+	var boss: EnemyData = schedule.boss_for(wave)
 	var total: float = budget(schedule, wave) / maxf(threat, 0.01)
-	if not types.is_empty():
+	if boss != null:
+		total = maxf(total - boss.cost, 0.0)
+	elif not types.is_empty():
 		var cheapest: float = INF
 		for type in types:
 			cheapest = minf(cheapest, type.cost)
@@ -55,7 +58,10 @@ static func plan(
 	for role in BUY_ORDER:
 		carry = _buy(picks, of_role(types, role), total * shares[role] + carry, rng)
 	_buy(picks, types, carry, rng)
-	return _shuffled(picks, rng)
+	var bought: Array[EnemyData] = _shuffled(picks, rng)
+	if boss != null:
+		bought.push_front(boss)
+	return bought
 
 
 ## Each role's share of this wave's budget, counting only roles with a type available

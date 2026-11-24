@@ -1,24 +1,30 @@
 extends "res://tests/net/smoke_script.gd"
-## Headless smoke test of the whole wave loop with a host and a client, using a quick 2-wave
-## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support, so the
-## enemies that change other enemies run over the network too). Both sides:
+## Headless smoke test of the whole wave loop with a host and a client, using a quick 3-wave
+## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support, wave 3 a
+## 2-phase boss whose death ends the match, so those run over the network too). Both sides:
 ##   1. ready up (the 20 s lobby must be skipped)       2. shoot through both waves: VICTORY
 ##   3. host presses "Play again": back to the LOBBY    4. stand still: DEFEAT
 ## Each side records the phases it sees (the client through replication) and checks them.
-## The host also checks a Splitter split, and that its children had to die before wave 1 cleared.
+## The host also checks a Splitter split, that its children had to die before wave 1 cleared,
+## and that the boss reached its second phase and was killed.
 ## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
 const WATCHDOG_SECONDS: float = 110.0
 const MATCH_PATH: String = "res://tests/net/data/combo_match.tres"
+## Groups.BOSSES.
+const BOSS_GROUP: StringName = &"bosses"
 
 var _seen: Array[String] = []
 var _state: RefCounted = null
 var _end_reason: String = ""
-var _saw_wave_two_hud: bool = false
+var _saw_last_wave_hud: bool = false
 var _saw_results: bool = false
 var _wave_one_msec: int = -1
 var _splits: int = 0
+## Host: the highest boss phase seen, and whether a boss died.
+var _boss_phase: int = -1
+var _boss_killed: bool = false
 var _kills: int = 0
 ## Host: kills seen when wave 1 ended (a split's children must die too).
 var _kills_by_wave_two: int = -1
@@ -45,7 +51,7 @@ func _run_host() -> void:
 	root.get_node("Main").call("_load_match_settings", MATCH_PATH)
 	var bus: Node = root.get_node("EventBus")
 	bus.enemy_split.connect(func(_e: Node2D, _into: Resource, _count: int) -> void: _splits += 1)
-	bus.enemy_killed.connect(func(_e: Node2D, _killer: int) -> void: _kills += 1)
+	bus.enemy_killed.connect(_on_enemy_killed)
 	_check(net.host(_port) == OK, "host() failed")
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
@@ -55,6 +61,8 @@ func _run_host() -> void:
 	_info("wave 1 started %.1f s after both joined (lobby timer is 20 s)" % lobby_seconds)
 	_check(lobby_seconds < 8.0, "ready-up did not skip the lobby (%.1f s)" % lobby_seconds)
 	_check(_splits >= 1, "the Splitter never split")
+	_check(_boss_phase >= 1, "the boss never reached its second phase (%d)" % _boss_phase)
+	_check(_boss_killed, "the boss was never killed")
 	_check(
 		_kills_by_wave_two >= 3,
 		"wave 1 cleared after %d kills; the Splitter and its 2 children make 3" % _kills_by_wave_two
@@ -78,7 +86,7 @@ func _run_client() -> void:
 	await _wait_until(func() -> bool: return _is_phase("LOBBY"), 10.0)
 	await _play_until(_phase["DEFEAT"], false, 45.0)
 	_check_sequence()
-	_check(_saw_wave_two_hud, "the HUD never showed 'Wave 2 / 2'")
+	_check(_saw_last_wave_hud, "the HUD never showed 'Wave 3 / 3'")
 	_check(_saw_results, "the results screen never appeared")
 	await _wait_until(func() -> bool: return not _end_reason.is_empty(), 15.0)
 	_check(
@@ -93,6 +101,7 @@ func _play_until(target_phase: int, shooting: bool, timeout: float) -> void:
 	while time_left > 0.0 and not (_state != null and _state.phase == target_phase):
 		_drive(shooting)
 		_watch_ui()
+		_watch_boss()
 		await create_timer(0.1).timeout
 		time_left -= 0.1
 	_script(_own_player(), 0.0, 0)
@@ -118,8 +127,8 @@ func _drive(shooting: bool) -> void:
 
 func _watch_ui() -> void:
 	var hud: Node = root.get_node_or_null("Main/UI/Hud")
-	if hud != null and hud.get("visible") and hud.get_node("%WaveLabel").text == "Wave 2 / 2":
-		_saw_wave_two_hud = true
+	if hud != null and hud.get("visible") and hud.get_node("%WaveLabel").text == "Wave 3 / 3":
+		_saw_last_wave_hud = true
 	var results: Node = root.get_node_or_null("Main/UI/ResultsScreen")
 	if results != null and results.get("visible"):
 		_saw_results = true
@@ -128,7 +137,16 @@ func _watch_ui() -> void:
 ## The phases this side saw, in order, must include the full loop.
 func _check_sequence() -> void:
 	var expected: Array[String] = [
-		"LOBBY", "ACTIVE 1", "BREAK 1", "ACTIVE 2", "VICTORY 2", "LOBBY", "ACTIVE 1", "DEFEAT 1"
+		"LOBBY",
+		"ACTIVE 1",
+		"BREAK 1",
+		"ACTIVE 2",
+		"BREAK 2",
+		"ACTIVE 3",
+		"VICTORY 3",
+		"LOBBY",
+		"ACTIVE 1",
+		"DEFEAT 1"
 	]
 	var position: int = 0
 	for token in _seen:
@@ -190,3 +208,17 @@ func _nearest_enemy(from: Vector2) -> Node2D:
 		if enemy.visible and closer:
 			nearest = enemy
 	return nearest
+
+
+func _on_enemy_killed(enemy: Node2D, _killer: int) -> void:
+	_kills += 1
+	var data: Resource = enemy.get("enemy_data")
+	if data != null and data.call("is_boss"):
+		_boss_killed = true
+
+
+## Host: the boss's phase right now (it changes with its health).
+func _watch_boss() -> void:
+	var boss: Node = get_first_node_in_group(BOSS_GROUP) if _role == "wavehost" else null
+	if boss != null:
+		_boss_phase = maxi(_boss_phase, boss.call("phase_index"))

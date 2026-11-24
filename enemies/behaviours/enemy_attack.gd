@@ -6,6 +6,9 @@ extends Resource
 
 ## Seconds between attacks.
 @export_range(0.05, 10.0) var interval: float = 1.0
+## Telegraph: seconds it warns (every peer sees the enemy charge up) before `perform`.
+## 0 = attacks at once.
+@export_range(0.0, 5.0) var windup: float = 0.0
 
 
 ## Whether `wants_to_attack` needs real line of sight (the enemy casts a ray only then, and

@@ -4,10 +4,11 @@
 [ext_resource type="Resource" path="res://tests/net/data/combo_splitter.tres" id="2_splitter"]
 [ext_resource type="Resource" path="res://tests/net/data/combo_support.tres" id="3_support"]
 [ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="4_schedule"]
+[ext_resource type="Resource" path="res://tests/net/data/combo_boss.tres" id="5_boss"]
 
 [resource]
 script = ExtResource("4_schedule")
-total_waves = 2
+total_waves = 3
 base_budget = 3.0
 budget_growth = 1.0
 budget_curve = 1.0
@@ -18,4 +19,6 @@ min_spawn_distance = 0.0
 first_modifier_wave = 99
 double_modifier_wave = 99
 shares_first = PackedFloat32Array(0, 0, 0, 1)
+boss_waves = PackedInt32Array(3)
+bosses = Array[ExtResource("1_edata")]([ExtResource("5_boss")])
 enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_splitter"), ExtResource("3_support")])

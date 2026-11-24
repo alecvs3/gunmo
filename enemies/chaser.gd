@@ -27,6 +27,13 @@ var modifier_mask: int = 0
 
 var _attack_cooldown_left: float = 0.0
 var _shots_fired: int = 0
+## Host: the boss phase it is in (always 0 for other enemies).
+var _phase: int = 0
+## Host: seconds left of a telegraphed attack's windup (0 = not winding up), and its length.
+var _windup_left: float = 0.0
+var _windup_total: float = 0.0
+## Every peer: the ring that shows a windup (the host's own, or from snapshots).
+var _telegraph := EnemyTelegraph.new()
 var _repath_left: float = 0.0
 var _speed: float = 0.0
 var _regen_per_second: float = 0.0
@@ -50,6 +57,10 @@ func _ready() -> void:
 	_knockback.configure(
 		enemy_data.knockback_friction, enemy_data.knockback_bounce, enemy_data.knockback_taken
 	)
+	_scale_body(enemy_data.body_scale)
+	add_child(_telegraph)
+	if enemy_data.is_boss():
+		add_to_group(Groups.BOSSES)
 	if not multiplayer.is_server():
 		set_physics_process(false)
 		_contact_area.monitoring = false
@@ -63,6 +74,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_regenerate(delta)
+	_phase = phase_index()
 	var target: Node2D = _find_nearest_target()
 	_move(target, delta)
 	_attack(target, delta)
@@ -80,6 +92,7 @@ func capture_net_state() -> NetState:
 	state.position = position
 	state.health = _health.current_health
 	state.facing = EnemyNetState.to_facing(_facing_target)
+	state.telegraph = EnemyNetState.to_telegraph(_windup_left, _windup_total)
 	return state
 
 
@@ -88,15 +101,27 @@ func apply_net_state(state: NetState) -> void:
 	position = enemy_state.position
 	_health.apply_replicated(enemy_state.health)
 	_facing_target = EnemyNetState.facing_angle(enemy_state.facing)
+	_telegraph.progress = enemy_state.telegraph / 255.0
 	visible = true
+
+
+## Share of its health left (0..1), on every peer (clients get health in snapshots).
+func health_share() -> float:
+	return float(_health.current_health) / maxf(_health.max_health, 1.0)
+
+
+## A boss's phase from its health (the same on every peer); 0 for other enemies.
+func phase_index() -> int:
+	return BossPhase.index_for(enemy_data.phases, health_share())
 
 
 func _move(target: Node2D, delta: float) -> void:
 	var chase: Vector2 = Vector2.ZERO
 	if target != null:
-		var goal: Vector2 = enemy_data.movement.goal(global_position, target.global_position)
+		var movement: EnemyMovement = enemy_data.movement_in(_phase)
+		var goal: Vector2 = movement.goal(global_position, target.global_position)
 		if global_position.distance_squared_to(goal) > 1.0:
-			chase = _direction_towards(goal, delta) * _speed
+			chase = _direction_towards(goal, delta) * _speed * enemy_data.speed_in(_phase)
 	velocity = chase + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -133,11 +158,19 @@ func _find_nearest_target() -> Node2D:
 	return nearest
 
 
+## A telegraphed attack winds up first (every peer sees the ring fill), then fires.
 func _attack(target: Node2D, delta: float) -> void:
+	var attack: EnemyAttack = enemy_data.attack_in(_phase)
+	if _windup_left > 0.0:
+		_windup_left = maxf(_windup_left - delta, 0.0)
+		if _windup_left <= 0.0:
+			_attack_cooldown_left = attack.interval
+			attack.perform(self, target, _touching_hitboxes())
+		_telegraph.progress = EnemyNetState.to_telegraph(_windup_left, _windup_total) / 255.0
+		return
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	if _attack_cooldown_left > 0.0:
 		return
-	var attack: EnemyAttack = enemy_data.attack
 	var distance: float = INF
 	if target != null:
 		distance = global_position.distance_to(target.global_position)
@@ -146,7 +179,10 @@ func _attack(target: Node2D, delta: float) -> void:
 		can_see = _can_see(target)
 	if not attack.wants_to_attack(_attack_cooldown_left, distance, can_see):
 		return
-	if attack.perform(self, target, _touching_hitboxes()):
+	if attack.windup > 0.0:
+		_windup_left = attack.windup
+		_windup_total = attack.windup
+	elif attack.perform(self, target, _touching_hitboxes()):
 		_attack_cooldown_left = attack.interval
 
 
@@ -168,6 +204,17 @@ func _can_see(target: Node2D) -> bool:
 		global_position, target.global_position, WORLD_MASK
 	)
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+
+## Bosses are bigger: hitbox, touch area and body grow with body_scale (every peer).
+func _scale_body(factor: float) -> void:
+	if is_equal_approx(factor, 1.0):
+		return
+	$HitboxComponent.scale_size(factor)
+	$HitboxComponent/CollisionShape2D.scale = Vector2.ONE * factor
+	$ContactArea/CollisionShape2D.scale = Vector2.ONE * factor
+	$CollisionShape2D.scale = Vector2.ONE * factor
+	_telegraph.radius *= factor
 
 
 ## Player hitboxes in the contact area.
