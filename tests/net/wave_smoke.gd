@@ -94,6 +94,8 @@ func _run_host() -> void:
 	await create_timer(1.0).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
 	await _wait_until(func() -> bool: return _is_phase("LOBBY"), 5.0)
+	# A restart clears every loadout, pets too; enemies reach the players in this run.
+	_give_client_a_healer()
 	await _play_until(_phase["ACTIVE"], false, 10.0)
 	await _down_and_revive_client()
 	await _play_until(_phase["DEFEAT"], false, 60.0)
