@@ -1,6 +1,7 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the whole wave loop with a host and a client, using a quick 3-wave
-## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support, wave 3 a
+## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support (walking in,
+## so the stand-still players can reach it behind cover), wave 3 a
 ## 2-phase boss whose death ends the match, so those run over the network too). Both sides:
 ##   1. ready up (the 20 s lobby must be skipped)       2. shoot through both waves: VICTORY
 ##   3. host presses "Play again": back to the LOBBY    4. stand still: DEFEAT
