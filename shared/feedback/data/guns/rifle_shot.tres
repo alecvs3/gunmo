@@ -18,5 +18,5 @@ stream_2/weight = 1.0
 [resource]
 script = ExtResource("1_cue")
 stream = SubResource("AudioStreamRandomizer_shot")
-volume_db = -7.0
+volume_db = -13.0
 max_at_once = 2
