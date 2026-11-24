@@ -884,15 +884,17 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 
 | Feature | Status | Where |
 |---|---|---|
-| **World sounds**, placed where they happen (louder near your camera): big hit (tin clank), enemy death (thud), explosions. Normal hits are silent for now (the punch sounded like a drum; Yusuf tried Kenney and generated options and none fit yet) | Done | `shared/feedback/feedback_system.gd` |
+| **World sounds**, placed where they happen (louder near your camera): enemy death (thud), explosions. Hits are silent for now: the punch sounded like a drum, none of the Kenney or generated options fit, and a tin clank on big hits played on nearly every hit (see below) | Done | `shared/feedback/feedback_system.gd` |
 | Your player hit (a short metal clink) | Done | `shared/feedback/feedback_system.gd` |
 | **Shop:** open/close, a click when you ask to buy, coins when the host confirms the purchase | Done | `ui/shop_panel.gd` |
 | **HUD banners** (wave started/cleared, Gun Game next gun) play a chime | Done | `ui/hud.gd` |
 | Every play picks a random variant and nudges the pitch; at most N of one sound at once (an SMG into a crowd stays readable); silent on headless peers | Done, tested | `shared/feedback/sound_playback.gd`, `sound_cue.gd` |
 | All picks and volumes in one Resource | Done, tested | `shared/feedback/data/default_sounds.tres` (`SoundData`) |
-| 27 sounds from Kenney's CC0 packs (Impact Sounds, Interface Sounds, Sci-Fi Sounds, RPG Audio) | Done | `assets/kenney_sounds/` |
+| 22 sounds from Kenney's CC0 packs (Impact Sounds, Interface Sounds, Sci-Fi Sounds, RPG Audio) | Done | `assets/kenney_sounds/` |
 
 ### Known limitations
-- **No gunshots yet**: none of these packs has gun sounds. No sound on normal hits yet.
+- **No gunshots yet**: none of these packs has gun sounds. No sound on hits yet.
+- "Big hit" (30%+ of the enemy's max health) is too easy with today's numbers: one pistol shot is 33% of
+  a grunt, so most hits show gold numbers. The rule needs rethinking.
 - No volume setting; everything plays on the Master bus.
 - **Not verified:** how it sounds in a window (the volumes are first guesses).

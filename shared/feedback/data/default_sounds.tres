@@ -21,34 +21,9 @@
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_002.ogg" id="19_impactSoft_heavy_002"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_003.ogg" id="20_impactSoft_heavy_003"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_004.ogg" id="21_impactSoft_heavy_004"]
-[ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactTin_medium_000.ogg" id="22_impactTin_medium_000"]
-[ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactTin_medium_001.ogg" id="23_impactTin_medium_001"]
-[ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactTin_medium_002.ogg" id="24_impactTin_medium_002"]
-[ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactTin_medium_003.ogg" id="25_impactTin_medium_003"]
-[ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactTin_medium_004.ogg" id="26_impactTin_medium_004"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/lowFrequency_explosion_000.ogg" id="27_lowFrequency_explosion_000"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/lowFrequency_explosion_001.ogg" id="28_lowFrequency_explosion_001"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/open_001.ogg" id="29_open_001"]
-
-[sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_enemy_big_hit"]
-random_pitch = 1.1
-streams_count = 5
-stream_0/stream = ExtResource("22_impactTin_medium_000")
-stream_0/weight = 1.0
-stream_1/stream = ExtResource("23_impactTin_medium_001")
-stream_1/weight = 1.0
-stream_2/stream = ExtResource("24_impactTin_medium_002")
-stream_2/weight = 1.0
-stream_3/stream = ExtResource("25_impactTin_medium_003")
-stream_3/weight = 1.0
-stream_4/stream = ExtResource("26_impactTin_medium_004")
-stream_4/weight = 1.0
-
-[sub_resource type="Resource" id="Resource_enemy_big_hit"]
-script = ExtResource("2_cue")
-stream = SubResource("AudioStreamRandomizer_enemy_big_hit")
-volume_db = -6.0
-max_at_once = 3
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_enemy_death"]
 random_pitch = 1.15
@@ -176,7 +151,6 @@ max_at_once = 1
 
 [resource]
 script = ExtResource("1_data")
-enemy_big_hit = SubResource("Resource_enemy_big_hit")
 enemy_death = SubResource("Resource_enemy_death")
 blast = SubResource("Resource_blast")
 player_hurt = SubResource("Resource_player_hurt")
