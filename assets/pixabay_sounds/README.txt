@@ -8,7 +8,6 @@ Which file came from where:
 pistol_1 <- eaglaxle-gun-shot-1-530788.mp3
 pistol_3 <- eaglaxle-gun-shot-2-530789.mp3
 pistol_4 <- eaglaxle-gun-shot-3-530790.mp3
-pistol_5 <- universfield-gunshot-352466.mp3
 smg_1 <- freesound_community-fnp90-burst-100583.mp3
 shotgun_1 <- universfield-shotgun-blast-352038.mp3
 rifle_1 <- freesound_community-sniper-rifle-5989.mp3
