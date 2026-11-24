@@ -8,6 +8,9 @@ const CHASER_SCENE: PackedScene = preload("res://enemies/chaser.tscn")
 ## Group members spawn on a ring this far around the group's point (px).
 const GROUP_SPREAD: float = 26.0
 
+## The enemy health this wave planned (its queue at the start; pets measure against it).
+var planned_health: int = 0
+
 var _level: Level
 var _schedule: WaveSchedule
 var _queue: Array[EnemyData] = []
@@ -89,6 +92,9 @@ func start_wave(
 	_schedule = schedule
 	_rng.seed = seed_value
 	_queue = WaveBudget.plan(schedule, wave, _rng, threat)
+	planned_health = 0
+	for data in _queue:
+		planned_health += data.max_health
 	_interval = schedule.spawn_interval(wave)
 	_time_left = 0.0
 

@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PetData" format=3]
+[gd_resource type="Resource" script_class="HealerData" format=3]
 
-[ext_resource type="Script" path="res://pets/pet_data.gd" id="1_pet"]
+[ext_resource type="Script" path="res://pets/healer_data.gd" id="1_pet"]
 [ext_resource type="Script" path="res://pets/pet_tier.gd" id="2_tier"]
 
 [sub_resource type="Resource" id="Tier_1"]
@@ -40,4 +40,15 @@ role = "Support"
 blurb = "Keeps the team standing. Heals are shares of max health with a limit each wave, so it never makes anyone unkillable."
 kind = 0
 color = Color(0.45, 1, 0.6, 1)
+mending_threshold = 0.5
+mending_share = 0.12
+mending_share_upgraded = 0.15
+wave_end_share = 0.08
+wave_end_share_upgraded = 0.1
+triage_health_bonus = 0.2
+triage_revive_speed = 1.25
+siphon_share = 0.02
+siphon_cap = 0.1
+siphon_cap_upgraded = 0.15
+guardian_share = 0.2
 tiers = Array[ExtResource("2_tier")]([SubResource("Tier_1"), SubResource("Tier_2"), SubResource("Tier_3"), SubResource("Tier_4"), SubResource("Tier_5")])

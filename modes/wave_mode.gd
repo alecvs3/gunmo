@@ -26,6 +26,8 @@ var _match_seed: int = 0
 var _modifier_mask: int = 0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 var _downed: DownedPlayers = null
+## Host: the pets' abilities.
+var _powers: PetPowers = null
 ## Host: ticks until bots next look at the shop (they buy one thing at a time).
 var _bot_shop_ticks: int = 0
 
@@ -38,6 +40,8 @@ func _ready() -> void:
 	EventBus.shop_purchase_requested.connect(_on_shop_purchase_requested)
 	if multiplayer.is_server():
 		EventBus.enemy_killed.connect(_on_enemy_killed)
+		_powers = PetPowers.new(level)
+		add_child(_powers)
 
 
 ## The shop is open in the lobby and in breaks.
@@ -86,6 +90,7 @@ func _handle(event: WaveFlow.Event) -> void:
 	match event:
 		WaveFlow.Event.EARLY_CALLED:
 			_pay_early_call()
+			_powers.on_wave_cleared()
 			_start_wave()
 		WaveFlow.Event.WAVE_STARTED:
 			_ready_peers.clear()
@@ -94,6 +99,7 @@ func _handle(event: WaveFlow.Event) -> void:
 			_ready_peers.clear()
 			_downed.clear()
 			_pay_wave_bonus()
+			_powers.on_wave_cleared()
 			if settings.revive_at_break:
 				_revive(false)
 		WaveFlow.Event.VICTORY, WaveFlow.Event.DEFEAT:
@@ -110,6 +116,7 @@ func _start_wave() -> void:
 	_spawner.start_wave(
 		level, schedule, _flow.wave, seed_value, _modifier_mask, _modifiers.threat(_modifier_mask)
 	)
+	_powers.on_wave_started(_spawner.planned_health)
 
 
 ## Whether the next wave may be called early right now.
@@ -172,7 +179,8 @@ func _on_player_killed(victim: Node2D, killer_id: int) -> Player:
 	var killer: Player = super(victim, killer_id)
 	var player := victim as Player
 	if player != null and _downed.enabled() and _flow.phase == GameMode.Phase.ACTIVE:
-		_downed.start(player)
+		if not _powers.save_from_going_down(player):
+			_downed.start(player)
 	return killer
 
 

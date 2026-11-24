@@ -2,7 +2,8 @@ class_name Level
 extends Node2D
 ## A map: where players and enemies live and spawn. Game modes decide *when* things spawn
 ## (rule 7); the level only knows *where*. Spawning helpers are host only; the level's
-## MultiplayerSpawners replicate what they add.
+## MultiplayerSpawners replicate what they add. Every peer's level draws pet effects
+## (PetEffects), like its ProjectileSystem draws bullets.
 
 const PLAYER_SCENE: PackedScene = preload("res://player/player.tscn")
 const BOT_CONTROLLER: Script = preload("res://bots/bot_controller.gd")
@@ -23,6 +24,7 @@ const BOT_CONTROLLER: Script = preload("res://bots/bot_controller.gd")
 
 
 func _ready() -> void:
+	add_child(PetEffects.new())
 	if multiplayer.is_server() and navigation_region != null:
 		navigation_region.bake_navigation_polygon(false)
 

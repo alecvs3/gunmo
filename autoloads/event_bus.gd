@@ -8,6 +8,11 @@ extends Node
 ## (0 = an enemy's touch; an enemy's bullet = Shot.enemy_shooter_id, never a player's id).
 signal player_killed(victim: Node2D, killer_id: int)
 signal enemy_killed(enemy: Node2D, killer_peer_id: int)
+## Host: an enemy lost `amount` health to `source_id` (a player's or bot's id; 0 = not a
+## player). Pets that react to hits read this.
+signal enemy_damaged(enemy: Node2D, amount: int, source_id: int)
+## Every peer (Waves): show a pet's effect (PetEffects.Kind) at `points` for `seconds`.
+signal pet_effect_shown(kind: int, points: PackedVector2Array, radius: float, seconds: float)
 ## Every peer (Gun Game): a kill for the kill feed. killer_id 0 = no player (a fall, an enemy);
 ## weapon_index is the killer's gun in the shop catalog (-1 = none).
 signal kill_reported(killer_id: int, victim_id: int, weapon_index: int)

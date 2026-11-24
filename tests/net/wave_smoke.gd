@@ -1,15 +1,16 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the whole wave loop with a host and a client, using a quick 3-wave
-## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support (walking in,
-## so the stand-still players can reach it behind cover), wave 3 a
+## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support (walking
+## in, so the stand-still players can reach it behind cover), wave 3 a
 ## 2-phase boss whose death ends the match, so those run over the network too). Both sides:
 ##   1. ready up (the 20 s lobby must be skipped)       2. shoot through both waves: VICTORY
 ##   3. host presses "Play again": back to the LOBBY    4. stand still: DEFEAT
 ## Each side records the phases it sees (the client through replication) and checks them.
 ## The host also checks a Splitter split, that its children had to die before wave 1 cleared,
-## and that the boss reached its second phase and was killed. In the second run the host
-## downs the client and revives it (holding revive next to it); the client must see itself go
-## down and come back.
+## and that the boss reached its second phase and was killed. The host gives the client a
+## tier-2 Healer pet: the client must see its heals (pet effects from the host).
+## In the second run the host downs the client and revives it (holding revive next to it);
+## the client must see itself go down and come back.
 ## Role botwavehost (its own port, + BOT_PORT_OFFSET): 1 human host who never fires and can't be
 ## hurt, plus 3 bots, must clear a quick 3-wave schedule. The host downs a bot once; another
 ## bot must revive it. The bots must have spent credits between waves. The human votes to
@@ -39,6 +40,8 @@ var _boss_killed: bool = false
 ## Client: saw its own player downed, then alive again.
 var _saw_self_downed: bool = false
 var _saw_self_revived: bool = false
+## Client: heal effects seen (EventBus pet_effect_shown, kind 0 = PetEffects.Kind.HEAL).
+var _heals_seen: int = 0
 var _kills: int = 0
 ## Host: kills seen when wave 1 ended (a split's children must die too).
 var _kills_by_wave_two: int = -1
@@ -73,6 +76,7 @@ func _run_host() -> void:
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
 	var joined_msec: int = Time.get_ticks_msec()
+	_give_client_a_healer()
 	await _play_until(_phase["VICTORY"], true, 50.0)
 	var lobby_seconds: float = (_wave_one_msec - joined_msec) / 1000.0
 	_info("wave 1 started %.1f s after both joined (lobby timer is 20 s)" % lobby_seconds)
@@ -100,6 +104,10 @@ func _run_client() -> void:
 	var net: Node = root.get_node("NetworkManager")
 	await create_timer(1.0).timeout
 	_check(net.join("127.0.0.1", _port) == OK, "join() failed")
+	root.get_node("EventBus").pet_effect_shown.connect(
+		func(kind: int, _at: PackedVector2Array, _r: float, _s: float) -> void:
+			_heals_seen += 1 if kind == 0 else 0
+	)
 	await _wait_until(func() -> bool: return _own_player() != null and _state != null, 15.0)
 	await _play_until(_phase["VICTORY"], true, 55.0)
 	await _wait_until(func() -> bool: return _is_phase("LOBBY"), 10.0)
@@ -107,6 +115,7 @@ func _run_client() -> void:
 	_check_sequence()
 	_check(_saw_last_wave_hud, "the HUD never showed 'Wave 3 / 3'")
 	_check(_saw_self_downed, "never saw our own player downed")
+	_check(_heals_seen > 0, "never saw the Healer pet heal")
 	_check(_saw_self_revived, "never saw our own player revived")
 	_check(_saw_results, "the results screen never appeared")
 	await _wait_until(func() -> bool: return not _end_reason.is_empty(), 15.0)
@@ -345,3 +354,11 @@ func _bots_shopped() -> bool:
 		if loadout.get("weapon_index") != 0 or Array(loadout.get("levels")).max() > 0:
 			return true
 	return false
+
+
+## Host: the client's loadout gets a tier-2 Healer (Mending + Wave's End).
+func _give_client_a_healer() -> void:
+	for player: Node in root.get_node(_level_path() + "/Players").get_children():
+		if player.name != "1" and not player.get("is_bot"):
+			player.get_node("PlayerLoadout").call("buy_pet_tier", 0)
+			player.get_node("PlayerLoadout").call("buy_pet_tier", 0)
