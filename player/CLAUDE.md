@@ -42,7 +42,8 @@ wallet, score, loadout.
   `bleed_out()` (host). A downed player is not alive (enemies ignore it, it can't act) but stays
   visible; `down_left` and `revive_progress` are in the snapshot. `held_buttons` lets the mode
   see who holds revive (`InputCommand.REVIVE`, key E).
-- Shots start at the drawn barrel: `CharacterLook.muzzle_for(pose)`, rotated by the aim.
+- Shots start at the drawn barrel: `CharacterLook.muzzle_for(pose)`, rotated by the aim. Their
+  first hit test starts at the body (`Shot.hit_origin`), so an enemy inside you can be shot.
 
 ## Tests
 `tests/player/`, plus `tests/upgrades/test_player_stats.gd` for stat stacking. Movement or firing

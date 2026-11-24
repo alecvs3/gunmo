@@ -904,6 +904,16 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - No volume setting; everything plays on the Master bus.
 - Tried in a window by Yusuf (every gun, explosions). **Not verified:** a 2-player match, boss deaths.
 
+## Enemies inside you can be shot ✅ (issue #124)
+
+| Feature | Status | Where |
+|---|---|---|
+| Enemies walk through players, and bullets start at the muzzle (33-38 px ahead), so an enemy between your body and the muzzle was never hit (worst with the shotgun and SMG). A player's bullet is still drawn from the muzzle, but its first hit test now starts at the body (`Shot.hit_origin`). Enemies behind you still aren't hit. Enemies' own shots are unchanged. Nothing new is sent over the network | Done, tested | `weapons/shot.gd`, `weapons/bullet.gd`, `player/player.gd` |
+
+### Known limitations
+- A wall between your body and the muzzle now stops the shot (before, a barrel poking through a wall could shoot past it).
+- **Not verified:** played in the game or in a 2-player match by hand (the smoke test passed).
+
 ## Shop hint no longer covers the Host/ping label ✅ (issue #122)
 
 | Feature | Status | Where |

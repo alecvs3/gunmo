@@ -10,7 +10,8 @@ reloading are `shared/components/weapon_component.gd`.
    announces it to everyone except the shooter (reliable event, `EVENT_FIRED`).
    Owner client: `shot_predicted` → a PREDICTED bullet, shown at once, deals nothing.
    Other clients: a REMOTE bullet, drawn on their render timeline.
-3. The host's bullet sweeps along its path each tick (`bullet.gd`). Human shots are tested
+3. The host's bullet sweeps along its path each tick (`bullet.gd`); the first sweep starts at
+   `Shot.hit_origin` (a player's body; the muzzle for enemies). Human shots are tested
    with lag compensation (what the shooter saw). Bots' and enemies' shots (any negative
    shooter id; enemies use `Shot.enemy_shooter_id(net_id)`) are tested against remote humans
    on their own timeline (`timeline_hits.gd`, fair dodging).

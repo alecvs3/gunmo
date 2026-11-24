@@ -15,6 +15,10 @@ var shooter_id: int = 0
 var shot_id: int = 0
 var team: StringName = &""
 var origin: Vector2 = Vector2.ZERO
+## Where the first tick's hit test starts: a player's body, so an enemy standing between the body
+## and the muzzle is hit (#124). Drawn bullets still start at `origin`. Not sent: only the host
+## and the shooter's prediction test hits.
+var hit_origin: Vector2 = Vector2.ZERO
 var direction: Vector2 = Vector2.RIGHT
 var speed: float = 0.0
 var lifetime: float = 0.0
@@ -37,6 +41,7 @@ var blast_damage: int = 0
 static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: Vector2) -> Shot:
 	var shot := Shot.new()
 	shot.origin = origin_point
+	shot.hit_origin = origin_point
 	shot.direction = aim_direction.normalized()
 	shot.speed = data.bullet_speed
 	shot.lifetime = data.bullet_lifetime

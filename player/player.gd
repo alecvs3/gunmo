@@ -331,6 +331,7 @@ func _make_shot(command: InputCommand, origin: Vector2, shot_id: int) -> Shot:
 	var seed_value: int = WeaponComponent.shot_seed(peer_id, shot_id)
 	var direction: Vector2 = _weapon.spread_direction(Vector2.from_angle(command.aim), seed_value)
 	var shot: Shot = Shot.from_weapon(_weapon.weapon_data, origin, direction)
+	shot.hit_origin = global_position
 	shot.shooter_id = peer_id
 	shot.shot_id = shot_id
 	shot.team = _hitbox.team
