@@ -729,7 +729,7 @@ No network format change.
 
 | Feature | Status | Where |
 |---|---|---|
-| The shop is a big see-through window over the game. While it's open (lobby, breaks) a gold "B: Shop" hint shows top right; **B** opens it, **B**, **Esc** or a click outside closes it. A new lobby or break starts with it closed | Done | `ui/shop_panel.*` |
+| The shop is a big see-through window over the game. While it's open (lobby, breaks) a gold "B: Shop" hint shows bottom right; **B** opens it, **B**, **Esc** or a click outside closes it. A new lobby or break starts with it closed | Done | `ui/shop_panel.*` |
 | **Gun cards:** each gun's own drawn model (`WeaponData.held_model`) shown big, its name and price (Free / Equipped); the gun you hold has a blue frame, guns you can't afford are dimmed | Done, tested | `ui/shop_weapon_card.*`, `ui/shop_gun_picture.gd` |
 | **Upgrade rows** for the gun you hold: level dots (gold = bought), what the next level gives, a buy button with the price (MAX at the cap) | Done, tested | `ui/shop_upgrade_row.*`, `ui/shop_pips.gd` |
 | **Buy feedback:** when the host confirms a purchase (your weapon or a level actually changes), that card swells and settles, or the new dot pops. A refused request pops nothing | Done, tested | `ui/shop_seen.gd` |
@@ -903,3 +903,13 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
   now 50% of the enemy's starting health (#109).
 - No volume setting; everything plays on the Master bus.
 - Tried in a window by Yusuf (every gun, explosions). **Not verified:** a 2-player match, boss deaths.
+
+## Shop hint no longer covers the Host/ping label ✅ (issue #122)
+
+| Feature | Status | Where |
+|---|---|---|
+| The gold "B: Shop" hint moved from the top-right corner (where the "Host · N players" / ping label is) to the bottom-right corner | Done | `ui/shop_panel.tscn` |
+
+### Known limitations
+- The UI layout test checks each scene on its own, so it can't catch two scenes using the same corner.
+- **Not verified:** seen in the running game.
