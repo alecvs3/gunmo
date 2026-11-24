@@ -178,3 +178,11 @@ func test_conflicts_can_leave_fewer() -> void:
 	a.conflicts_with = PackedStringArray(["B"])
 	tight.modifiers.assign([a, b])
 	assert_eq(_bits(tight.pick(2, _rng(1))), 1)
+
+
+func test_threat_of_a_wave_s_modifiers() -> void:
+	assert_eq(catalog.threat(0), 1.0, "no modifiers")
+	var armored: float = (1.0 / 0.6) * (1.0 + catalog.speed_threat * (0.9 - 1.0))
+	assert_almost_eq(catalog.threat(0b001), armored, 1e-4)
+	assert_almost_eq(catalog.threat(0b100), 1.0 + catalog.regen_threat * 0.05, 1e-4)
+	assert_gt(catalog.threat(0b101), catalog.threat(0b001), "more modifiers, more threat")

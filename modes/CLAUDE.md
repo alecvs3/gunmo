@@ -20,7 +20,7 @@ reviewed by both developers.
 | File | Rules |
 |---|---|
 | `waves/wave_flow.gd` | The wave mode's state machine |
-| `waves/wave_budget.gd` | How many points a wave may spend, and which enemies it buys |
+| `waves/wave_budget.gd` | How many points a wave may spend, and which enemies it buys (role shares, modifier threat) |
 | `waves/wave_schedule.gd` | How waves grow (data in `waves/data/default_waves.tres`) |
 | `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
 | `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |

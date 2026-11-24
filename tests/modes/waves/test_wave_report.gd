@@ -44,7 +44,8 @@ func before_each() -> void:
 func _plan(wave: int) -> Array[EnemyData]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = WaveBudget.wave_seed(MATCH_SEED, wave)
-	return WaveBudget.plan(schedule, wave, rng)
+	var threat: float = catalog.threat(catalog.pick_for_wave(schedule, MATCH_SEED, wave))
+	return WaveBudget.plan(schedule, wave, rng, threat)
 
 
 func test_one_row_per_wave() -> void:
@@ -58,7 +59,9 @@ func test_rows_match_budget_and_spawner() -> void:
 		assert_eq(row.budget, WaveBudget.budget(schedule, row.wave))
 		var spawner := WaveSpawner.new()
 		var seed_value: int = WaveBudget.wave_seed(MATCH_SEED, row.wave)
-		spawner.start_wave(null, schedule, row.wave, seed_value, row.modifier_mask)
+		spawner.start_wave(
+			null, schedule, row.wave, seed_value, row.modifier_mask, row.threat_factor
+		)
 		assert_eq(row.enemies, spawner.remaining(), "wave %d: the spawner's queue" % row.wave)
 		spawner.free()
 		var planned: Array[EnemyData] = _plan(row.wave)
@@ -102,7 +105,7 @@ func test_format_has_a_line_per_wave_and_a_column_per_type() -> void:
 	var lines: PackedStringArray = WaveReport.format(schedule, rows).split("\n")
 	assert_eq(lines.size(), 2 + 3, "header, rule, 3 waves")
 	assert_string_contains(lines[0], "| Imp | Ogre |")
-	assert_string_starts_with(lines[2], "| 1 | 4.0 | ")
+	assert_string_starts_with(lines[2], "| 1 | 4.0 | 4.0 | ")
 	assert_string_ends_with(lines[2], "| - |")
 
 

@@ -4,7 +4,11 @@ extends Resource
 ## (enemies/chaser.tscn) plays any of them. What it does is a combination of parts: a movement
 ## behaviour (where it walks) and an attack behaviour (how it hurts players).
 
+## What it does in a wave; the schedule gives each role a share of the budget.
+enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
+
 @export var display_name: String = ""
+@export var role: Role = Role.FRONTLINE
 ## Tint on the sprite (white = the picture's own colors).
 @export var color: Color = Color.WHITE
 ## Drawn size (1 = the picture's size); looks only, the hitbox stays the same.

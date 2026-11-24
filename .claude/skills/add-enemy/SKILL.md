@@ -15,7 +15,8 @@ behaviour (e.g. a `MeleeAttack` sub-resource with its damage, interval and knock
 a range and a lead).
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
    closest type (grunt, runner, brute, shooter, tank, swarmer) and change its numbers:
-   `display_name`, `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
+   `display_name`, `role` (frontline / ranged / swarm / support: the schedule gives each role a
+   share of the budget), `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
    `move_speed`, `repath_interval`, the Behaviours group
    (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
    group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`).

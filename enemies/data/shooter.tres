@@ -22,6 +22,7 @@ muzzle_distance = 20.0
 [resource]
 script = ExtResource("1_edata")
 display_name = "Shooter"
+role = 1
 color = Color(0.55, 0.9, 1, 1)
 max_health = 70
 move_speed = 120.0
