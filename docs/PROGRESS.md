@@ -1064,6 +1064,25 @@ than a whole team of maxed-out players deals.
 - The wave report doesn't include healing, so its numbers don't change.
 - **Not verified:** a real wave-20 or wave-25 fight in a window.
 
+## Joining no longer fails the latency check ✅
+
+Since the pets landed, smoke **G** failed on main: the client's smoothing buffer sat at about
+95–140 ms instead of 35–60. The cause was not the network. Joining a match freezes the client
+for one frame while it loads (about 180 ms locally), and the snapshots read after that frame
+arrive all at once. The jitter meter took that for 165 ms of network jitter, the buffer jumped
+to about 210 ms, and it shrinks slowly, so it was still too high when the test measured.
+
+| Feature | Status | Where |
+|---|---|---|
+| A client frame longer than `NetworkConfig.local_stall_seconds` (0.1 s) drops the jitter measured so far, so a local freeze never counts as network jitter | Done, tested | `shared/network/net_clock.gd`, `default_network_config.tres` |
+
+Smoke G locally: 3 of 3 failed before (buffer 20–38 ms over what the jitter needs), 3 of 3 pass
+after (about 0 ms over, p95 about 60 ms).
+
+### Known limitations
+- The join freeze itself is still there (about 180 ms). It is only a frame, but it grows as
+  more scripts and data load at join.
+
 ## The early-call prompt shows again ✅ (issue #142)
 
 The "G: call the next wave early" prompt from #126 never appeared: during a wave the HUD wrote
