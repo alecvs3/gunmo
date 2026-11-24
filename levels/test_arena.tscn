@@ -164,11 +164,11 @@ position = Vector2(1400, 460)
 [node name="BehindPillarRightSouth" type="Marker2D" parent="PointsOfInterest"]
 position = Vector2(1400, 740)
 
+[node name="Projectiles" type="Node2D" parent="."]
+
 [node name="Enemies" type="Node2D" parent="."]
 
 [node name="Players" type="Node2D" parent="."]
-
-[node name="Projectiles" type="Node2D" parent="."]
 
 [node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
 _spawnable_scenes = PackedStringArray("res://player/player.tscn")

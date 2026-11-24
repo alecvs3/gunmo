@@ -924,6 +924,17 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - The UI layout test checks each scene on its own, so it can't catch two scenes using the same corner.
 - **Not verified:** seen in the running game.
 
+## Bullets no longer drawn over the gun ✅ (issue #129)
+
+| Feature | Status | Where |
+|---|---|---|
+| A bullet spawns centred on the muzzle and its tail reaches 11-44 px back, so it was drawn over the gun. Bullets now draw **under** characters: every map puts `Projectiles` before `Enemies` and `Players`, and the gun and body cover the part still in the barrel. Explosion flashes stay on top | Done | `levels/*.tscn`, `weapons/explosion_flash.gd` |
+| MapCheck fails a map whose bullets would draw over its characters | Done, tested | `levels/map_check.gd`, `tests/levels/test_map_check.gd` |
+
+### Known limitations
+- Bullets also pass under other players and enemies they fly past (Yusuf chose this over cutting off the back of each new bullet).
+- **Not verified:** seen in the running game.
+
 ## Pets & pacing 1: call the next wave early ✅ (issue #126)
 
 Instead of a speed-up button (a shooter is played every second, and the netcode runs at a fixed

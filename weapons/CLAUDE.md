@@ -40,6 +40,9 @@ reloading are `shared/components/weapon_component.gd`.
 
 ## Rules that aren't obvious
 - **Only AUTHORITATIVE bullets deal damage.**
+- Bullets draw **under** characters, so a fired bullet doesn't cover the gun: every map puts its
+  `Projectiles` node before `Enemies` and `Players` (MapCheck fails otherwise). Explosion
+  flashes share that parent and set `z_index = 1` to stay on top.
 - A REMOTE bullet that passes near your own player catches up to the present over 0.2 s, so a
   bullet that hits you visibly reaches you.
 - Weapons are referred to by **index in the shop catalog** (`upgrades/data/shop_catalog.tres`)
