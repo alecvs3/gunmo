@@ -95,3 +95,13 @@ func test_hex_picks_a_boss_then_the_toughest() -> void:
 func test_tempest_damage_is_a_share_of_max_health() -> void:
 	assert_eq(WizardRules.tempest_damage(data, 650, false), 52)
 	assert_eq(WizardRules.tempest_damage(data, 7000, true), 140, "bosses: 2%")
+
+
+func test_tempest_skips_enemies_that_died_during_the_warning() -> void:
+	var alive: ChaserEnemy = autofree(ChaserEnemy.new())
+	var died: ChaserEnemy = ChaserEnemy.new()
+	var marked: Array = [died, alive]
+	died.free()
+	var standing: Array[ChaserEnemy] = WizardPowers.still_standing(marked)
+	assert_eq(standing.size(), 1)
+	assert_eq(standing[0], alive)
