@@ -2,7 +2,9 @@ class_name BotShopping
 extends RefCounted
 ## What a bot buys between waves, by simple rules (pure, tested): the dearest gun it can afford
 ## that costs more than the one it holds; otherwise the cheapest next upgrade level it can
-## afford. Every choice is a purchase ShopRules allows. The host sends it through the same
+## afford. In Waves it also raises its pet (each bot has its own favourite) whenever the next
+## tier costs no more than twice the cheapest upgrade. Every choice is a purchase ShopRules
+## allows. The host sends it through the same
 ## purchase path as a human's.
 
 
@@ -45,3 +47,26 @@ static func _cheapest_upgrade(catalog: ShopCatalog, levels: PackedByteArray, cre
 			best = index
 			best_price = price
 	return best
+
+
+## The pet to buy a tier of (its index), or -1: the bot's `favourite` pet (or the one it has),
+## when the next tier is affordable and costs at most twice the cheapest upgrade (or nothing
+## else is left to buy).
+static func pet_tier_to_buy(loadout: PlayerLoadout, credits: int, favourite: int) -> int:
+	var pets: PetCatalog = loadout.pets
+	var index: int = loadout.pet_index if loadout.pet_index >= 0 else favourite
+	if not pets.is_pet_index(index):
+		return -1
+	var problem: String = ShopRules.check_pet(
+		true, pets, index, loadout.pet_index, loadout.pet_tier, credits
+	)
+	if not problem.is_empty():
+		return -1
+	var price: int = ShopRules.pet_price(pets, index, loadout.pet_index, loadout.pet_tier)
+	var cheapest: int = _cheapest_upgrade(loadout.catalog, loadout.levels, 1000000)
+	if cheapest < 0:
+		return index
+	var upgrade_price: int = ShopRules.price(
+		loadout.catalog, ShopRules.KIND_UPGRADE, cheapest, loadout.level(cheapest)
+	)
+	return index if price <= upgrade_price * 2 else -1

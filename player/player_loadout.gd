@@ -11,6 +11,10 @@ extends Node
 @export var look: PlayerLook
 
 var catalog: ShopCatalog = ShopCatalog.load_default()
+var pets: PetCatalog = PetCatalog.load_default()
+## Waves: the pet (index into the PetCatalog, -1 = none) and how many of its tiers are bought.
+var pet_index: int = -1
+var pet_tier: int = 0
 var weapon_index: int = 0
 ## One level per catalog upgrade (fixed size, so it fits the snapshot).
 var levels := PackedByteArray()
@@ -49,10 +53,34 @@ func add_level(upgrade_index: int) -> bool:
 	return true
 
 
-## Back to the starting weapon with no upgrades.
+## Host: the pet's next tier; a different pet starts again at tier 1.
+func buy_pet_tier(index: int) -> void:
+	if not pets.is_pet_index(index):
+		return
+	if index == pet_index:
+		pet_tier = mini(pet_tier + 1, PetData.TIERS)
+	else:
+		pet_index = index
+		pet_tier = 1
+
+
+## The pet, or null.
+func pet() -> PetData:
+	return pets.pet(pet_index)
+
+
+## Clients: the pet from a snapshot (`pet` = index + 1, 0 = none).
+func load_pet(pet: int, tier: int) -> void:
+	pet_index = pet - 1 if pets.is_pet_index(pet - 1) else -1
+	pet_tier = clampi(tier, 0, PetData.TIERS) if pet_index >= 0 else 0
+
+
+## Back to the starting weapon with no upgrades and no pet.
 func reset() -> void:
 	weapon_index = 0
 	levels.fill(0)
+	pet_index = -1
+	pet_tier = 0
 	_apply(true)
 
 

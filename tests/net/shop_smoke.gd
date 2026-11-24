@@ -1,7 +1,9 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of the shop, credits, weapons and wave modifiers with a host and a
 ## client, using the quick match (1000 starting credits, a modifier from wave 1).
-## The client buys the shotgun and a damage level (the host must apply both), tries purchases
+## The client buys the shotgun and a damage level (the host must apply both), then adopts the
+## Wizard pet and buys its second tier (the host must apply both and the client see them), tries
+## purchases
 ## the host must refuse, then both clear the waves: the client's shotgun fires 6 pellets per
 ## trigger pull, its hits are confirmed, it earns credits, and the wave's modifiers reach it.
 ## Usage: -s res://tests/net/shop_smoke.gd -- <shophost|shopclient> <port>
@@ -13,6 +15,8 @@ const SHOTGUN: int = 2
 const DAMAGE: int = 0
 const KIND_UPGRADE: int = 0
 const KIND_WEAPON: int = 1
+const KIND_PET: int = 2
+const WIZARD: int = 1
 
 var _state: RefCounted = null
 var _predicted: int = 0
@@ -44,6 +48,9 @@ func _run_host() -> void:
 	var client_id: int = net.peers.filter(func(id: int) -> bool: return id != 1)[0]
 	var bought := func() -> bool: return _loadout_of(client_id) == [SHOTGUN, 1]
 	await _wait_until(bought, 15.0)
+	var pet_bought := func() -> bool: return _pet_of(client_id) == [WIZARD, 2]
+	await _wait_until(pet_bought, 15.0)
+	_check(pet_bought.call(), "client's pet not applied on the host: %s" % [_pet_of(client_id)])
 	_check(
 		bought.call(), "client's purchases not applied on the host: %s" % [_loadout_of(client_id)]
 	)
@@ -61,6 +68,7 @@ func _run_client() -> void:
 	_check(net.join("127.0.0.1", _port) == OK, "join() failed")
 	await _wait_until(func() -> bool: return _own() != null and _state != null, 15.0)
 	await _buy_and_check()
+	await _buy_pet_and_check()
 	await _refused_purchase_check("buying the gun already equipped", KIND_WEAPON, SHOTGUN)
 	var hits := root.get_node(_level_path() + "/ProjectileSystem")
 	hits.hit_confirmed.connect(func(_key: String, _at: Vector2) -> void: _confirmed += 1)
@@ -178,3 +186,30 @@ func _nearest_enemy() -> Node2D:
 		if enemy.visible and closer:
 			nearest = enemy
 	return nearest
+
+
+## Adopt the Wizard (200) and buy its tier 2 (400): 600 -> 0 credits.
+func _buy_pet_and_check() -> void:
+	var bus: Node = root.get_node("EventBus")
+	bus.shop_purchase_requested.emit(KIND_PET, WIZARD)
+	await _wait_until(func() -> bool: return _pet_of(root.multiplayer.get_unique_id())[1] == 1, 5.0)
+	bus.shop_purchase_requested.emit(KIND_PET, WIZARD)
+	var applied := func() -> bool: return _pet_of(root.multiplayer.get_unique_id()) == [WIZARD, 2]
+	await _wait_until(applied, 10.0)
+	_info(
+		(
+			"after the pet: credits %d, pet %s"
+			% [_credits(), _pet_of(root.multiplayer.get_unique_id())]
+		)
+	)
+	_check(applied.call(), "the pet purchases did not reach us")
+	_check(_credits() == 0, "600 - 200 - 400 = 0 credits, got %d" % _credits())
+
+
+## [pet index, tier] of a player's loadout.
+func _pet_of(peer_id: int) -> Array:
+	var player: Node = root.get_node_or_null(_level_path() + "/Players/%d" % peer_id)
+	if player == null:
+		return [-1, 0]
+	var loadout: Node = player.get_node("PlayerLoadout")
+	return [loadout.get("pet_index"), loadout.get("pet_tier")]

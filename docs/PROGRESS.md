@@ -952,3 +952,22 @@ Instead of a speed-up button (a shooter is played every second, and the netcode 
 ### Known limitations
 - Not the last wave, and not before the current wave has spawned everything.
 - **Not verified:** how it feels in a window.
+
+## Pets & pacing 2: pets and the Pets menu ✅ (issue #128)
+
+| Feature | Status | Where |
+|---|---|---|
+| Three pets as data, five tiers each with the ability texts and prices (200 / 400 / 700 / 1100 / 1600, about 4,000 in all): **Healer** (support), **Wizard** (control), **Soldier** (offense) | Done, tested | `pets/data/*.tres`, `pets/pet_data.gd`, `pets/pet_tier.gd`, `pets/pet_catalog.gd` |
+| **Buying:** adopt a pet, then buy its tiers one by one; another pet starts again at tier 1. The host checks every purchase (`ShopRules.check_pet`, `KIND_PET`) | Done, tested | `upgrades/shop_rules.gd`, `player/player_loadout.gd`, `modes/wave_mode.gd` |
+| **Pets menu (P):** a see-through window in the shop's style. Left: the three pets as cards with an animated portrait, role and tier pips (gold frame on yours). Right: the chosen pet's ladder (owned tiers lit, the next one framed in gold with its price, the rest dimmed), one big button ("Adopt Wizard · 200", "Tier 3: Conduction · 700") and a warning before you swap pets. A confirmed tier flashes gold | Done, tested, checked in a rendered screenshot | `ui/pet_panel.gd`, `ui/pet_card.gd`, `ui/pet_tier_row.gd`, `ui/pet_portrait.gd` |
+| **The pet in the world:** floats behind its owner, bobbing, eyes blinking, with its mark (Healer's cross and halo, Wizard's hat and star, Soldier's helmet) and gold tier pips. Drawn from the owner's replicated pet, so nothing extra is sent | Done | `pets/pet_look.gd`, `pets/pet_follower.gd` |
+| Pet and tier in the player snapshot, public too (protocol 18) | Done, tested | `shared/network/states/player_net_state.gd`, `player/player_net_sync.gd` |
+| Bots adopt a favourite pet (one per bot) and raise it when the next tier costs at most twice their cheapest upgrade | Done, tested | `bots/bot_shopping.gd` |
+| Smoke **D**: the client adopts the Wizard and buys tier 2; the host must apply both and the client see them | Done | `tests/net/shop_smoke.gd` |
+
+The abilities themselves come in the next three steps. Until then a pet does nothing but follow.
+
+### Known limitations
+- **Not verified in a running match:** the menu was checked in a rendered screenshot, and the
+  pet in the world only in code.
+- Swapping pets loses the old pet's tiers (the menu warns first).

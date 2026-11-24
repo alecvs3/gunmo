@@ -122,6 +122,7 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_revive_ring.color = REVIVE_COLOR
+	add_child(PetFollower.new())
 	add_child(_revive_ring)
 	var looks: Array[CharacterLook] = player_data.all_looks()
 	if look_index >= 0 and look_index < looks.size():

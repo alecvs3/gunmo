@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="PetCatalog" format=3]
+
+[ext_resource type="Script" path="res://pets/pet_catalog.gd" id="1_catalog"]
+[ext_resource type="Script" path="res://pets/pet_data.gd" id="2_pet"]
+[ext_resource type="Resource" path="res://pets/data/healer.tres" id="3_healer"]
+[ext_resource type="Resource" path="res://pets/data/wizard.tres" id="4_wizard"]
+[ext_resource type="Resource" path="res://pets/data/soldier.tres" id="5_soldier"]
+
+[resource]
+script = ExtResource("1_catalog")
+pets = Array[ExtResource("2_pet")]([ExtResource("3_healer"), ExtResource("4_wizard"), ExtResource("5_soldier")])
