@@ -18,6 +18,8 @@ var _cards: Array[ShopWeaponCard] = []
 var _rows: Array[ShopUpgradeRow] = []
 ## What the last refresh showed (null = nothing yet, so opening the shop pops nothing).
 var _seen: ShopSeen = null
+var _sounds: SoundData = SoundData.load_default()
+var _sound := SoundPlayback.new()
 
 @onready var _hint: Label = %Hint
 @onready var _dim: ColorRect = %Dim
@@ -50,6 +52,7 @@ static func gain_text(upgrade: UpgradeData, weapon: WeaponData) -> String:
 
 func _ready() -> void:
 	hide()
+	add_child(_sound)
 	_build()
 	_dim.gui_input.connect(_on_dim_input)
 	EventBus.match_state_changed.connect(_on_match_state_changed)
@@ -59,14 +62,20 @@ func _ready() -> void:
 ## Esc closes the shop before the game menu (which reads Esc in _unhandled_input) sees it.
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and visible and _shown_by_player:
-		_shown_by_player = false
+		_show_window(false)
 		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("shop") and _open:
-		_shown_by_player = not _shown_by_player
+		_show_window(not _shown_by_player)
 		get_viewport().set_input_as_handled()
+
+
+## The player opened or closed the window (with its sound).
+func _show_window(shown: bool) -> void:
+	_shown_by_player = shown
+	_sound.play(_sounds.shop_open if shown else _sounds.shop_close)
 
 
 func _process(_delta: float) -> void:
@@ -97,13 +106,14 @@ func _build() -> void:
 
 
 func _request(kind: int, index: int) -> void:
+	_sound.play(_sounds.click)
 	EventBus.shop_purchase_requested.emit(kind, index)
 
 
 func _on_dim_input(event: InputEvent) -> void:
 	var click := event as InputEventMouseButton
 	if click != null and click.pressed:
-		_shown_by_player = false
+		_show_window(false)
 		_dim.accept_event()
 
 
@@ -137,10 +147,12 @@ func _refresh(player: Player) -> void:
 		_cards[i].show_state(_catalog.weapons[i], equipped, problem.is_empty())
 		if _seen != null and _seen.weapon_bought(now) == i:
 			_cards[i].pop()
+			_sound.play(_sounds.bought)
 	for i in _rows.size():
 		var level: int = loadout.level(i)
 		var problem: String = ShopRules.check_upgrade(true, _catalog, i, level, credits)
 		_rows[i].show_upgrade(_catalog.upgrades[i], level, held, problem.is_empty())
 		if _seen != null and _seen.level_bought(now, i):
 			_rows[i].pop()
+			_sound.play(_sounds.bought)
 	_seen = now

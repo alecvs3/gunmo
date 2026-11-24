@@ -15,6 +15,9 @@ const MAX_BURST_SCALE: float = 10.0
 ## Where numbers and bursts are added (world space, above the floor).
 @export var effects_root: Node2D
 @export var data: FeedbackData
+@export var sounds: SoundData
+
+var _sound := SoundPlayback.new()
 
 
 static func encode_death(at: Vector2, color: Color, size_scale: float) -> PackedByteArray:
@@ -41,7 +44,12 @@ static func decode_death(buffer: StreamPeerBuffer) -> Array:
 func _ready() -> void:
 	if data == null:
 		data = FeedbackData.load_default()
+	if sounds == null:
+		sounds = SoundData.load_default()
+	add_child(_sound)
 	EventBus.damage_seen.connect(_show_number)
+	EventBus.blast_shown.connect(_on_blast_shown)
+	EventBus.local_player_hurt.connect(_on_local_player_hurt.unbind(1))
 	if multiplayer.is_server():
 		EventBus.enemy_killed.connect(_on_enemy_killed)
 	else:
@@ -55,6 +63,7 @@ func _show_number(at: Vector2, amount: int, big: bool) -> void:
 	number.big = big
 	number.position = at + Vector2(randf_range(-1.0, 1.0) * data.number_spread, -16.0)
 	effects_root.add_child(number)
+	_sound.play_at(sounds.enemy_big_hit if big else sounds.enemy_hit, at)
 
 
 func _show_burst(at: Vector2, color: Color, size_scale: float) -> void:
@@ -64,6 +73,15 @@ func _show_burst(at: Vector2, color: Color, size_scale: float) -> void:
 	burst.size_scale = size_scale
 	burst.position = at
 	effects_root.add_child(burst)
+	_sound.play_at(sounds.enemy_death, at)
+
+
+func _on_blast_shown(at: Vector2, _radius: float) -> void:
+	_sound.play_at(sounds.blast, at)
+
+
+func _on_local_player_hurt() -> void:
+	_sound.play(sounds.player_hurt)
 
 
 ## Host: show it here and tell every client.

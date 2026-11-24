@@ -759,3 +759,20 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
   where it last saw the enemy.
 - **Not verified:** how it feels in a window and in a 2-player match.
+
+## Sounds: hits, kills, explosions, shop and banners ✅ (issue #114)
+
+| Feature | Status | Where |
+|---|---|---|
+| **World sounds**, placed where they happen (louder near your camera): enemy hit (punch), big hit (heavy punch), enemy death (thud), explosions | Done | `shared/feedback/feedback_system.gd` |
+| Your player hit (a short metal clink) | Done | `shared/feedback/feedback_system.gd` |
+| **Shop:** open/close, a click when you ask to buy, coins when the host confirms the purchase | Done | `ui/shop_panel.gd` |
+| **HUD banners** (wave started/cleared, Gun Game next gun) play a chime | Done | `ui/hud.gd` |
+| Every play picks a random variant and nudges the pitch; at most N of one sound at once (an SMG into a crowd stays readable); silent on headless peers | Done, tested | `shared/feedback/sound_playback.gd`, `sound_cue.gd` |
+| All picks and volumes in one Resource | Done, tested | `shared/feedback/data/default_sounds.tres` (`SoundData`) |
+| 32 sounds from Kenney's CC0 packs (Impact Sounds, Interface Sounds, Sci-Fi Sounds, RPG Audio) | Done | `assets/kenney_sounds/` |
+
+### Known limitations
+- **No gunshots yet**: none of these packs has gun sounds.
+- No volume setting; everything plays on the Master bus.
+- **Not verified:** how it sounds in a window (the volumes are first guesses).
