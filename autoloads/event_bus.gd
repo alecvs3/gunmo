@@ -8,6 +8,9 @@ extends Node
 ## (0 = an enemy's touch; an enemy's bullet = Shot.enemy_shooter_id, never a player's id).
 signal player_killed(victim: Node2D, killer_id: int)
 signal enemy_killed(enemy: Node2D, killer_peer_id: int)
+## Every peer (Gun Game): a kill for the kill feed. killer_id 0 = no player (a fall, an enemy);
+## weapon_index is the killer's gun in the shop catalog (-1 = none).
+signal kill_reported(killer_id: int, victim_id: int, weapon_index: int)
 ## A dying enemy splits into `count` enemies of type `into` (an EnemyData) where it stood.
 ## Emitted before it is freed, so the wave never looks empty in between.
 signal enemy_split(enemy: Node2D, into: Resource, count: int)

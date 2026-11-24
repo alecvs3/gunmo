@@ -38,6 +38,24 @@ extends Resource
 @export_range(0.0, 5.0) var knockback_taken: float = 1.0
 
 
+## Every look by index: player_looks, then bot_looks (Player.look_index points in here).
+func all_looks() -> Array[CharacterLook]:
+	var looks: Array[CharacterLook] = []
+	looks.append_array(player_looks)
+	looks.append_array(bot_looks)
+	return looks
+
+
+## The indices a human (or a bot) tries first.
+func preferred_looks(for_bot: bool) -> Array[int]:
+	var indices: Array[int] = []
+	var start: int = player_looks.size() if for_bot else 0
+	var size: int = bot_looks.size() if for_bot else player_looks.size()
+	for i in size:
+		indices.append(start + i)
+	return indices
+
+
 ## The character for a peer: bots (negative ids) from bot_looks, humans from player_looks.
 func look_for(peer_id: int) -> CharacterLook:
 	var looks: Array[CharacterLook] = bot_looks if peer_id < 0 else player_looks

@@ -57,6 +57,9 @@ var revive_progress: int = 0:
 		_revive_ring.progress = value / 255.0
 ## Host: the buttons of the last command simulated (the mode reads REVIVE from it).
 var held_buttons: int = 0
+## Which character it looks like (PlayerData.all_looks); picked by the host so nobody looks
+## alike, sent once with the spawn. -1 = from the peer id.
+var look_index: int = -1
 var teleport_count: int = 0
 ## The aim being simulated (the pivot's drawn rotation may lag behind it on the host).
 var aim: float = 0.0
@@ -120,7 +123,11 @@ func _enter_tree() -> void:
 func _ready() -> void:
 	_revive_ring.color = REVIVE_COLOR
 	add_child(_revive_ring)
-	_look.character = player_data.look_for(peer_id)
+	var looks: Array[CharacterLook] = player_data.all_looks()
+	if look_index >= 0 and look_index < looks.size():
+		_look.character = looks[look_index]
+	else:
+		_look.character = player_data.look_for(peer_id)
 	_hitbox.owner_id = peer_id
 	($NetEntity as NetEntity).owner_peer = peer_id
 	_hitbox.team = HitboxComponent.team_for(team_id)

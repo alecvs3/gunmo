@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–11 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–12 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -100,7 +100,7 @@ balance at the end, when everything that affects balance exists.
   hit rate before/after in the PR.
 - **Done when:** a hard bot beats a medium bot most of the time in Gun Game.
 
-### 12. Gun Game polish
+### 12. Gun Game polish ✅ (#111)
 - **Adds:** spawn protection (short, ends when you fire), a kill feed, a different character per
   player, and a results screen at the end.
 - **Test:** GUT for spawn protection rules and character assignment; smoke **E** checks both
