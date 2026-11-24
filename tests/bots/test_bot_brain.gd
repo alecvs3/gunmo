@@ -70,3 +70,35 @@ func test_profiles_get_harder() -> void:
 	assert_gt(easy.reaction_time, hard.reaction_time)
 	assert_gt(easy.aim_error_degrees, hard.aim_error_degrees)
 	assert_lt(easy.turn_speed_degrees, hard.turn_speed_degrees)
+
+
+func test_the_most_dangerous_for_its_distance_wins() -> void:
+	var grunt := BotBrain.Candidate.new(1, Vector2(200, 0), true, 1.0)
+	var support := BotBrain.Candidate.new(2, Vector2(400, 0), true, 4.0)
+	var candidates: Array[BotBrain.Candidate] = [grunt, support]
+	assert_eq(BotBrain.choose_target(Vector2.ZERO, candidates, 800.0, 0), 2, "4/400 beats 1/200")
+	support.danger = 1.5
+	assert_eq(BotBrain.choose_target(Vector2.ZERO, candidates, 800.0, 0), 1)
+	assert_eq(BotBrain.choose_target(Vector2.ZERO, candidates, 800.0, 1), 1, "keeps its target")
+
+
+func test_equal_danger_still_means_nearest() -> void:
+	var near := BotBrain.Candidate.new(1, Vector2(10, 0), true)
+	var far := BotBrain.Candidate.new(2, Vector2(50, 0), true)
+	var candidates: Array[BotBrain.Candidate] = [far, near]
+	assert_eq(BotBrain.choose_target(Vector2.ZERO, candidates, 800.0, 0), 1)
+
+
+func test_regroup_goes_to_the_team_centre_when_too_far() -> void:
+	var team: Array[Vector2] = [Vector2(400, 0), Vector2(600, 0)]
+	assert_eq(BotBrain.regroup_goal(Vector2.ZERO, team, 300.0), Vector2(500, 0))
+	assert_eq(BotBrain.regroup_goal(Vector2(450, 0), team, 300.0), Vector2.INF, "close enough")
+	assert_eq(BotBrain.regroup_goal(Vector2.ZERO, [] as Array[Vector2], 300.0), Vector2.INF)
+
+
+func test_revive_the_nearest_downed_teammate_in_reach() -> void:
+	var downed: Array[Vector2] = [Vector2(800, 0), Vector2(300, 0), Vector2(2000, 0)]
+	assert_eq(BotBrain.revive_target(Vector2.ZERO, downed, 900.0), 1)
+	assert_eq(BotBrain.revive_target(Vector2.ZERO, [Vector2(2000, 0)] as Array[Vector2], 900.0), -1)
+	assert_true(BotBrain.can_revive(Vector2.ZERO, Vector2(40, 0), 45.0))
+	assert_false(BotBrain.can_revive(Vector2.ZERO, Vector2(60, 0), 45.0))

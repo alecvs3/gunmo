@@ -23,3 +23,10 @@ extends Resource
 @export_range(0.2, 10.0) var strafe_period: float = 1.5
 ## Seconds between path updates while roaming or chasing out of sight.
 @export_range(0.1, 5.0) var repath_interval: float = 0.5
+
+@export_group("Co-op")
+## Stays within this far of the team's centre when nobody is in sight (px).
+@export_range(50.0, 3000.0) var team_spread: float = 320.0
+## Goes to revive a downed teammate this close (px), and holds revive within `revive_reach`.
+@export_range(0.0, 5000.0) var revive_seek_distance: float = 900.0
+@export_range(10.0, 200.0) var revive_reach: float = 45.0

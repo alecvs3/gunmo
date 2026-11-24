@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–9 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–10 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -86,7 +86,7 @@ balance at the end, when everything that affects balance exists.
   goes down, host revives them, both sides agree.
 - **Done when:** a downed player can be revived over the network with simulated lag.
 
-### 10. Bots in co-op
+### 10. Bots in co-op ✅ (#105)
 - **Adds:** `BotBrain` decisions for Waves: target the most dangerous enemy, stay near the team,
   revive downed players, spend credits by simple rules between waves.
 - **Test:** GUT for every new decision (pure `BotBrain`); a smoke scenario where 1 human + 3

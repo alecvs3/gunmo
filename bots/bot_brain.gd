@@ -9,6 +9,9 @@ extends RefCounted
 ## A target being fought stays chosen this much farther than a new one would be noticed.
 const KEEP_TARGET_RANGE: float = 1.25
 
+## Closer than this counts as this close when weighing danger (no division blow-ups).
+const MIN_WEIGH_DISTANCE: float = 60.0
+
 
 ## Something a bot could fight.
 class Candidate:
@@ -16,19 +19,24 @@ class Candidate:
 	var position: Vector2
 	## In the bot's line of sight.
 	var visible: bool
+	## How much it matters to kill it (an enemy's cost; 1 for a player).
+	var danger: float
 
-	func _init(candidate_id: int, at: Vector2, can_see: bool) -> void:
+	func _init(candidate_id: int, at: Vector2, can_see: bool, how_dangerous: float = 1.0) -> void:
 		id = candidate_id
 		position = at
 		visible = can_see
+		danger = how_dangerous
 
 
 ## The id of the target to fight, or 0 for none. Only visible candidates count. The current
-## target is kept while it stays visible and within reach; otherwise the nearest wins.
+## target is kept while it stays visible and within reach; otherwise the most dangerous for
+## its distance wins (danger / distance; with equal danger, the nearest).
 static func choose_target(
 	from: Vector2, candidates: Array[Candidate], awareness_range: float, current_id: int
 ) -> int:
 	var best_id: int = 0
+	var best_score: float = -1.0
 	var best_distance: float = INF
 	for candidate in candidates:
 		if not candidate.visible:
@@ -39,10 +47,45 @@ static func choose_target(
 			reach *= KEEP_TARGET_RANGE
 			if distance <= reach:
 				return current_id
-		if distance <= reach and distance < best_distance:
+		var score: float = candidate.danger / maxf(distance, MIN_WEIGH_DISTANCE)
+		var better: bool = score > best_score
+		if is_equal_approx(score, best_score):
+			better = distance < best_distance
+		if distance <= reach and better:
 			best_id = candidate.id
+			best_score = score
 			best_distance = distance
 	return best_id
+
+
+## Co-op: where to walk to stay with the team (their centre), or Vector2.INF when already
+## within `spread` of it or there is no team.
+static func regroup_goal(from: Vector2, teammates: Array[Vector2], spread: float) -> Vector2:
+	if teammates.is_empty():
+		return Vector2.INF
+	var centre := Vector2.ZERO
+	for teammate in teammates:
+		centre += teammate
+	centre /= teammates.size()
+	return Vector2.INF if from.distance_to(centre) <= spread else centre
+
+
+## Co-op: the index of the downed teammate to go and revive (the nearest within
+## `max_distance`), or -1.
+static func revive_target(from: Vector2, downed: Array[Vector2], max_distance: float) -> int:
+	var best: int = -1
+	var best_distance: float = max_distance
+	for i in downed.size():
+		var distance: float = from.distance_to(downed[i])
+		if distance <= best_distance:
+			best = i
+			best_distance = distance
+	return best
+
+
+## Co-op: close enough to hold revive (and stop walking).
+static func can_revive(from: Vector2, downed_at: Vector2, reach: float) -> bool:
+	return from.distance_to(downed_at) <= reach
 
 
 ## The aim after one tick of turning from `current` toward `desired` (radians), at most

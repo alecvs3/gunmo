@@ -10,6 +10,8 @@ extends GameMode
 
 ## NetChannel request topic: [kind (ShopRules.KIND_*), index].
 const REQUEST_BUY: int = 2
+## Bots buy at most one thing this often while the shop is open (ticks).
+const BOT_SHOP_TICKS: int = 30
 
 var _flow := WaveFlow.new()
 var _ready_peers: Dictionary = {}
@@ -17,6 +19,8 @@ var _match_seed: int = 0
 var _modifier_mask: int = 0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 var _downed: DownedPlayers = null
+## Host: ticks until bots next look at the shop (they buy one thing at a time).
+var _bot_shop_ticks: int = 0
 
 @onready var _spawner: WaveSpawner = $WaveSpawner
 
@@ -41,6 +45,7 @@ func _physics_process(delta: float) -> void:
 	var wave_done: bool = _spawner.is_finished() and level.enemy_count() == 0
 	var ready: int = _count_ready(players)
 	_handle(_flow.update(NetworkManager.clock.tick, players.size(), living, ready, wave_done))
+	_bots_shop(players)
 	_refresh_state(players.size(), living, ready)
 
 
@@ -127,6 +132,36 @@ func _on_peer_joined(peer_id: int) -> void:
 	var mid_wave: bool = _flow.phase == GameMode.Phase.ACTIVE
 	if joined != null and mid_wave and settings.late_joiners_spectate:
 		joined.make_spectator()
+	_sync_bots()
+
+
+func _prepare_new_bot(bot: Player) -> void:
+	_give_starting_kit(bot)
+	if _flow.phase == GameMode.Phase.ACTIVE and settings.late_joiners_spectate:
+		bot.make_spectator()
+
+
+func _on_bot_removed(peer_id: int) -> void:
+	if _downed != null:
+		_downed.forget(peer_id)
+
+
+## Host: while the shop is open, each bot buys what BotShopping picks, one thing every
+## BOT_SHOP_TICKS, through the same rules as a human's purchase.
+func _bots_shop(players: Array[Player]) -> void:
+	_bot_shop_ticks -= 1
+	if not shop_open() or _bot_shop_ticks > 0:
+		return
+	_bot_shop_ticks = BOT_SHOP_TICKS
+	for player in players:
+		if not player.is_bot:
+			continue
+		var loadout: PlayerLoadout = player.get_loadout()
+		var choice: Array[int] = BotShopping.choose(
+			loadout.catalog, loadout.weapon_index, loadout.levels, player.get_wallet().credits
+		)
+		if not choice.is_empty():
+			_buy(player.peer_id, choice[0], choice[1])
 
 
 ## Starting credits and weapon (new players, and everyone on restart).
@@ -201,6 +236,7 @@ func _purchase_problem(
 func _on_peer_left(peer_id: int) -> void:
 	super(peer_id)
 	_ready_peers.erase(peer_id)
+	_sync_bots()
 	if _downed != null:
 		_downed.forget(peer_id)
 
@@ -213,12 +249,20 @@ func _count_living(players: Array[Player]) -> int:
 	return living
 
 
+## Bots are ready whenever every human is (they never hold a break up), but a lobby of bots
+## alone waits for its timer.
 func _count_ready(players: Array[Player]) -> int:
-	var ready: int = 0
+	var humans: int = 0
+	var humans_ready: int = 0
+	var bots: int = 0
 	for player in players:
-		if _ready_peers.has(player.peer_id):
-			ready += 1
-	return ready
+		if player.is_bot:
+			bots += 1
+		else:
+			humans += 1
+			if _ready_peers.has(player.peer_id):
+				humans_ready += 1
+	return WaveFlow.ready_with_bots(humans, humans_ready, bots)
 
 
 func _refresh_state(player_count: int, living: int, ready: int) -> void:

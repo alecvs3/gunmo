@@ -9,11 +9,16 @@ extends "res://tests/net/smoke_script.gd"
 ## and that the boss reached its second phase and was killed. In the second run the host
 ## downs the client and revives it (holding revive next to it); the client must see itself go
 ## down and come back.
-## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient> <port>
+## Role botwavehost (its own port, + BOT_PORT_OFFSET): 1 human host who never fires and can't be
+## hurt, plus 3 bots, must clear a quick 3-wave schedule. The host downs a bot once; another
+## bot must revive it. The bots must have spent credits between waves.
+## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient|botwavehost> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
 const WATCHDOG_SECONDS: float = 110.0
 const MATCH_PATH: String = "res://tests/net/data/combo_match.tres"
+const BOT_MATCH_PATH: String = "res://tests/net/data/bot_coop_match.tres"
+const BOT_PORT_OFFSET: int = 50
 ## InputCommand.REVIVE.
 const REVIVE_BUTTON: int = 4
 ## Groups.BOSSES.
@@ -46,7 +51,10 @@ func _run() -> void:
 	root.get_node("NetworkManager").session_ended.connect(
 		func(reason: String) -> void: _end_reason = reason
 	)
-	if _role == "wavehost":
+	if _role == "botwavehost":
+		_port += BOT_PORT_OFFSET
+		await _run_bot_coop()
+	elif _role == "wavehost":
 		await _run_host()
 	else:
 		await _run_client()
@@ -267,3 +275,59 @@ func _watch_downed() -> void:
 		_saw_self_downed = true
 	elif _saw_self_downed and own.get("is_alive"):
 		_saw_self_revived = true
+
+
+## botwavehost: the bots fight, shop and revive while the human only readies up.
+func _run_bot_coop() -> void:
+	var net: Node = root.get_node("NetworkManager")
+	root.get_node("Main").call("_load_match_settings", BOT_MATCH_PATH)
+	_check(net.host(_port) == OK, "host() failed")
+	await _wait_until(func() -> bool: return _bots().size() == 3, 10.0)
+	_check(_bots().size() == 3, "expected 3 bots, got %d" % _bots().size())
+	var downed_one: bool = false
+	var revived_by_bot: bool = false
+	var victim: Node2D = null
+	var time_left: float = 75.0
+	while time_left > 0.0 and not _is_phase("VICTORY"):
+		var own: Node2D = _own_player()
+		if own != null:
+			own.get_node("HealthComponent").invulnerable = true
+			_script(own, 0.0, 0)
+		var mode: Node = _mode()
+		if mode != null and (_is_phase("LOBBY") or _is_phase("BREAK")):
+			if not mode.get("local_ready"):
+				mode.call("set_local_ready", true)
+		if not downed_one and _is_phase("ACTIVE") and _bots().size() == 3:
+			victim = _bots()[0]
+			victim.get_node("HealthComponent").take_damage(100000, 0)
+			downed_one = true
+		if victim != null and is_instance_valid(victim) and downed_one and not revived_by_bot:
+			revived_by_bot = victim.get("is_alive") and _is_phase("ACTIVE")
+		await create_timer(0.1).timeout
+		time_left -= 0.1
+	_check(_is_phase("VICTORY"), "1 human + 3 bots did not clear the quick schedule")
+	_check(downed_one, "never downed a bot")
+	_check(revived_by_bot, "no bot revived the downed bot during the wave")
+	_check(_bots_shopped(), "no bot spent credits in the shop")
+	_info("bots cleared the schedule, revived a teammate and shopped")
+	net.leave()
+	await create_timer(0.5).timeout
+
+
+func _bots() -> Array[Node2D]:
+	var found: Array[Node2D] = []
+	var players: Node = root.get_node_or_null("%s/Players" % LEVEL_PATH)
+	if players == null:
+		return found
+	for player: Node in players.get_children():
+		if player.get("is_bot"):
+			found.append(player)
+	return found
+
+
+func _bots_shopped() -> bool:
+	for bot in _bots():
+		var loadout: Node = bot.get_node("PlayerLoadout")
+		if loadout.get("weapon_index") != 0 or Array(loadout.get("levels")).max() > 0:
+			return true
+	return false

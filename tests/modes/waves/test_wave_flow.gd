@@ -94,3 +94,9 @@ func test_default_match_settings() -> void:
 	assert_eq(settings.break_seconds, 20.0)
 	assert_not_null(settings.wave_schedule)
 	assert_eq(settings.wave_schedule.total_waves, 25)
+
+
+func test_bots_are_ready_once_every_human_is() -> void:
+	assert_eq(WaveFlow.ready_with_bots(2, 2, 3), 5)
+	assert_eq(WaveFlow.ready_with_bots(2, 1, 3), 1, "a human not ready: bots wait too")
+	assert_eq(WaveFlow.ready_with_bots(0, 0, 4), 0, "bots alone never skip the lobby")

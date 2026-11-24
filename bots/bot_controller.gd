@@ -8,9 +8,14 @@ extends Node
 ## lets BotBrain decide, and adds the profile's human flaws: reaction time, aim error and
 ## limited turn speed. Out of sight it walks the navigation mesh toward
 ## where it last saw someone, or roams between the level's respawn points.
+## Co-op (teammates on its own team): it prefers dangerous enemies (their cost), walks over to
+## revive a downed teammate (holding revive next to them, still shooting), and when nobody is
+## in sight it stays with the team instead of roaming.
 
 ## How close to a path point counts as reached.
 const PATH_POINT_REACHED: float = 24.0
+## A goal that moved less than this keeps its path until the next repath (px).
+const REPLAN_DISTANCE: float = 64.0
 
 @export var profile: BotProfile
 
@@ -53,9 +58,12 @@ func next_command() -> InputCommand:
 		return command
 	_tick_timers()
 	var target: HitboxComponent = _pick_target()
+	var downed: Player = _downed_teammate()
+	if downed != null:
+		_go_revive(downed, command)
 	if target != null:
-		_fight(target, command)
-	else:
+		_fight(target, command, downed == null)
+	elif downed == null:
 		_roam(command)
 	command.aim = _aim
 	return command.sanitized()
@@ -85,7 +93,7 @@ func _pick_target() -> HitboxComponent:
 			continue
 		var id: int = hitbox.get_instance_id()
 		var at: Vector2 = hitbox.center()
-		candidates.append(BotBrain.Candidate.new(id, at, _can_see(at)))
+		candidates.append(BotBrain.Candidate.new(id, at, _can_see(at), _danger_of(hitbox)))
 		by_id[id] = hitbox
 	var chosen: int = BotBrain.choose_target(
 		_player.global_position, candidates, profile.awareness_range, _target_id
@@ -99,20 +107,69 @@ func _pick_target() -> HitboxComponent:
 	return by_id[chosen]
 
 
-func _fight(target: HitboxComponent, command: InputCommand) -> void:
+## How much killing it matters: an enemy's wave cost (bosses and Supports rank high), 1 for
+## a player.
+static func _danger_of(hitbox: HitboxComponent) -> float:
+	var enemy := hitbox.get_parent() as ChaserEnemy
+	return enemy.enemy_data.cost if enemy != null else 1.0
+
+
+## Living players on our own team (co-op), not us.
+func _teammates() -> Array[Player]:
+	var found: Array[Player] = []
+	for node in get_tree().get_nodes_in_group(Groups.PLAYERS):
+		var other := node as Player
+		if other != null and other != _player and other.team_id == _player.team_id:
+			found.append(other)
+	return found
+
+
+## The downed teammate to revive (BotBrain.revive_target), or null.
+func _downed_teammate() -> Player:
+	var downed: Array[Player] = []
+	var places: Array[Vector2] = []
+	for teammate in _teammates():
+		if teammate.is_downed():
+			downed.append(teammate)
+			places.append(teammate.global_position)
+	var at: int = BotBrain.revive_target(
+		_player.global_position, places, profile.revive_seek_distance
+	)
+	return downed[at] if at >= 0 else null
+
+
+## Walk to `downed` along the navigation mesh; next to them, stop and hold revive.
+func _go_revive(downed: Player, command: InputCommand) -> void:
+	var goal: Vector2 = downed.global_position
+	if BotBrain.can_revive(_player.global_position, goal, profile.revive_reach):
+		command.buttons |= InputCommand.REVIVE
+		return
+	if goal.distance_to(_path_goal) > PATH_POINT_REACHED or _repath_ticks <= 0:
+		_plan_path(goal)
+	var step: Array = BotBrain.follow_path(
+		_player.global_position, _path, _path_index, PATH_POINT_REACHED
+	)
+	command.move = (
+		step[0] if step[0] != Vector2.ZERO else _player.global_position.direction_to(goal)
+	)
+	_path_index = step[1]
+
+
+func _fight(target: HitboxComponent, command: InputCommand, moves: bool = true) -> void:
 	var target_position: Vector2 = target.center()
 	var to_target: Vector2 = target_position - _player.global_position
 	_last_seen = target_position
 	var aim_point: Vector2 = _lead(target)
 	var desired: float = (aim_point - _player.global_position).angle() + _aim_error
 	_aim = BotBrain.turn_towards(_aim, desired, _turn_step())
-	command.move = BotBrain.move_direction(
-		_player.global_position,
-		target_position,
-		profile.preferred_distance,
-		profile.strafe,
-		_strafe_sign
-	)
+	if moves:
+		command.move = BotBrain.move_direction(
+			_player.global_position,
+			target_position,
+			profile.preferred_distance,
+			profile.strafe,
+			_strafe_sign
+		)
 	var reacted: bool = _target_seen_ticks >= roundi(profile.reaction_time * NetClock.tick_rate())
 	var cone: float = deg_to_rad(profile.fire_cone_degrees)
 	var in_range: bool = to_target.length() <= _weapon_range()
@@ -136,16 +193,22 @@ func _lead(target: HitboxComponent) -> Vector2:
 	)
 
 
-## Nobody in sight: go where someone was last seen, else to a random respawn point.
+## Nobody in sight: go where someone was last seen, else back to the team (co-op), else to a
+## random respawn point.
 func _roam(command: InputCommand) -> void:
 	if _last_seen != Vector2.INF and _player.global_position.distance_to(_last_seen) < 40.0:
 		_last_seen = Vector2.INF
 	var goal: Vector2 = _path_goal
+	var regroup: Vector2 = BotBrain.regroup_goal(
+		_player.global_position, _living_teammate_places(), profile.team_spread
+	)
 	if _last_seen != Vector2.INF:
 		goal = _last_seen
+	elif regroup != Vector2.INF:
+		goal = regroup
 	elif _path_goal == Vector2.INF or _path_index >= _path.size():
 		goal = _random_roam_point()
-	if goal != _path_goal or _repath_ticks <= 0:
+	if goal.distance_to(_path_goal) > REPLAN_DISTANCE or _repath_ticks <= 0:
 		_plan_path(goal)
 	var step: Array = BotBrain.follow_path(
 		_player.global_position, _path, _path_index, PATH_POINT_REACHED
@@ -157,6 +220,14 @@ func _roam(command: InputCommand) -> void:
 	var weapon: WeaponComponent = _player.get_loadout().weapon
 	if weapon.ammo < weapon.weapon_data.magazine_size:
 		command.buttons |= InputCommand.RELOAD
+
+
+func _living_teammate_places() -> Array[Vector2]:
+	var places: Array[Vector2] = []
+	for teammate in _teammates():
+		if teammate.is_alive:
+			places.append(teammate.global_position)
+	return places
 
 
 func _plan_path(goal: Vector2) -> void:
