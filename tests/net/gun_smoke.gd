@@ -32,6 +32,9 @@ var _state: RefCounted = null
 var _winner_id: int = 0
 var _highest_tier: int = 0
 var _blasts_seen: int = 0
+## Kill feed entries seen ("killer>victim:weapon"), until the match is won.
+var _feed: PackedStringArray = []
+var _feed_closed: bool = false
 
 
 func _initialize() -> void:
@@ -40,6 +43,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	root.get_node("EventBus").match_state_changed.connect(_on_state)
+	root.get_node("EventBus").kill_reported.connect(_on_kill_reported)
 	if _role == "botduel":
 		_port += DUEL_PORT_OFFSET
 		await _run_duel()
@@ -64,7 +68,8 @@ func _run_host() -> void:
 	_check(_bot_kills() > 0, "the bots never killed anyone")
 	await _fight_until_winner(95.0)
 	_info("winner id %d" % _winner_id)
-	await create_timer(1.0).timeout
+	await _report_feed()
+	await create_timer(0.5).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 5.0)
 	await _check_restarted()
@@ -85,6 +90,7 @@ func _run_client() -> void:
 	await _hold_fire(HOLD_FIRE_SECONDS)
 	await _fight_until_winner(100.0)
 	_info("winner id %d, %d rocket blasts seen" % [_winner_id, _blasts_seen])
+	await _report_feed()
 	_check(_blasts_seen > 0, "no rocket blast reached the client")
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 10.0)
 	await _check_restarted()
@@ -263,3 +269,18 @@ func _run_duel() -> void:
 	_check(kills[HARD_BOT] > kills[NORMAL_BOT], "the Hard bot did not beat the Normal bot")
 	net.leave()
 	await create_timer(0.5).timeout
+
+
+## Every entry (the host stops reporting once someone has won), until _report_feed.
+func _on_kill_reported(killer: int, victim: int, weapon: int) -> void:
+	if not _feed_closed:
+		_feed.append("%d>%d:%d" % [killer, victim, weapon])
+
+
+## Prints the last entries (run_smoke.ps1 checks both sides printed the same) and stops
+## recording, before the host restarts.
+func _report_feed() -> void:
+	await create_timer(0.5).timeout
+	_feed_closed = true
+	_info("kill feed tail %s" % ",".join(_feed.slice(-5)))
+	_check(_feed.size() > 0, "the kill feed showed nothing")

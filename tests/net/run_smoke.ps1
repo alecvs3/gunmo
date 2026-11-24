@@ -134,6 +134,15 @@ function Test-GunGameWinner {
         return $false
     }
     Write-Host "Both sides agree on the winner ($($winners[0]))" -ForegroundColor Green
+    $feeds = @("gunhost", "gunclient") | ForEach-Object {
+        $line = Select-String -Path (Join-Path $LogDir "$_.log") -Pattern "kill feed tail (\S*)" | Select-Object -Last 1
+        if ($line) { $line.Matches[0].Groups[1].Value } else { "none" }
+    }
+    if ($feeds[0] -ne $feeds[1] -or $feeds[0] -eq "none") {
+        Write-Host "SMOKE FAIL gun game: kill feeds differ: host $($feeds[0]), client $($feeds[1])" -ForegroundColor Red
+        return $false
+    }
+    Write-Host "Both sides show the same kill feed ($($feeds[0]))" -ForegroundColor Green
     return $true
 }
 

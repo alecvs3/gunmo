@@ -6,7 +6,12 @@ extends GameMode
 ## spawn point farthest from everyone else with a moment of spawn protection, and keeps the
 ## replicated MatchState current. Empty slots are filled with bots up to bot_fill_to (they
 ## leave again as humans join). The ladder, kill targets, timings and bot profiles come from
-## MatchSettings.
+## MatchSettings. Every kill is reported to every peer for the kill feed.
+
+## NetChannel event topic for the kill feed (ProjectileSystem uses 1): [i32 killer, i32 victim,
+## i8 weapon index (-1 = none)].
+const KILL_FEED_TOPIC: int = 3
+const KILL_FEED_SIZE: int = 9
 
 ## Ladder guns as ShopCatalog weapon indices (what PlayerLoadout equips and snapshots carry).
 var _ladder_weapons: Array[int] = []
@@ -21,6 +26,10 @@ var _protected_until: Dictionary = {}
 func _ready() -> void:
 	super()
 	set_physics_process(multiplayer.is_server())
+	if multiplayer.is_server():
+		EventBus.shot_fired.connect(_on_shot_fired)
+	else:
+		NetworkManager.channel.event_received.connect(_on_event_received)
 
 
 func _physics_process(_delta: float) -> void:
@@ -30,7 +39,7 @@ func _physics_process(_delta: float) -> void:
 			_respawn_at.erase(peer_id)
 			_bring_back(level.player(peer_id))
 	for peer_id: int in _protected_until.keys():
-		if now >= _protected_until[peer_id]:
+		if not SpawnProtection.is_on(now, _protected_until[peer_id]):
 			_protected_until.erase(peer_id)
 			var player: Player = level.player(peer_id)
 			if player != null:
@@ -100,8 +109,18 @@ func _bring_back(player: Player) -> void:
 	player.get_loadout().equip_weapon(_tier_weapon(player.get_score().tier))
 	player.respawn(level.farthest_respawn_point(_positions_except(player)))
 	player.is_protected = settings.spawn_protection_seconds > 0.0
-	var protection_ticks: int = roundi(settings.spawn_protection_seconds * NetClock.tick_rate())
-	_protected_until[player.peer_id] = NetworkManager.clock.tick + protection_ticks
+	_protected_until[player.peer_id] = SpawnProtection.until_after_spawn(
+		NetworkManager.clock.tick, settings.spawn_protection_seconds
+	)
+
+
+## Host: firing ends your own spawn protection.
+func _on_shot_fired(shot: RefCounted) -> void:
+	var shooter: int = (shot as Shot).shooter_id
+	if _protected_until.has(shooter):
+		_protected_until[shooter] = SpawnProtection.until_after_shot(
+			_protected_until[shooter], NetworkManager.clock.tick
+		)
 
 
 func _on_player_killed(victim: Node2D, killer_id: int) -> Player:
@@ -112,9 +131,34 @@ func _on_player_killed(victim: Node2D, killer_id: int) -> Player:
 		_respawn_at[victim_player.peer_id] = NetworkManager.clock.tick + delay
 		_protected_until.erase(victim_player.peer_id)
 		victim_player.is_protected = false
+	if victim_player != null and _winner_id == 0:
+		_report_kill(killer, victim_player)
 	if killer != null and _winner_id == 0:
 		_advance(killer)
 	return killer
+
+
+## Host: tells every peer (and our own HUD) who killed whom with what, for the kill feed.
+func _report_kill(killer: Player, victim: Player) -> void:
+	var killer_id: int = killer.peer_id if killer != null else 0
+	var weapon: int = killer.get_loadout().weapon_index if killer != null else -1
+	EventBus.kill_reported.emit(killer_id, victim.peer_id, weapon)
+	var buffer := StreamPeerBuffer.new()
+	buffer.put_32(killer_id)
+	buffer.put_32(victim.peer_id)
+	buffer.put_8(clampi(weapon, -1, 127))
+	for peer_id in multiplayer.get_peers():
+		NetworkManager.channel.send_event(peer_id, KILL_FEED_TOPIC, buffer.data_array)
+
+
+## Clients: the host's kill reports (trusted: events only come from the host).
+func _on_event_received(topic: int, data: PackedByteArray) -> void:
+	if topic != KILL_FEED_TOPIC or data.size() != KILL_FEED_SIZE:
+		return
+	var buffer: StreamPeerBuffer = NetCodec.buffer_from(data)
+	var killer_id: int = buffer.get_32()
+	var victim_id: int = buffer.get_32()
+	EventBus.kill_reported.emit(killer_id, victim_id, buffer.get_8())
 
 
 func _advance(killer: Player) -> void:

@@ -741,7 +741,7 @@ checks it. No network format change.
 - No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
 - Tried in a window by Yusuf. **Not verified:** a 2-player match.
 
-## M7 step 11: smarter bots ✅ (issue #107)
+## M7 step 11: smarter bots ✅ (merged, issue #107)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -769,3 +769,17 @@ longer: smoke E now allows 95 s for a winner (was 70).
 - Bots dodge on the host's timeline; against a lagged human's bullets that is a little early.
 - `bot_controller.gd` is long (about 370 lines); a split into senses and actions would help.
 - **Not verified:** how they feel to fight in a window.
+
+## M7 step 12: Gun Game polish ✅ (issue #111)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Spawn protection ends when you fire** (it was a fixed 0.5 s): no shooting from safety | Done, tested | `modes/gun_game/spawn_protection.gd`, `modes/gun_game/gun_game_mode.gd` |
+| **Kill feed:** the host reports every kill (killer, victim, gun) to every peer (event topic 3, protocol 14); the HUD shows the last 5 top right, "Killer [SMG] Victim", fading after 5 s. Reports stop once someone has won | Done, tested | `gun_game_mode.gd`, EventBus `kill_reported`, `ui/kill_feed.gd`, `ui/hud.tscn` |
+| **A different character per player:** the host gives each new player a look nobody has yet (humans from the human looks first, bots from the bot looks), sent once with the spawn (`look_index`); repeats only when all 6 are taken. Fixes "two players can get the same one" | Done, tested | `player/character_assignment.gd`, `player/player_data.gd`, `levels/level.gd`, `player/player.tscn` |
+| **Results screen at the end:** already there (M4: winner, scoreboard); smoke E keeps checking it | Done (M4) | `ui/results_screen.*` |
+| Smoke **E**: both sides print the last 5 kill feed entries; run_smoke checks they are the same | Done | `tests/net/gun_smoke.gd`, `tests/net/run_smoke.ps1` |
+
+### Known limitations
+- The kill feed is Gun Game only (Waves has no feed of enemy kills).
+- **Not verified:** the kill feed's look and the characters in a window.
