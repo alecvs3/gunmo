@@ -5,7 +5,8 @@ extends SceneTree
 ## These scripts run before the autoloads exist, so they never name project classes directly
 ## (that would compile them too early); _begin() loads what they need once the game runs.
 
-const LEVEL_PATH: String = "Main/LevelContainer/TestArena"
+## Where the level goes; the level node is named after its scene's root (TestArena, ...).
+const LEVEL_CONTAINER: String = "Main/LevelContainer"
 
 ## From the command line: -- <role> <port> [more]
 var _role: String = ""
@@ -50,8 +51,16 @@ func _begin() -> void:
 	_run()
 
 
+## The loaded level's node path (_level_path() on the test arena).
+func _level_path() -> String:
+	var container: Node = root.get_node_or_null(LEVEL_CONTAINER)
+	if container == null or container.get_child_count() == 0:
+		return LEVEL_CONTAINER + "/TestArena"
+	return "%s/%s" % [LEVEL_CONTAINER, container.get_child(0).name]
+
+
 func _own_player() -> Node2D:
-	var path: String = "%s/Players/%d" % [LEVEL_PATH, root.multiplayer.get_unique_id()]
+	var path: String = "%s/Players/%d" % [_level_path(), root.multiplayer.get_unique_id()]
 	return root.get_node_or_null(path) as Node2D
 
 

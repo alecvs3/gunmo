@@ -85,6 +85,7 @@ func _ready() -> void:
 		return
 	set_process(false)
 	if mode == Mode.AUTHORITATIVE:
+		add_to_group(Groups.BULLETS)
 		var hits: TimelineHits = TimelineHits.for_shot(shot, get_tree())
 		_timeline = null if hits.is_empty() else hits
 

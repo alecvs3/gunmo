@@ -1,5 +1,6 @@
-[gd_resource type="Resource" script_class="MatchSettings" load_steps=9 format=3]
+[gd_resource type="Resource" script_class="MatchSettings" format=3]
 
+[ext_resource type="Resource" path="res://levels/data/pit.tres" id="90_map"]
 [ext_resource type="Script" path="res://modes/match_settings.gd" id="1_match"]
 [ext_resource type="PackedScene" path="res://modes/gun_game/gun_game_mode.tscn" id="2_mode"]
 [ext_resource type="Resource" path="res://weapons/data/smg.tres" id="3_smg"]
@@ -11,10 +12,11 @@
 
 [resource]
 script = ExtResource("1_match")
+map = ExtResource("90_map")
 mode_scene = ExtResource("2_mode")
 bot_fill_to = 4
 ladder = Array[ExtResource("5_wdata")]([ExtResource("3_smg"), ExtResource("8_rocket"), ExtResource("3_smg")])
-kills_per_tier = 2
+kills_per_tier = 1
 final_tier_kills = 1
 respawn_seconds = 0.5
 spawn_protection_seconds = 0.5

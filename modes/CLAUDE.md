@@ -28,6 +28,7 @@ reviewed by both developers.
 | `waves/revive_rules.gd` | Downed and revive: bleed-out timer, revive bar, range, interruption (`waves/downed_players.gd` applies it on the host) |
 | `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |
 | `gun_game/gun_game_ladder.gd` | Kills per tier, the last tier, who has won |
+| `gun_game/spawn_protection.gd` | Spawn protection: how long, and that firing ends it |
 
 Put new rules in a pure class like these and test it. The mode node should only wire it up.
 
@@ -42,6 +43,8 @@ That's kept on purpose: splitting it would change the network format for little 
 Clients ask through `NetChannel.send_request(topic, data)`. `GameMode._on_request_received`
 ignores peers without a player, handles `REQUEST_READY` (1) and passes the rest to
 `_on_request()`. `WaveMode` uses `REQUEST_BUY` (2). Check every request against the rules.
+Host-to-client events: `GunGameMode.KILL_FEED_TOPIC` (3) reports each kill to everyone
+(ProjectileSystem uses topic 1).
 
 ## Recipes
 `add-game-mode`, `add-wave-modifier`, `add-client-request` (in `.claude/skills/`).

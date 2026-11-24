@@ -56,7 +56,7 @@ $scenarios = @(
        Roles = @((Role "shophost"), (Role "shopclient")) },
     @{ Id = "E"; Title = "Gun Game with bots (names, ladder, winner, restart)"; Alone = $false
        Script = "res://tests/net/gun_smoke.gd"; Metrics = ""
-       Roles = @((Role "gunhost"), (Role "gunclient")) },
+       Roles = @((Role "gunhost"), (Role "gunclient"), (Role "botduel")) },
     @{ Id = "F"; Title = "stress (8 players vs 40 enemies, performance budget)"; Alone = $true
        Script = "res://tests/net/stress.gd"; Metrics = "STRESS"
        Roles = @((Role "stresshost"), (Role "stressclient")) },
@@ -134,6 +134,15 @@ function Test-GunGameWinner {
         return $false
     }
     Write-Host "Both sides agree on the winner ($($winners[0]))" -ForegroundColor Green
+    $feeds = @("gunhost", "gunclient") | ForEach-Object {
+        $line = Select-String -Path (Join-Path $LogDir "$_.log") -Pattern "kill feed tail (\S*)" | Select-Object -Last 1
+        if ($line) { $line.Matches[0].Groups[1].Value } else { "none" }
+    }
+    if ($feeds[0] -ne $feeds[1] -or $feeds[0] -eq "none") {
+        Write-Host "SMOKE FAIL gun game: kill feeds differ: host $($feeds[0]), client $($feeds[1])" -ForegroundColor Red
+        return $false
+    }
+    Write-Host "Both sides show the same kill feed ($($feeds[0]))" -ForegroundColor Green
     return $true
 }
 

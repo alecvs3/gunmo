@@ -213,7 +213,7 @@ func _mode() -> Node:
 
 
 func _nearest_enemy(from: Vector2) -> Node2D:
-	var enemies: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Enemies")
+	var enemies: Node = root.get_node_or_null(_level_path() + "/Enemies")
 	var nearest: Node2D = null
 	if enemies == null:
 		return null
@@ -247,7 +247,7 @@ func _watch_boss() -> void:
 ## Host: knocks the client down, walks over (a teleport) and holds revive until it is back.
 func _down_and_revive_client() -> void:
 	var client: Node2D = null
-	for player: Node in root.get_node("%s/Players" % LEVEL_PATH).get_children():
+	for player: Node in root.get_node("%s/Players" % _level_path()).get_children():
 		if player.name != "1":
 			client = player
 	_check(client != null, "no client player to revive")
@@ -316,7 +316,7 @@ func _run_bot_coop() -> void:
 
 func _bots() -> Array[Node2D]:
 	var found: Array[Node2D] = []
-	var players: Node = root.get_node_or_null("%s/Players" % LEVEL_PATH)
+	var players: Node = root.get_node_or_null("%s/Players" % _level_path())
 	if players == null:
 		return found
 	for player: Node in players.get_children():

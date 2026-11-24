@@ -14,6 +14,9 @@ const BOT_CONTROLLER: Script = preload("res://bots/bot_controller.gd")
 ## Spread around the whole map; free-for-all respawns pick the one farthest from everyone.
 ## Falls back to the player spawn points when empty.
 @export var respawn_points: Node2D
+## Bot points of interest: spots worth going to (cover behind pillars, chokepoints). Bots
+## hunt and take cover around these and the respawn points. May be empty.
+@export var points_of_interest: Node2D
 ## Where enemies can walk. Baked on the host when the level starts, from the static colliders
 ## in the "navigation_obstacles" group (walls, pillars); clients don't need it.
 @export var navigation_region: NavigationRegion2D
@@ -29,6 +32,7 @@ func spawn_player(peer_id: int, display_name: String = "") -> Player:
 	var new_player: Player = PLAYER_SCENE.instantiate()
 	new_player.name = str(peer_id)
 	new_player.display_name = display_name
+	new_player.look_index = _free_look(new_player, false)
 	new_player.position = player_spawn_position(players_root.get_child_count())
 	players_root.add_child(new_player, true)
 	return new_player
@@ -40,14 +44,27 @@ func spawn_bot(bot_id: int, display_name: String, profile: BotProfile) -> Player
 	new_bot.name = str(bot_id)
 	new_bot.display_name = display_name
 	new_bot.is_bot = true
+	new_bot.look_index = _free_look(new_bot, true)
 	var controller: BotController = BOT_CONTROLLER.new()
 	controller.name = "BotController"
 	controller.profile = profile
-	controller.roam_points = _respawn_positions()
+	controller.roam_points = _respawn_positions() + interest_positions()
 	new_bot.bot = controller
 	new_bot.add_child(controller)
 	players_root.add_child(new_bot, true)
 	return new_bot
+
+
+## A character nobody in the level has yet (CharacterAssignment).
+func _free_look(joining: Player, for_bot: bool) -> int:
+	var taken: Array[int] = []
+	for other: Player in players_root.get_children():
+		if not other.is_queued_for_deletion():
+			taken.append(other.look_index)
+	var data: PlayerData = joining.player_data
+	return CharacterAssignment.pick(
+		taken, data.preferred_looks(for_bot), data.all_looks().size(), absi(joining.name.to_int())
+	)
 
 
 func remove_player(peer_id: int) -> void:
@@ -101,6 +118,14 @@ func _respawn_positions() -> Array[Vector2]:
 	var positions: Array[Vector2] = []
 	for point: Node2D in root.get_children():
 		positions.append(point.position)
+	return positions
+
+
+func interest_positions() -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	if points_of_interest != null:
+		for point: Node2D in points_of_interest.get_children():
+			positions.append(point.position)
 	return positions
 
 

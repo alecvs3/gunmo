@@ -11,11 +11,20 @@ extends Node
 ## Co-op (teammates on its own team): it prefers dangerous enemies (their cost), walks over to
 ## revive a downed teammate (holding revive next to them, still shooting), and when nobody is
 ## in sight it stays with the team instead of roaming.
+## Smarts (by profile): it sidesteps bullets about to hit it, aims so the shot leaves the barrel
+## on target (not the body's centre), breaks off to cover when hurt, and hunts opponents out of
+## sight by coming in from the side instead of roaming between spawns.
 
 ## How close to a path point counts as reached.
 const PATH_POINT_REACHED: float = 24.0
 ## A goal that moved less than this keeps its path until the next repath (px).
 const REPLAN_DISTANCE: float = 64.0
+## Bullets farther than this aren't looked at for dodging (px).
+const DODGE_LOOK_DISTANCE: float = 500.0
+## Hitbox radius plus a bullet's, for "about to hit me" (px).
+const DODGE_RADIUS: float = 30.0
+## After taking cover it won't again for this long (s).
+const COVER_COOLDOWN: float = 8.0
 
 @export var profile: BotProfile
 
@@ -37,6 +46,11 @@ var _path := PackedVector2Array()
 var _path_index: int = 0
 var _path_goal: Vector2 = Vector2.INF
 var _repath_ticks: int = 0
+## Ticks left in cover (0 = not hiding), ticks until it may hide again, and where it hides.
+var _cover_ticks: int = 0
+var _cover_cooldown_ticks: int = 0
+var _cover_goal: Vector2 = Vector2.INF
+var _flank_side: float = 1.0
 
 
 func _ready() -> void:
@@ -65,6 +79,7 @@ func next_command() -> InputCommand:
 		_fight(target, command, downed == null)
 	elif downed == null:
 		_roam(command)
+	_sidestep(command)
 	command.aim = _aim
 	return command.sanitized()
 
@@ -160,8 +175,13 @@ func _fight(target: HitboxComponent, command: InputCommand, moves: bool = true) 
 	var to_target: Vector2 = target_position - _player.global_position
 	_last_seen = target_position
 	var aim_point: Vector2 = _lead(target)
-	var desired: float = (aim_point - _player.global_position).angle() + _aim_error
+	var desired: float = (
+		BotBrain.barrel_aim(_player.global_position, _player.muzzle_offset(), aim_point)
+		+ _aim_error
+	)
 	_aim = BotBrain.turn_towards(_aim, desired, _turn_step())
+	if moves and _take_cover(target_position, command):
+		moves = false
 	if moves:
 		command.move = BotBrain.move_direction(
 			_player.global_position,
@@ -206,6 +226,14 @@ func _roam(command: InputCommand) -> void:
 		goal = _last_seen
 	elif regroup != Vector2.INF:
 		goal = regroup
+	elif profile.hunts and _nearest_opponent() != Vector2.INF:
+		goal = BotBrain.flank_point(
+			_player.global_position,
+			_nearest_opponent(),
+			_flank_side,
+			deg_to_rad(profile.flank_degrees),
+			profile.preferred_distance
+		)
 	elif _path_goal == Vector2.INF or _path_index >= _path.size():
 		goal = _random_roam_point()
 	if goal.distance_to(_path_goal) > REPLAN_DISTANCE or _repath_ticks <= 0:
@@ -241,6 +269,81 @@ func _plan_path(goal: Vector2) -> void:
 	if _path.is_empty():
 		_path = PackedVector2Array([goal])
 	_path_index = 0
+
+
+## Every opponent's whereabouts are known to the host; a hunting bot heads for the nearest.
+func _nearest_opponent() -> Vector2:
+	var own_team: StringName = HitboxComponent.team_for(_player.team_id)
+	var best := Vector2.INF
+	for hitbox in NetworkManager.lag_compensator.hitboxes():
+		if hitbox.team == own_team or not hitbox.is_hittable():
+			continue
+		var at: Vector2 = hitbox.center()
+		if _player.global_position.distance_to(at) < _player.global_position.distance_to(best):
+			best = at
+	return best
+
+
+## Sidestep bullets about to hit us, blended into the move by the profile's dodge.
+func _sidestep(command: InputCommand) -> void:
+	if profile.dodge <= 0.0:
+		return
+	var threats: Array[BotBrain.Threat] = []
+	var own_team: StringName = _player.get_hitbox().team
+	for node in get_tree().get_nodes_in_group(Groups.BULLETS):
+		var bullet := node as Bullet
+		if bullet == null or bullet.shot.team == own_team:
+			continue
+		if bullet.global_position.distance_to(_player.global_position) > DODGE_LOOK_DISTANCE:
+			continue
+		threats.append(
+			BotBrain.Threat.new(bullet.global_position, bullet.shot.direction, bullet.shot.speed)
+		)
+	var away: Vector2 = BotBrain.dodge(
+		_player.global_position, threats, DODGE_RADIUS, profile.dodge_horizon
+	)
+	if away != Vector2.ZERO:
+		command.move = command.move.lerp(away, profile.dodge).limit_length(1.0)
+
+
+## Hurt and under fire: run to the nearest spot the threat can't see for cover_seconds.
+## True while hiding (the move is set; it still aims and fires).
+func _take_cover(threat: Vector2, command: InputCommand) -> bool:
+	_cover_cooldown_ticks -= 1
+	if _cover_ticks <= 0 and _cover_cooldown_ticks <= 0 and _hurt():
+		_cover_goal = _pick_cover(threat)
+		if _cover_goal != Vector2.INF:
+			_cover_ticks = roundi(profile.cover_seconds * NetClock.tick_rate())
+			_cover_cooldown_ticks = roundi(COVER_COOLDOWN * NetClock.tick_rate())
+			_flank_side = -_flank_side
+	if _cover_ticks <= 0:
+		return false
+	_cover_ticks -= 1
+	if _cover_goal.distance_to(_path_goal) > REPLAN_DISTANCE:
+		_plan_path(_cover_goal)
+	var step: Array = BotBrain.follow_path(
+		_player.global_position, _path, _path_index, PATH_POINT_REACHED
+	)
+	command.move = step[0]
+	_path_index = step[1]
+	return true
+
+
+func _hurt() -> bool:
+	var stats: Player.HudStats = _player.hud_stats()
+	return stats.health < stats.max_health * profile.cover_health
+
+
+func _pick_cover(threat: Vector2) -> Vector2:
+	var exposed: Array[bool] = []
+	for point in roam_points:
+		exposed.append(_clear_line(point, threat))
+	return BotBrain.cover_point(_player.global_position, roam_points, exposed)
+
+
+func _clear_line(from: Vector2, to: Vector2) -> bool:
+	var query := PhysicsRayQueryParameters2D.create(from, to, Bullet.WORLD_MASK)
+	return _player.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
 func _random_roam_point() -> Vector2:

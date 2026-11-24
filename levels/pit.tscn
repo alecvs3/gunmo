@@ -1,0 +1,263 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
+[ext_resource type="Script" path="res://weapons/projectile_system.gd" id="2_proj"]
+[ext_resource type="Script" path="res://shared/feedback/feedback_system.gd" id="5_feedback"]
+[ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/tiles/floor_concrete.png" id="3_floor"]
+[ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/tiles/wall_planks.png" id="4_wall"]
+
+[sub_resource type="RectangleShape2D" id="Shape_North"]
+size = Vector2(1480, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_South"]
+size = Vector2(1480, 40)
+
+[sub_resource type="RectangleShape2D" id="Shape_West"]
+size = Vector2(40, 1000)
+
+[sub_resource type="RectangleShape2D" id="Shape_East"]
+size = Vector2(40, 1000)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall1"]
+size = Vector2(120, 120)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall2"]
+size = Vector2(140, 60)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall3"]
+size = Vector2(140, 60)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall4"]
+size = Vector2(140, 60)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall5"]
+size = Vector2(140, 60)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall6"]
+size = Vector2(60, 60)
+
+[sub_resource type="RectangleShape2D" id="Shape_Wall7"]
+size = Vector2(60, 60)
+
+[sub_resource type="NavigationPolygon" id="NavigationPolygon_map"]
+outlines = Array[PackedVector2Array]([PackedVector2Array(0, 0, 1400, 0, 1400, 1000, 0, 1000)])
+parsed_geometry_type = 1
+parsed_collision_mask = 1
+source_geometry_mode = 1
+source_geometry_group_name = &"navigation_obstacles"
+agent_radius = 20.0
+
+[node name="Pit" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points", "navigation_region", "respawn_points", "points_of_interest")]
+script = ExtResource("1_level")
+players_root = NodePath("Players")
+enemies_root = NodePath("Enemies")
+player_spawn_points = NodePath("PlayerSpawnPoints")
+enemy_spawn_points = NodePath("EnemySpawnPoints")
+navigation_region = NodePath("NavigationRegion")
+respawn_points = NodePath("RespawnPoints")
+points_of_interest = NodePath("PointsOfInterest")
+
+[node name="Floor" type="Polygon2D" parent="."]
+texture_repeat = 2
+color = Color(0.85, 0.88, 0.95, 1)
+texture = ExtResource("3_floor")
+polygon = PackedVector2Array(0, 0, 1400, 0, 1400, 1000, 0, 1000)
+
+[node name="NavigationRegion" type="NavigationRegion2D" parent="."]
+navigation_polygon = SubResource("NavigationPolygon_map")
+
+[node name="Walls" type="StaticBody2D" parent="." groups=["navigation_obstacles"]]
+texture_repeat = 2
+collision_mask = 0
+
+[node name="North" type="CollisionShape2D" parent="Walls"]
+position = Vector2(700, -20)
+shape = SubResource("Shape_North")
+
+[node name="South" type="CollisionShape2D" parent="Walls"]
+position = Vector2(700, 1020)
+shape = SubResource("Shape_South")
+
+[node name="West" type="CollisionShape2D" parent="Walls"]
+position = Vector2(-20, 500)
+shape = SubResource("Shape_West")
+
+[node name="East" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1420, 500)
+shape = SubResource("Shape_East")
+
+[node name="Wall1" type="CollisionShape2D" parent="Walls"]
+position = Vector2(700, 500)
+shape = SubResource("Shape_Wall1")
+
+[node name="Wall2" type="CollisionShape2D" parent="Walls"]
+position = Vector2(370, 280)
+shape = SubResource("Shape_Wall2")
+
+[node name="Wall3" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1030, 280)
+shape = SubResource("Shape_Wall3")
+
+[node name="Wall4" type="CollisionShape2D" parent="Walls"]
+position = Vector2(370, 720)
+shape = SubResource("Shape_Wall4")
+
+[node name="Wall5" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1030, 720)
+shape = SubResource("Shape_Wall5")
+
+[node name="Wall6" type="CollisionShape2D" parent="Walls"]
+position = Vector2(180, 500)
+shape = SubResource("Shape_Wall6")
+
+[node name="Wall7" type="CollisionShape2D" parent="Walls"]
+position = Vector2(1220, 500)
+shape = SubResource("Shape_Wall7")
+
+[node name="NorthVisual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(-40, -40, 1440, -40, 1440, 0, -40, 0)
+
+[node name="SouthVisual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(-40, 1000, 1440, 1000, 1440, 1040, -40, 1040)
+
+[node name="WestVisual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(-40, 0, 0, 0, 0, 1000, -40, 1000)
+
+[node name="EastVisual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(1400, 0, 1440, 0, 1440, 1000, 1400, 1000)
+
+[node name="Wall1Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(640, 440, 760, 440, 760, 560, 640, 560)
+
+[node name="Wall2Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(300, 250, 440, 250, 440, 310, 300, 310)
+
+[node name="Wall3Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(960, 250, 1100, 250, 1100, 310, 960, 310)
+
+[node name="Wall4Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(300, 690, 440, 690, 440, 750, 300, 750)
+
+[node name="Wall5Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(960, 690, 1100, 690, 1100, 750, 960, 750)
+
+[node name="Wall6Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(150, 470, 210, 470, 210, 530, 150, 530)
+
+[node name="Wall7Visual" type="Polygon2D" parent="Walls"]
+texture = ExtResource("4_wall")
+polygon = PackedVector2Array(1190, 470, 1250, 470, 1250, 530, 1190, 530)
+
+[node name="PlayerSpawnPoints" type="Node2D" parent="."]
+
+[node name="A" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(200, 150)
+
+[node name="B" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(1200, 150)
+
+[node name="C" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(200, 850)
+
+[node name="D" type="Marker2D" parent="PlayerSpawnPoints"]
+position = Vector2(1200, 850)
+
+[node name="RespawnPoints" type="Node2D" parent="."]
+
+[node name="NorthWest" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(100, 100)
+
+[node name="North" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(700, 120)
+
+[node name="NorthEast" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1300, 100)
+
+[node name="West" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(80, 620)
+
+[node name="East" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1320, 380)
+
+[node name="SouthWest" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(100, 900)
+
+[node name="South" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(700, 880)
+
+[node name="SouthEast" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(1300, 900)
+
+[node name="InnerWest" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(480, 500)
+
+[node name="InnerEast" type="Marker2D" parent="RespawnPoints"]
+position = Vector2(920, 500)
+
+[node name="EnemySpawnPoints" type="Node2D" parent="."]
+
+[node name="NorthWest" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(80, 80)
+
+[node name="NorthEast" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(1320, 80)
+
+[node name="SouthWest" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(80, 920)
+
+[node name="SouthEast" type="Marker2D" parent="EnemySpawnPoints"]
+position = Vector2(1320, 920)
+
+[node name="PointsOfInterest" type="Node2D" parent="."]
+
+[node name="BehindNorthWest" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(370, 200)
+
+[node name="BehindNorthEast" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(1030, 200)
+
+[node name="BehindSouthWest" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(370, 800)
+
+[node name="BehindSouthEast" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(1030, 800)
+
+[node name="CentreNorth" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(700, 380)
+
+[node name="CentreSouth" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(700, 620)
+
+[node name="Enemies" type="Node2D" parent="."]
+
+[node name="Players" type="Node2D" parent="."]
+
+[node name="Projectiles" type="Node2D" parent="."]
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://player/player.tscn")
+spawn_path = NodePath("../Players")
+
+[node name="EnemySpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://enemies/chaser.tscn")
+spawn_path = NodePath("../Enemies")
+
+[node name="ProjectileSystem" type="Node" parent="." node_paths=PackedStringArray("projectiles_root")]
+script = ExtResource("2_proj")
+projectiles_root = NodePath("../Projectiles")
+
+[node name="Effects" type="Node2D" parent="."]
+
+[node name="FeedbackSystem" type="Node" parent="." node_paths=PackedStringArray("effects_root")]
+script = ExtResource("5_feedback")
+effects_root = NodePath("../Effects")

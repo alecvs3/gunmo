@@ -6,6 +6,8 @@ extends Resource
 
 ## The game mode scene this match runs (modes/*.tscn, listed in Main's ModeSpawner).
 @export var mode_scene: PackedScene
+## The map (levels/data/*.tres); none = the default map (test arena).
+@export var map: MapData
 ## Bots added until there are this many players, humans included (modes with bots only).
 ## The host's menu can override it.
 @export_range(0, 16) var bot_fill_to: int = 0
