@@ -237,4 +237,4 @@ func _shoot_nearest_enemy() -> void:
 
 
 func _level() -> Node:
-	return root.get_node_or_null("Main/LevelContainer/TestArena")
+	return root.get_node_or_null(_level_path())

@@ -219,7 +219,7 @@ func _is_phase(name: String) -> bool:
 
 func _players() -> Array[Node2D]:
 	var found: Array[Node2D] = []
-	var players_root: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Players")
+	var players_root: Node = root.get_node_or_null(_level_path() + "/Players")
 	if players_root == null:
 		return found
 	for child: Node in players_root.get_children():
@@ -229,7 +229,7 @@ func _players() -> Array[Node2D]:
 
 
 func _player_by_id(peer_id: int) -> Node:
-	return root.get_node_or_null("Main/LevelContainer/TestArena/Players/%d" % peer_id)
+	return root.get_node_or_null(_level_path() + "/Players/%d" % peer_id)
 
 
 ## botduel: Hard vs Normal, counting kills, shots and hits per bot.

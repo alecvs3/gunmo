@@ -62,7 +62,7 @@ func _run_client() -> void:
 	await _wait_until(func() -> bool: return _own() != null and _state != null, 15.0)
 	await _buy_and_check()
 	await _refused_purchase_check("buying the gun already equipped", KIND_WEAPON, SHOTGUN)
-	var hits := root.get_node("Main/LevelContainer/TestArena/ProjectileSystem")
+	var hits := root.get_node(_level_path() + "/ProjectileSystem")
 	hits.hit_confirmed.connect(func(_key: String, _at: Vector2) -> void: _confirmed += 1)
 	_mode().call("set_local_ready", true)
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 10.0)
@@ -141,7 +141,7 @@ func _mode() -> Node:
 
 
 func _player(peer_id: int) -> Node2D:
-	return root.get_node_or_null("Main/LevelContainer/TestArena/Players/%d" % peer_id) as Node2D
+	return root.get_node_or_null(_level_path() + "/Players/%d" % peer_id) as Node2D
 
 
 func _own() -> Node2D:
@@ -167,7 +167,7 @@ func _credits() -> int:
 func _nearest_enemy() -> Node2D:
 	var nearest: Node2D = null
 	var from: Vector2 = _own().global_position
-	for enemy: Node2D in root.get_node("Main/LevelContainer/TestArena/Enemies").get_children():
+	for enemy: Node2D in root.get_node(_level_path() + "/Enemies").get_children():
 		var closer: bool = (
 			nearest == null
 			or (

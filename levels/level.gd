@@ -14,6 +14,9 @@ const BOT_CONTROLLER: Script = preload("res://bots/bot_controller.gd")
 ## Spread around the whole map; free-for-all respawns pick the one farthest from everyone.
 ## Falls back to the player spawn points when empty.
 @export var respawn_points: Node2D
+## Bot points of interest: spots worth going to (cover behind pillars, chokepoints). Bots
+## hunt and take cover around these and the respawn points. May be empty.
+@export var points_of_interest: Node2D
 ## Where enemies can walk. Baked on the host when the level starts, from the static colliders
 ## in the "navigation_obstacles" group (walls, pillars); clients don't need it.
 @export var navigation_region: NavigationRegion2D
@@ -45,7 +48,7 @@ func spawn_bot(bot_id: int, display_name: String, profile: BotProfile) -> Player
 	var controller: BotController = BOT_CONTROLLER.new()
 	controller.name = "BotController"
 	controller.profile = profile
-	controller.roam_points = _respawn_positions()
+	controller.roam_points = _respawn_positions() + interest_positions()
 	new_bot.bot = controller
 	new_bot.add_child(controller)
 	players_root.add_child(new_bot, true)
@@ -115,6 +118,14 @@ func _respawn_positions() -> Array[Vector2]:
 	var positions: Array[Vector2] = []
 	for point: Node2D in root.get_children():
 		positions.append(point.position)
+	return positions
+
+
+func interest_positions() -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	if points_of_interest != null:
+		for point: Node2D in points_of_interest.get_children():
+			positions.append(point.position)
 	return positions
 
 

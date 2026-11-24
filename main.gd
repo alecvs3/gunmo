@@ -55,7 +55,10 @@ func _load_match_settings(path: String) -> void:
 func _on_hosting_started() -> void:
 	_menu.hide()
 	var settings: MatchSettings = _match_settings if _match_settings else _menu.chosen_match()
-	var level: Level = LEVEL_SCENE.instantiate()
+	var scene: PackedScene = LEVEL_SCENE
+	if settings.map != null and settings.map.scene != null:
+		scene = settings.map.scene
+	var level: Level = scene.instantiate()
 	_level_container.add_child(level, true)
 	var mode: GameMode = settings.mode_scene.instantiate()
 	mode.setup(level, settings)

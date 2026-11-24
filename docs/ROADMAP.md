@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–12 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–13 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -107,7 +107,7 @@ balance at the end, when everything that affects balance exists.
   sides see the same kill feed entries and results.
 - **Done when:** a Gun Game match reads clearly from start to winner.
 
-### 13. Maps: the framework
+### 13. Maps: the framework ✅ (#113)
 - **Adds:** maps as data (spawn points per mode, enemy spawn zones, bot points of interest) and
   a map choice in `MatchSettings` (the lobby picker comes in M6).
 - **Test:** an automatic map check for every map: every spawn point is on the navigation mesh

@@ -65,7 +65,7 @@ func _run_host() -> void:
 	while net.peers.size() >= 2:
 		for player: Node in _players():
 			player.get_node("HealthComponent").invulnerable = true
-		var own: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Players/1")
+		var own: Node = root.get_node_or_null(_level_path() + "/Players/1")
 		if own != null:
 			own.get_node("HitboxComponent").monitorable = false
 		for player: Node in _players():
@@ -179,7 +179,7 @@ func _walk(move: Vector2) -> void:
 
 ## Host: ranged test enemies at the level's enemy spawn points nearest the client.
 func _spawn_spitters() -> void:
-	var level: Node = root.get_node("Main/LevelContainer/TestArena")
+	var level: Node = root.get_node(_level_path())
 	var client: Node2D = null
 	for player: Node in _players():
 		if not player.get("is_bot") and player.name != "1":
@@ -201,10 +201,10 @@ func _spawn_spitters() -> void:
 
 
 func _enemies() -> Array[Node]:
-	var enemies_root: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Enemies")
+	var enemies_root: Node = root.get_node_or_null(_level_path() + "/Enemies")
 	return enemies_root.get_children() if enemies_root != null else []
 
 
 func _players() -> Array[Node]:
-	var players_root: Node = root.get_node_or_null("Main/LevelContainer/TestArena/Players")
+	var players_root: Node = root.get_node_or_null(_level_path() + "/Players")
 	return players_root.get_children() if players_root != null else []
