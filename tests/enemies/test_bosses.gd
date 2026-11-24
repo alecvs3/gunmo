@@ -1,6 +1,12 @@
 extends GutTest
 
 const BOSSES: Array[String] = ["brood_mother", "warden", "overlord"]
+## The worst healing the waves can give a boss: this many supports beside it, in a wave at the
+## catalog's regeneration and health caps.
+const SUPPORTS_BESIDE: int = 2
+## Most of its max health a boss may heal a second in that worst case (2.5% of the Warden's
+## 7000 is 175 HP/s, about one player's damage). Before heal_received it was 19%.
+const MOST_HEALED_SHARE: float = 0.025
 
 
 func _phase(below: float, name: String = "") -> BossPhase:
@@ -12,6 +18,13 @@ func _phase(below: float, name: String = "") -> BossPhase:
 
 func _boss(boss_name: String) -> EnemyData:
 	return load("res://enemies/data/bosses/%s.tres" % boss_name)
+
+
+func _modifier_index(catalog: ModifierCatalog, display_name: String) -> int:
+	for index in catalog.modifiers.size():
+		if catalog.modifiers[index].display_name == display_name:
+			return index
+	return -1
 
 
 func test_phase_follows_health() -> void:
@@ -110,6 +123,44 @@ func test_bosses_come_at_10_20_25_and_the_last_ends_the_match() -> void:
 	var plan: Array[EnemyData] = WaveBudget.plan(schedule, 20, rng)
 	assert_eq(plan[0], _boss("warden"), "the boss comes first")
 	assert_eq(plan.count(_boss("warden")), 1)
+
+
+## Support pulses and Regenerating heal a share of max health, which a boss has a lot of.
+func test_bosses_resist_percentage_healing() -> void:
+	var support: EnemyData = load("res://enemies/data/support.tres")
+	var pulse := support.attack as HealPulseAttack
+	var catalog: ModifierCatalog = ModifierCatalog.load_default()
+	for boss_name in BOSSES:
+		var boss: EnemyData = _boss(boss_name)
+		var health: int = roundi(boss.max_health * catalog.max_health_multiplier)
+		var per_pulse: int = boss.received_heal(pulse.heal_amount(health))
+		var healed: float = (
+			SUPPORTS_BESIDE * per_pulse / pulse.interval
+			+ catalog.max_regen_per_second * boss.heal_received * health
+		)
+		assert_lt(healed / health, MOST_HEALED_SHARE, boss_name + " must not out-heal players")
+
+
+## The real enemy applies heal_received to both kinds of healing.
+func test_a_boss_in_play_heals_slowly() -> void:
+	var catalog: ModifierCatalog = ModifierCatalog.load_default()
+	var warden: EnemyData = _boss("warden")
+	var enemy: ChaserEnemy = (load("res://enemies/chaser.tscn") as PackedScene).instantiate()
+	var regenerating: int = _modifier_index(catalog, "Regenerating")
+	assert_gte(regenerating, 0, "the catalog has Regenerating")
+	enemy.enemy_data = warden
+	enemy.modifier_mask = 1 << regenerating
+	add_child_autofree(enemy)
+	var health: HealthComponent = enemy.get_node("HealthComponent")
+	health.take_damage(2000)
+	var before: int = health.current_health
+	enemy.heal(700)
+	assert_eq(health.current_health - before, warden.received_heal(700), "a support pulse")
+	before = health.current_health
+	await wait_physics_frames(60)
+	var regen: float = catalog.combined(enemy.modifier_mask).regen_per_second
+	var expected: float = regen * warden.heal_received * health.max_health
+	assert_almost_eq(float(health.current_health - before), expected, 2.0, "a second of regen")
 
 
 func test_boss_bar_title() -> void:

@@ -18,6 +18,9 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 @export_range(1, 100000) var max_health: int = 1
 ## Armor: damage it takes is multiplied by this (0.7 = 30% less). Stacks with wave modifiers.
 @export_range(0.05, 2.0) var damage_taken: float = 1.0
+## Healing it receives (support pulses, Regenerating waves) is multiplied by this. Those heal
+## a share of max health, so bosses take far less, or a boss would out-heal the players.
+@export_range(0.0, 1.0) var heal_received: float = 1.0
 ## Pixels per second.
 @export_range(0.0, 2000.0) var move_speed: float = 1.0
 ## Seconds between path updates towards its target (lower = reacts sooner, costs more).
@@ -69,6 +72,11 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 
 func is_boss() -> bool:
 	return not phases.is_empty()
+
+
+## Pure: the points it really gets back from `amount` points of healing (see heal_received).
+func received_heal(amount: int) -> int:
+	return roundi(amount * heal_received)
 
 
 ## The movement, attack and speed multiplier of phase `index` (or the plain ones, not a boss).
