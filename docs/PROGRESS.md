@@ -1105,3 +1105,17 @@ after (about 0 ms over, p95 about 60 ms).
 ### Known limitations
 - The join freeze itself is still there (about 180 ms). It is only a frame, but it grows as
   more scripts and data load at join.
+
+## The Wizard's Tempest no longer crashes the host ✅
+
+A two-player game crashed on wave 22: `SCRIPT ERROR: Trying to assign invalid previously freed
+instance` in `WizardPowers._strike_due`. The Tempest (tier 5) marks enemies, then strikes them
+after a warning. When one of them died during the warning, the loop put it into a typed
+`ChaserEnemy` variable before the existing "is it still there?" check ran, which is an error.
+
+| Feature | Status | Where |
+|---|---|---|
+| `WizardPowers.still_standing()` checks each marked enemy before treating it as a `ChaserEnemy` | Done, tested | `pets/wizard_powers.gd`, `tests/pets/test_wizard.gd` |
+
+### Known limitations
+- A match can't be saved or resumed, so a crash loses the run.
