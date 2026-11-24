@@ -39,3 +39,12 @@ func test_group_members_stand_apart() -> void:
 	var b: Vector2 = WaveSpawner.group_offset(2, 5)
 	assert_almost_eq(a.length(), WaveSpawner.GROUP_SPREAD, 0.01)
 	assert_gt(a.distance_to(b), 20.0)
+
+
+func test_split_positions_are_around_the_parent() -> void:
+	var at := Vector2(500, 300)
+	var spots: Array[Vector2] = WaveSpawner.split_positions(at, 2)
+	assert_eq(spots.size(), 2)
+	assert_ne(spots[0], spots[1])
+	for spot in spots:
+		assert_almost_eq(spot.distance_to(at), WaveSpawner.GROUP_SPREAD, 0.01)

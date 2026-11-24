@@ -58,8 +58,18 @@ static func group_offset(index: int, size: int) -> Vector2:
 	return Vector2.RIGHT.rotated(TAU * index / (size - 1)) * GROUP_SPREAD
 
 
+## Where `count` split enemies appear around the point `at` where their parent died.
+static func split_positions(at: Vector2, count: int) -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	for index in count:
+		positions.append(at + group_offset(index + 1, count + 1))
+	return positions
+
+
 func _ready() -> void:
 	set_physics_process(multiplayer.is_server())
+	if multiplayer.is_server():
+		EventBus.enemy_split.connect(_on_enemy_split)
 
 
 ## Plans the wave (the same seed gives the same enemies) and starts releasing it. Every enemy
@@ -99,7 +109,18 @@ func _physics_process(delta: float) -> void:
 	var count: int = group_count(_queue, _schedule.max_alive - _level.enemy_count())
 	var point: Vector2 = _pick_point()
 	for index in count:
-		_spawn(_queue.pop_front(), point + group_offset(index, count))
+		_spawn(_queue.pop_front(), point + group_offset(index, count), _modifier_mask)
+
+
+## Host: a split enemy's children join the fight at once (not the queue: they never wait for
+## max_alive, and remaining() stays the enemies not spawned yet).
+func _on_enemy_split(enemy: Node2D, into: Resource, count: int) -> void:
+	var data := into as EnemyData
+	var parent := enemy as ChaserEnemy
+	if _level == null or data == null or parent == null:
+		return
+	for at in split_positions(enemy.global_position, count):
+		_spawn(data, at, parent.modifier_mask)
 
 
 func _pick_point() -> Vector2:
@@ -112,9 +133,9 @@ func _pick_point() -> Vector2:
 	)
 
 
-func _spawn(data: EnemyData, at: Vector2) -> void:
+func _spawn(data: EnemyData, at: Vector2, modifier_mask: int) -> void:
 	var enemy: ChaserEnemy = CHASER_SCENE.instantiate()
 	enemy.enemy_data = data
-	enemy.modifier_mask = _modifier_mask
+	enemy.modifier_mask = modifier_mask
 	enemy.position = at
 	_level.add_enemy(enemy)

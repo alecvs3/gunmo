@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Script" path="res://enemies/behaviours/melee_attack.gd" id="2_melee"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/chase.tres" id="3_chase"]
+[ext_resource type="Resource" path="res://enemies/data/splitling.tres" id="4_splitling"]
+
+[sub_resource type="Resource" id="Resource_melee"]
+script = ExtResource("2_melee")
+interval = 0.7
+damage = 15
+knockback = 400.0
+
+[resource]
+script = ExtResource("1_edata")
+display_name = "Splitter"
+color = Color(0.7, 1, 0.4, 1)
+visual_scale = 1.15
+max_health = 140
+move_speed = 110.0
+repath_interval = 0.25
+movement = ExtResource("3_chase")
+attack = SubResource("Resource_melee")
+split_into = ExtResource("4_splitling")
+split_count = 2
+knockback_friction = 2000.0
+knockback_bounce = 0.3
+knockback_taken = 0.7
+cost = 3.0
+first_wave = 7
+spawn_weight = 0.8
+bounty = 25

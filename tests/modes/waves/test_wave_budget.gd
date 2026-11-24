@@ -87,7 +87,7 @@ func test_spawn_interval_blends_across_waves() -> void:
 func test_default_schedule_shape() -> void:
 	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
 	assert_eq(real.total_waves, 25)
-	assert_eq(real.enemy_types.size(), 6)
+	assert_eq(real.enemy_types.size(), 8)
 	var first: int = WaveBudget.plan(real, 1, _rng(1)).size()
 	var last: int = WaveBudget.plan(real, 25, _rng(1)).size()
 	assert_between(first, 4, 8, "wave 1 is a handful of grunts")

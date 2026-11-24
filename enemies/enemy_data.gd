@@ -22,6 +22,10 @@ extends Resource
 @export var movement: EnemyMovement
 ## How it attacks (MeleeAttack...), usually its own sub-resource with this type's numbers.
 @export var attack: EnemyAttack
+## Dies into `split_count` enemies of this type (none = it just dies). They spawn where it fell
+## with the wave's modifiers and count as enemies of the wave until killed.
+@export var split_into: EnemyData
+@export_range(0, 8) var split_count: int = 0
 
 @export_group("Knockback")
 ## How fast a push on this enemy dies down (px/s lost per second).

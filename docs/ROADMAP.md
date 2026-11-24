@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–4 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–5 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -50,7 +50,7 @@ balance at the end, when everything that affects balance exists.
   wave report before/after; smoke **C** still wins and loses as before.
 - **Done when:** waves 6+ mix frontline, ranged and swarm enemies.
 
-### 5. Enemy roster, part 2: enemies that change other enemies
+### 5. Enemy roster, part 2: enemies that change other enemies ✅ (#94)
 - **Adds:** Splitter (dies into two small ones) and Support (heals or shields enemies near it).
   These make the fight about which target to kill first.
 - **Test:** GUT for split counts (and that splits don't count twice toward the wave being

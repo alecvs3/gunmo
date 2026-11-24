@@ -56,6 +56,7 @@ func _ready() -> void:
 		return
 	_health.reset()
 	_health.died.connect(_on_died)
+	add_to_group(Groups.ENEMIES)
 	_facing.configure(enemy_data.flinch_degrees, enemy_data.flinch_recovery)
 	_knockback.pushed.connect(_facing.flinch_from)
 
@@ -181,7 +182,24 @@ func _touching_hitboxes() -> Array[HitboxComponent]:
 
 func _on_died(killer_peer_id: int) -> void:
 	EventBus.enemy_killed.emit(self, killer_peer_id)
+	if enemy_data.split_into != null and enemy_data.split_count > 0:
+		EventBus.enemy_split.emit(self, enemy_data.split_into, enemy_data.split_count)
+	remove_from_group(Groups.ENEMIES)
 	queue_free()
+
+
+## Host: whether it has lost health (support enemies heal these).
+func is_wounded() -> bool:
+	return _health.current_health < _health.max_health
+
+
+## Host: heal `amount` points (support enemies).
+func heal(amount: int) -> void:
+	_health.heal(amount)
+
+
+func max_health() -> int:
+	return _health.max_health
 
 
 ## The wave's modifiers change health, speed, armor and regeneration, and tint the enemy so

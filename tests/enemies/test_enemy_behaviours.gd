@@ -118,3 +118,16 @@ func test_keep_distance_walks_in_backs_off_and_holds() -> void:
 	assert_eq(keep.goal(Vector2(800, 0), target), target, "too far: walk in")
 	assert_eq(keep.goal(Vector2(100, 0), target), Vector2(300, 0), "too close: back off")
 	assert_eq(keep.goal(Vector2(350, 0), target), Vector2(350, 0), "in range: hold")
+
+
+func test_heal_pulse_amount_and_range() -> void:
+	var pulse := HealPulseAttack.new()
+	pulse.radius = 200.0
+	pulse.heal_share = 0.12
+	assert_eq(pulse.heal_amount(100), 12)
+	assert_eq(pulse.heal_amount(650), 78)
+	assert_eq(pulse.heal_amount(3), 1, "always at least 1")
+	assert_true(pulse.reaches(Vector2.ZERO, Vector2(200, 0)))
+	assert_false(pulse.reaches(Vector2.ZERO, Vector2(150, 150)), "212 px is out of range")
+	assert_true(pulse.wants_to_attack(0.0, INF, false), "pulses with no player in sight")
+	assert_false(pulse.wants_to_attack(0.5, 10.0, true))
