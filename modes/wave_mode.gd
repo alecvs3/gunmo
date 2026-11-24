@@ -116,7 +116,7 @@ func _start_wave() -> void:
 	_spawner.start_wave(
 		level, schedule, _flow.wave, seed_value, _modifier_mask, _modifiers.threat(_modifier_mask)
 	)
-	_powers.on_wave_started(_spawner.planned_health)
+	_powers.on_wave_started(_spawner.planned_health, _flow.wave)
 
 
 ## Whether the next wave may be called early right now.

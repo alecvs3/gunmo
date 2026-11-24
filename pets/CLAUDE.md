@@ -13,6 +13,7 @@ the Pets window (`ui/pet_panel.gd`, P). Every tier adds an ability and strengthe
 | `pet_powers.gd` | Host only: runs the abilities. WaveMode tells it when waves start and clear; it reads EventBus `enemy_damaged` |
 | `pet_effects.gd` | Every peer (a child of each Level): draws what pets do. The host calls `PetEffects.broadcast()` (event topic 4) |
 | `healer_data.gd`, `healer_rules.gd` | The Healer's numbers and its five tiers as pure rules |
+| `soldier_data.gd`, `soldier_rules.gd`, `soldier_powers.gd` | The Soldier: numbers, pure rules, and the host side (kills, Rally, covering fire, Last Stand, airstrikes, everyone's buffs) |
 | `wizard_data.gd`, `wizard_rules.gd`, `wizard_powers.gd` | The Wizard: numbers, pure rules, and the host side (arcs, runes, hexes, tempest) |
 
 ## Rules that aren't obvious
@@ -28,6 +29,10 @@ the Pets window (`ui/pet_panel.gd`, P). Every tier adds an ability and strengthe
   bounties go to the owner; `WizardPowers` ignores its own damage so arcs never arc again.
 - Enemies' **status** (slowed, hexed: `enemies/enemy_status.gd`) is decided on the host; clients
   get two flags packed into the telegraph byte of the enemy snapshot.
+- **Buffs that change `simulate()`** (fire rate, move speed) live on the loadout
+  (`set_buffs`) and travel in the owner's snapshot (`buff_fire`, `buff_move`), so prediction
+  matches the host. `SoldierPowers` sets everyone's buffs every tick. Damage bonuses are host
+  only (`Player.damage_bonus`), since only the host's shots deal damage.
 - **Team effects don't stack:** with two Healers, Wave's End heals by the stronger one, once.
 
 ## Tests

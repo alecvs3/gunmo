@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PetData" format=3]
+[gd_resource type="Resource" script_class="SoldierData" format=3]
 
-[ext_resource type="Script" path="res://pets/pet_data.gd" id="1_pet"]
+[ext_resource type="Script" path="res://pets/soldier_data.gd" id="1_pet"]
 [ext_resource type="Script" path="res://pets/pet_tier.gd" id="2_tier"]
 
 [sub_resource type="Resource" id="Tier_1"]
@@ -40,4 +40,24 @@ role = "Offense"
 blurb = "Hits hard and pushes the whole team forward, especially when things go wrong."
 kind = 2
 color = Color(1, 0.7, 0.35, 1)
+drill_bonus = 0.08
+drill_bonus_upgraded = 0.1
+rally_kills = 12
+rally_fire_rate = 0.15
+rally_fire_rate_upgraded = 0.2
+rally_seconds = 6.0
+rally_reach = 400.0
+cover_interval = 0.8
+cover_damage_share = 0.25
+cover_reach = 350.0
+last_stand_damage = 0.25
+last_stand_move = 0.1
+airstrike_kills = 10
+airstrike_window = 8.0
+airstrike_warning = 1.2
+airstrike_length = 600.0
+airstrike_width = 50.0
+airstrike_damage = 300
+airstrike_damage_per_wave = 20
+airstrike_boss_share = 0.25
 tiers = Array[ExtResource("2_tier")]([SubResource("Tier_1"), SubResource("Tier_2"), SubResource("Tier_3"), SubResource("Tier_4"), SubResource("Tier_5")])
