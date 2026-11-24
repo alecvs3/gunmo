@@ -117,6 +117,7 @@ func _show_blast(at: Vector2, radius: float) -> void:
 	flash.position = at
 	flash.radius = minf(radius, 1000.0)
 	projectiles_root.add_child(flash)
+	EventBus.blast_shown.emit(at, flash.radius)
 
 
 ## Host: tell the shooter its bullet hit (the host's own shots are confirmed locally), and

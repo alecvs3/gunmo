@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://shared/network/net_entity.gd" id="6_netentity"]
 [ext_resource type="Script" path="res://shared/components/display_delay.gd" id="20_delay"]
 [ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/characters/zombie1_hold.png" id="21_zombie"]
+[ext_resource type="Script" path="res://shared/feedback/hit_feedback.gd" id="22_feedback"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_body"]
 size = Vector2(28, 28)
@@ -78,6 +79,12 @@ target_desired_distance = 8.0
 script = ExtResource("20_delay")
 body = NodePath("..")
 visual = NodePath("../Body")
+
+[node name="HitFeedback" type="Node" parent="." node_paths=PackedStringArray("health", "target")]
+script = ExtResource("22_feedback")
+health = NodePath("../HealthComponent")
+target = NodePath("../Body")
+show_numbers = true
 
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("6_netentity")

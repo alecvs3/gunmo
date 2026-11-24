@@ -235,6 +235,16 @@ func _on_died(killer_peer_id: int) -> void:
 	queue_free()
 
 
+## Where it is drawn (the host draws remote things a little back, see DisplayDelay).
+func drawn_position() -> Vector2:
+	return _body.global_position
+
+
+## The colour its death burst uses: its body tint (wave modifiers included).
+func burst_color() -> Color:
+	return _body.modulate
+
+
 ## Host: whether it has lost health (support enemies heal these).
 func is_wounded() -> bool:
 	return _health.current_health < _health.max_health

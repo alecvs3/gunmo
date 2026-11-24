@@ -740,3 +740,22 @@ checks it. No network format change.
 ### Known limitations
 - No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
 - Tried in a window by Yusuf. **Not verified:** a 2-player match.
+
+## Game feel: hit flash, damage numbers, death bursts, screen shake ✅ (issue #109)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Hit flash:** enemies and players flash bright when they lose health (healing and respawns don't). Every peer watches the health the host decided, so it needs no network data | Done, tested | `shared/feedback/hit_feedback.gd`, `enemies/chaser.tscn`, `player/player.tscn` |
+| **Damage numbers** pop from enemies, rise and fade; hits in the same frame add up. A hit taking 30%+ of the enemy's max health is a **big hit**: bigger and gold (a crit look, no randomness) | Done, tested | `shared/feedback/damage_number.gd`, `feedback_system.gd` |
+| **Death bursts:** a dying enemy bursts into pieces in its colour (wave modifier tint included), bigger for bosses. The host sends every client one small event (where, colour, size), so a match reset never sets off bursts | Done, tested | `shared/feedback/feedback_system.gd`, `death_burst.gd`, `levels/test_arena.tscn` |
+| **Screen shake** when your player is hit and when an explosion goes off near you (fades with distance) | Done, tested | `player/player_camera.gd` |
+| All tuning in one Resource | Done | `shared/feedback/data/default_feedback.tres` (`FeedbackData`) |
+
+Network: new event topic 2 (`FeedbackSystem.EVENT_DEATH`), `Handshake.PROTOCOL` 13 → 14.
+EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
+
+### Known limitations
+- No sounds yet (next issue), and no setting to turn screen shake off.
+- A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
+  where it last saw the enemy.
+- **Not verified:** how it feels in a window and in a 2-player match.
