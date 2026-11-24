@@ -46,6 +46,13 @@ func is_hittable() -> bool:
 	return monitorable and is_inside_tree()
 
 
+## Grows (or shrinks) the hit shape by `factor` (a boss's body_scale). Call after _ready.
+func scale_size(factor: float) -> void:
+	_radius *= factor
+	_half_extents *= factor
+	_shape_offset *= factor
+
+
 ## Where the shape's centre is now.
 func center() -> Vector2:
 	return global_position + _shape_offset

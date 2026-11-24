@@ -19,6 +19,7 @@ gameplay.
 | `hud.gd`, `gun_game_hud_text.gd` | In-match HUD. Text is built in static functions so it can be tested |
 | `scoreboard.gd` | Tab board and the results board, ranked by `Scoreboard.Row.ranks_above` |
 | `shop_panel.gd` | Emits EventBus `shop_purchase_requested`; the mode turns it into a request the host checks |
+| `boss_bar.gd` | Boss name, phase and health from the replicated boss (`Groups.BOSSES`), bottom centre |
 | `results_screen.gd`, `game_menu.gd`, `hurt_indicator.gd`, `net_overlay.gd` (F3) | |
 | `fullscreen_check.gd`, `ui_scale_option.gd` | Display choices in both menus (`GameSettings`) |
 | `view_mask.gd` | Bars over the world outside the fair view box (`player/fair_view.gd`), under the rest of the UI |

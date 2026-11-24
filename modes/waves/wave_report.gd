@@ -80,7 +80,7 @@ static func with_splits(type: EnemyData, depth: int = 0) -> Array[EnemyData]:
 ## The rows as a markdown table, one column per enemy type of the schedule.
 static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
 	var names := PackedStringArray()
-	for type in schedule.enemy_types:
+	for type in schedule.enemy_types + schedule.bosses:
 		if type != null and not names.has(type.display_name):
 			names.append(type.display_name)
 	var header := PackedStringArray(["Wave", "Budget", "Threat", "Enemies"])

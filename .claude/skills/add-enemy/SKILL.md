@@ -30,6 +30,14 @@ a range and a lead).
    play differently. Add to it. If wave budgets change, check `tests/modes/waves/test_wave_budget.gd`.
 4. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR.
 
+## A boss
+A boss is an `EnemyData` in `enemies/data/bosses/` with `phases` (`BossPhase`: a health
+threshold, a movement, an attack, a speed multiplier; first phase at 1.0, then lower), a big
+`body_scale`, and an entry in the schedule's `boss_waves` + `bosses`. Give its attacks a
+`windup` (telegraph: every peer sees a ring fill before it fires). `VolleyAttack` fires fans or
+rings, `SummonAttack` calls enemies. `ends_wave_on_death` makes its death end the wave (the
+final boss). The HUD's boss bar (`ui/boss_bar.gd`) finds it through `Groups.BOSSES`.
+
 ## A new behaviour (keeps distance, ranged, ...)
 - **Movement:** extend `EnemyMovement` (`enemies/behaviours/enemy_movement.gd`) and override
   `goal(own, target)`: the point to walk to (the enemy paths there). Pure, stateless.
