@@ -50,6 +50,9 @@ extends Resource
 ## Each time drawing runs out of snapshots the delay gets half a snapshot interval extra,
 ## which fades at this rate (seconds per second).
 @export_range(0.0, 1.0) var dry_boost_decay: float = 0.0
+## A client frame longer than this was a local freeze (loading, a hitch), not the network:
+## the snapshots read after it arrive bunched up, so the jitter measured so far is dropped.
+@export_range(0.02, 1.0) var local_stall_seconds: float = 0.1
 ## Clients re-sync their clock estimate when it is off by more than this many ticks.
 @export_range(1.0, 120.0) var clock_snap_ticks: float = 10.0
 ## How much of the clock error each snapshot corrects (0..1, small = smoother).

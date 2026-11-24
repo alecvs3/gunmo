@@ -70,6 +70,12 @@ static func stepped_delay(
 	return maxf(current - lower_rate * delta, target)
 
 
+## Whether a frame of `delta` seconds was this peer freezing (loading, a hitch) rather than
+## the network: snapshots read after it arrive together, which would look like jitter.
+static func is_local_stall(delta: float, threshold: float) -> bool:
+	return delta > threshold
+
+
 ## Runs before every other physics node, so the whole tick sees the same number.
 func _ready() -> void:
 	process_physics_priority = -100
@@ -82,6 +88,8 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	if _synced and not multiplayer.is_server():
+		if is_local_stall(delta, config.local_stall_seconds):
+			snapshot_jitter.reset()
 		_estimate += delta * tick_rate()
 		_adapt_delay(delta)
 		_check_hiccup()

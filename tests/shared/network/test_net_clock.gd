@@ -24,3 +24,10 @@ func test_repeated_observations_converge() -> void:
 func test_tick_helpers_match_project_settings() -> void:
 	assert_eq(NetClock.tick_rate(), Engine.physics_ticks_per_second)
 	assert_almost_eq(NetClock.tick_delta(), 1.0 / Engine.physics_ticks_per_second, 1e-9)
+
+
+func test_only_a_long_frame_is_a_local_stall() -> void:
+	var config: NetworkConfig = load("res://shared/network/default_network_config.tres")
+	# A slow 30 fps frame is still the network's business; a loading freeze is not.
+	assert_false(NetClock.is_local_stall(1.0 / 30.0, config.local_stall_seconds))
+	assert_true(NetClock.is_local_stall(0.18, config.local_stall_seconds))
