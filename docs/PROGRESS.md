@@ -846,6 +846,8 @@ levels); everything is close to maxed by wave 22. Left as it is.
 
 **Checked:** wave report before and after (only regeneration waves and boss waves change), all
 smoke scenarios, the 10-minute soak (numbers in the PR).
+Also: smoke E's quick ladder is 1 kill per gun now (was 2): with smarter bots, CI's slower
+machines sometimes ran out of time before anyone finished it.
 
 ### Not done: the playtests
 The roadmap's test for this step is two real playtests by Alex and Yusuf of a full run to wave

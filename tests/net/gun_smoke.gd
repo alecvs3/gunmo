@@ -1,7 +1,7 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless smoke test of Gun Game with a host, a client and two bots, using the quick match
-## (tests/net/data/quick_gun_game.tres: SMG, Rocket Launcher, SMG; 2 kills each, 1 on the
-## last, fill to 4).
+## (tests/net/data/quick_gun_game.tres: SMG, Rocket Launcher, SMG; 1 kill each; fill to 4;
+## on The Pit).
 ##   1. both sides see 4 players: the two humans by the names they chose, and 2 bots
 ##   2. the humans hold fire for a while: the bots must find and kill someone on their own
 ##   3. then everyone fights until someone finishes the ladder: both sides see VICTORY with
