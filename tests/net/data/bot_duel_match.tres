@@ -1,5 +1,6 @@
 [gd_resource type="Resource" script_class="MatchSettings" format=3]
 
+[ext_resource type="Resource" path="res://levels/data/outpost.tres" id="90_map"]
 [ext_resource type="Script" path="res://modes/match_settings.gd" id="1_match"]
 [ext_resource type="PackedScene" path="res://modes/gun_game/gun_game_mode.tscn" id="2_mode"]
 [ext_resource type="Resource" path="res://weapons/data/smg.tres" id="3_smg"]
@@ -10,6 +11,7 @@
 
 [resource]
 script = ExtResource("1_match")
+map = ExtResource("90_map")
 mode_scene = ExtResource("2_mode")
 bot_fill_to = 2
 ladder = Array[ExtResource("4_wdata")]([ExtResource("3_smg")])
