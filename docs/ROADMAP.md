@@ -128,7 +128,8 @@ balance at the end, when everything that affects balance exists.
 
 ## How testing stays fast and useful
 - **Every PR:** `.\tools\check.ps1` (import, GUT, lint, format; about a minute).
-- **Network changes:** add `-Smoke`. New checks go into the existing A–E scenarios where they
+- **Smoke scenarios:** `-Changed` runs the ones a branch needs (`tools/check_scope.json`); big
+  changes run all of them (`-Smoke`). New checks go into the existing A–E scenarios where they
   fit (those run in parallel), so the smoke test stays around 2 minutes.
 - **Pure logic is unit-tested:** budgets, composition, stacking, phases, timers and bot
   decisions live in pure functions so GUT tests them in milliseconds.

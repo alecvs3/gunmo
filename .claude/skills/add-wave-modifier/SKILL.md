@@ -34,4 +34,4 @@ scenarios).
 4. More than 8 modifiers means a wider mask: a network format change that bumps
    `Handshake.PROTOCOL` (`shared/network/handshake.gd`).
 
-Run `.\tools\check.ps1 -Smoke` (scenario D checks modifiers reach the client) and update `docs/PROGRESS.md`.
+Run `.\tools\check.ps1 -Changed` (scenario D checks modifiers reach the client) and update `docs/PROGRESS.md`.

@@ -82,7 +82,16 @@ wave modifier, networked field, client request or game mode. Use one when it fit
 - **Follow the roadmap.** `docs/ROADMAP.md` lists the next milestones and their steps in order, each with how to test it.
 - **Edit scene files carefully.** Keep `.tscn` diffs minimal and explain them. Never edit `project.godot`, `.import` files or `export_presets.cfg` without asking.
 - **Test logic.** Add or update tests for damage math, upgrade stacking, wave budgets, ladder progression and bot decisions.
-- **Before calling something done,** run the tests and the linter and report the results honestly. If you couldn't run the game or test multiplayer, say so.
+- **Before calling something done,** run the checks the change needs (see "Which checks to run") and report the results honestly, including which smoke scenarios ran and why. If you couldn't run the game or test multiplayer, say so.
+
+## Which checks to run
+Run only what a change can break; run everything for a big change.
+- **Always:** import, GUT, lint and format (`.\tools\check.ps1`, under a minute). They're cheap and catch most mistakes.
+- **Smoke scenarios:** `.\tools\check.ps1 -Changed` picks them from the files this branch changes, using `tools/check_scope.json` (each folder → the scenarios that exercise it), and prints why. Docs-only changes run none. Use it while working and before a PR.
+- **Everything** (`.\tools\check.ps1 -Smoke`) for a **big change**: netcode, autoloads, the player, `main.tscn`, `project.godot`, the mode base class, the check tools themselves, any file no rule covers, or more than 25 changed files. `-Changed` already picks "all" for these; run the full set yourself before calling one done. Add the `full-checks` label to such a PR.
+- **CI** does the same: a pull request runs the scoped scenarios (or all of them with the `full-checks` label), and every push to main runs all of them, so a miss is still caught.
+- **Timing scenarios (F, G, H) are unreliable with the Godot editor or a game open.** If one fails locally by a little, say so and let CI decide; don't loosen a budget for it.
+- **New folder or scenario?** Add it to `tools/check_scope.json` in the same PR (`tests/tools/test_check_scope.gd` fails for a folder with no rule).
 - **Ask instead of guessing.** Don't add addons or dependencies without asking.
 - **Explain what you did** in plain words, so both developers understand every change.
 - **Update `docs/PROGRESS.md`** in the same PR when a feature is finished or a known limitation is added or fixed.
@@ -93,7 +102,7 @@ wave modifier, networked field, client request or game mode. Use one when it fit
 - **Both review:** `autoloads/`, `shared/`, `modes/` base class, `main.tscn`, `project.godot`
 
 ## Commands
-- **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step. `-Smoke -Scenarios S` is the 10-minute soak test (opt-in: memory and node counts must not keep growing).
+- **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Changed` to run only the smoke scenarios this branch needs (`-Base <ref>`, default `origin/main`), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step. `-Smoke -Scenarios S` is the 10-minute soak test (opt-in: memory and node counts must not keep growing).
 - **Wave report:** `.\tools\wave_report.ps1` (`-Seed N`, `-Schedule res://...`) prints every wave's budget, enemies by type, health, peak alive and modifiers as a markdown table. Paste it before/after in any PR that changes wave balance.
 - Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 

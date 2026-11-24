@@ -28,5 +28,5 @@ plan first and wait for an OK.
 6. **Smoke test:** a scenario in `tests/net/` that extends `tests/net/smoke_script.gd` and plays a
    quick match to the end with a host and a client (copy `tests/net/gun_smoke.gd`, with a quick
    `.tres` in `tests/net/data/`). Add it to `tests/net/run_smoke.ps1`.
-7. Run `.\tools\check.ps1 -Smoke`, add a section to `docs/PROGRESS.md`, and write
+7. Add the mode's files to `tools/check_scope.json` (with a smoke scenario for it), run `.\tools\check.ps1 -Smoke` (a new mode is a big change), add a section to `docs/PROGRESS.md`, and write
    `modes/<mode>/` notes into `modes/CLAUDE.md`.

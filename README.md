@@ -20,7 +20,7 @@ this for you. Otherwise:
 ## Checks before opening a PR
 
 **One command for everything:** `.\tools\check.ps1` (import, tests, lint, format; about 15 s) or
-`.\tools\check.ps1 -Smoke` (also the multiplayer smoke test, about 2.5 more minutes; `-Scenarios A,E` runs only some). It prints only
+`.\tools\check.ps1 -Smoke` (also the multiplayer smoke test, about 2.5 more minutes; `-Scenarios A,E` runs only some), or `.\tools\check.ps1 -Changed` (only the smoke scenarios your branch needs, from `tools/check_scope.json`). It prints only
 what failed and why. `-Fix` formats first; `-Only tests|lint|format|smoke` runs one step.
 It finds Godot from `-Godot`, the `GODOT` environment variable, PATH, or `%LOCALAPPDATA%\Programs\Godot`,
 `C:\Tools\Godot`, `~\Godot`, `~\Downloads`.
@@ -53,7 +53,7 @@ Every kill counts toward your current gun; enough kills move you to the next one
 to finish the last gun wins. Hold **Tab** for the scoreboard (both modes). Your name (menu) is
 shown above your player and on the scoreboard. `-- --match res://tests/net/data/quick_gun_game.tres`
 hosts a short ladder with 2 bots.
-**CI:** every PR runs lint, format, GUT and the smoke test on GitHub Actions (`checks`).
+**CI:** every PR runs lint, format, GUT and the smoke scenarios its changes need on GitHub Actions (`checks`; the `full-checks` label runs all of them). Every push to main runs all of them.
 
 **In game:** the ping is in the top right (green/yellow/red), **F3** shows details for every
 player, **Esc** opens Resume / Leave match, **F11** or **Alt+Enter** toggles fullscreen (also a

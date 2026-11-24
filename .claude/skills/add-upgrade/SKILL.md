@@ -32,4 +32,4 @@ Area: **Alex** (`upgrades/`).
 4. Add a test in `tests/upgrades/test_player_stats.gd`.
 
 Upgrade levels are already in the player's snapshot, so no network change is needed.
-Run `.\tools\check.ps1 -Smoke` (scenario D is the shop) and update `docs/PROGRESS.md`.
+Run `.\tools\check.ps1 -Changed` (scenario D is the shop) and update `docs/PROGRESS.md`.
