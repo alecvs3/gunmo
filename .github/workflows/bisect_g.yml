@@ -1,0 +1,38 @@
+# Temporary: runs smoke scenario G (latency) four times on each listed commit, in parallel, and
+# prints its clean-phase metrics. Lives only on the bisect/g branch.
+name: bisect-g
+
+on:
+  push:
+    branches: [bisect/g]
+
+jobs:
+  g:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        commit: [872b7d2, 0654072, ba5d633, 71c300c, 4ad4acf, 63136d4, 720b8e2, c6e947a, bad8060, 27fcc0f]
+    env:
+      GODOT_VERSION: 4.7.2-stable
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.commit }}
+          lfs: true
+      - name: Download Godot
+        run: |
+          $zip = "Godot_v$($env:GODOT_VERSION)_win64.exe.zip"
+          Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$($env:GODOT_VERSION)/$zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
+          "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
+      - name: Import
+        run: .\tools\check.ps1 -Only import -LogDir "$env:RUNNER_TEMP\logs"
+      - name: G four times
+        run: |
+          foreach ($i in 1..4) {
+            $out = & .\tests\net\run_smoke.ps1 -Godot $env:GODOT -LogDir "$env:RUNNER_TEMP\g$i" -Only G *>&1 | ForEach-Object { "$_" }
+            $m = @($out | Select-String "clean_smoothing_p95_ms|clean_smoothing_excess_ms|clean_snapshot_jitter_ms|clean_smoothing_avg_ms" | ForEach-Object { ($_.Line -replace '\s+', ' ').Trim() })
+            Write-Host "BISECT ${{ matrix.commit }} run $i : $($m -join ' | ')"
+          }
