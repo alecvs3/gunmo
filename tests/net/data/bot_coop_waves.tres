@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WaveSchedule" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Resource" path="res://enemies/data/grunt.tres" id="2_grunt"]
+[ext_resource type="Resource" path="res://enemies/data/runner.tres" id="3_runner"]
+[ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="4_schedule"]
+
+[resource]
+script = ExtResource("4_schedule")
+total_waves = 3
+base_budget = 4.0
+budget_growth = 2.0
+budget_curve = 1.0
+first_spawn_interval = 0.4
+last_spawn_interval = 0.4
+max_alive = 10
+min_spawn_distance = 0.0
+first_modifier_wave = 99
+double_modifier_wave = 99
+enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_grunt"), ExtResource("3_runner")])

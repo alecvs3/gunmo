@@ -12,6 +12,8 @@ enum Phase { LOBBY, BREAK, ACTIVE, VICTORY, DEFEAT }
 
 ## NetChannel request topics (client -> host).
 const REQUEST_READY: int = 1
+## Bot profile when the match settings name none.
+const FALLBACK_BOT_PROFILE: String = "res://bots/profiles/normal.tres"
 
 var settings: MatchSettings
 var level: Level
@@ -113,6 +115,50 @@ func _on_player_killed(victim: Node2D, killer_id: int) -> Player:
 		return null
 	killer.get_score().kills += 1
 	return killer
+
+
+## Host: adds or removes bots so humans + bots = bot_fill_to (never removes humans).
+func _sync_bots() -> void:
+	var bots: Array[Player] = []
+	var humans: int = 0
+	for player in level.players():
+		if player.is_bot:
+			bots.append(player)
+		else:
+			humans += 1
+	var wanted: int = maxi(settings.bot_fill_to - humans, 0)
+	while bots.size() > wanted:
+		var leaving: Player = bots.pop_back()
+		_on_bot_removed(leaving.peer_id)
+		level.remove_player(leaving.peer_id)
+	while bots.size() < wanted:
+		bots.append(_add_bot())
+
+
+## Hooks: a bot joined (give it what a new player gets) or is about to leave.
+func _prepare_new_bot(_bot: Player) -> void:
+	pass
+
+
+func _on_bot_removed(_peer_id: int) -> void:
+	pass
+
+
+func _add_bot() -> Player:
+	var number: int = 1
+	while level.player(-number) != null:
+		number += 1
+	var profile: BotProfile = _bot_profile(number)
+	var name_text: String = "Bot %d · %s" % [number, profile.display_name]
+	var bot: Player = level.spawn_bot(-number, name_text, profile)
+	_prepare_new_bot(bot)
+	return bot
+
+
+func _bot_profile(number: int) -> BotProfile:
+	if settings.bot_profiles.is_empty():
+		return load(FALLBACK_BOT_PROFILE)
+	return settings.bot_profiles[(number - 1) % settings.bot_profiles.size()]
 
 
 ## Host: every player's score back to zero (a restart).

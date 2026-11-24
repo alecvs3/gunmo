@@ -50,7 +50,7 @@ $scenarios = @(
        Roles = @((Role "dedicated"), (Role "shooter" "60,10,0" -Late), (Role "observer" -Late)) },
     @{ Id = "C"; Title = "wave loop (ready-up, victory, restart, defeat)"; Alone = $false
        Script = "res://tests/net/wave_smoke.gd"; Metrics = ""
-       Roles = @((Role "wavehost"), (Role "waveclient")) },
+       Roles = @((Role "wavehost"), (Role "waveclient"), (Role "botwavehost")) },
     @{ Id = "D"; Title = "shop, credits, weapons, wave modifiers"; Alone = $false
        Script = "res://tests/net/shop_smoke.gd"; Metrics = ""
        Roles = @((Role "shophost"), (Role "shopclient")) },

@@ -69,3 +69,11 @@ func _update_wave(now: int, players: int, living: int, wave_done: bool) -> Event
 	phase = GameMode.Phase.BREAK
 	phase_end_tick = now + _break_ticks
 	return Event.WAVE_CLEARED
+
+
+## How many players count as ready: the humans who are, plus every bot once all humans are
+## (and there is at least one human).
+static func ready_with_bots(humans: int, humans_ready: int, bots: int) -> int:
+	if humans > 0 and humans_ready >= humans:
+		return humans_ready + bots
+	return humans_ready

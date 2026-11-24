@@ -683,7 +683,7 @@ budget 60), host tick p95 4.7 ms.
 - A boss's attack waits for its windup even if the target walks away; it then fires at where
   the target is.
 
-## M7 step 9: downed and revive (co-op) ✅ (issue #102)
+## M7 step 9: downed and revive (co-op) ✅ (merged, issue #102)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -701,3 +701,26 @@ Also: `project.godot` gets the `revive` input action (E).
 - Bots don't revive yet (step 10).
 - Reviving doesn't stop you moving or shooting; walking out of range interrupts it.
 - **Not verified:** how it feels in a window; the ring and the prompts' look.
+
+## M7 step 10: bots in co-op ✅ (issue #105)
+
+| Feature | Status | Where |
+|---|---|---|
+| Bots fill empty slots in Waves too (the menu's bot count now applies to co-op); the fill moved from Gun Game into the `GameMode` base | Done | `modes/game_mode.gd`, `modes/gun_game/gun_game_mode.gd`, `modes/wave_mode.gd`, `ui/main_menu.gd` |
+| **Most dangerous target:** a target's danger (an enemy's wave cost, 1 for a player) over its distance; equal danger = nearest, as before | Done, tested | `bots/bot_brain.gd`, `bots/bot_controller.gd` |
+| **Revive:** a bot walks to the nearest downed teammate within 900 px and holds revive next to them, still shooting | Done, tested | same |
+| **Stay with the team:** with nobody in sight it walks back to the team's centre when more than 320 px away, instead of roaming | Done, tested | same |
+| **Shopping:** between waves each bot buys one thing every half second: the dearest gun it can afford that beats its own, else the cheapest next upgrade (`BotShopping`, checked by the same `ShopRules`) | Done, tested | `bots/bot_shopping.gd`, `modes/wave_mode.gd` |
+| Bots are ready whenever every human is; a lobby of bots alone waits for its timer | Done, tested | `modes/waves/wave_flow.gd` |
+| Smoke **C** gets a third role: 1 human (never fires, can't be hurt) + 3 bots clear a quick 3-wave schedule; the host downs a bot and another bot revives it; the bots shopped | Done | `tests/net/wave_smoke.gd`, `tests/net/data/bot_coop_*.tres` |
+
+Also: bots replan a path only when their goal moves more than 64 px (the team centre moves
+every tick); the main menu's rows are 6 px apart (was 10) so it still fits at 768x432 with the
+bot count shown for Waves.
+
+No network format change.
+
+### Known limitations
+- Bots don't dodge, use cover or aim from the barrel yet (step 11).
+- Their shopping ignores what suits their style; the Rocket Launcher counts as "dearer, so better".
+- **Not verified:** whether they feel like useful teammates in a window.
