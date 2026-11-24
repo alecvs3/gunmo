@@ -14,6 +14,9 @@ extends Resource
 @export_range(0.5, 3.0) var budget_curve: float = 1.0
 ## Every enemy type the waves may buy.
 @export var enemy_types: Array[EnemyData] = []
+## Boss waves: bosses[i] comes first in wave boss_waves[i], paid from that wave's budget.
+@export var boss_waves: PackedInt32Array = []
+@export var bosses: Array[EnemyData] = []
 ## Share of the budget for each EnemyData.Role (frontline, ranged, swarm, support) in wave 1
 ## and in the last wave, blended in between. A role with no type available yet passes its share
 ## on to the others. Empty = everything frontline.
@@ -35,6 +38,12 @@ extends Resource
 
 func spawn_interval(wave: int) -> float:
 	return lerpf(first_spawn_interval, last_spawn_interval, progress(wave))
+
+
+## This wave's boss, or null.
+func boss_for(wave: int) -> EnemyData:
+	var at: int = boss_waves.find(wave)
+	return bosses[at] if at >= 0 and at < bosses.size() else null
 
 
 ## 0 in wave 1, 1 in the last wave.

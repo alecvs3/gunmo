@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="WeaponData" format=3]
+
+[ext_resource type="Script" path="res://weapons/weapon_data.gd" id="1_wdata"]
+
+[resource]
+script = ExtResource("1_wdata")
+display_name = "Boss bolt"
+damage = 15
+fire_rate = 1.0
+bullet_speed = 360.0
+bullet_lifetime = 2.4
+magazine_size = 1
+bullet_radius = 8.0
+knockback = 220.0
+projectile = 4

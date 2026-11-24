@@ -21,7 +21,7 @@ static func next_peer(living_peer_ids: Array[int], current: int) -> int:
 
 
 func _process(_delta: float) -> void:
-	if player.is_alive:
+	if player.is_alive or player.is_downed():
 		if _target != null:
 			_watch(null)
 		return
@@ -30,7 +30,7 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not player.is_alive and event.is_action_pressed("fire"):
+	if not player.is_alive and not player.is_downed() and event.is_action_pressed("fire"):
 		_watch(_next_after(_target.peer_id if _target != null else 0))
 
 

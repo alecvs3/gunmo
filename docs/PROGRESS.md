@@ -633,7 +633,7 @@ No network format change: the mask is still one byte (5 of 8 modifiers used).
   code (recipe `add-wave-modifier`).
 - **Not verified:** how a 3-modifier banner reads in a window.
 
-## M7 step 7: the wave curve to 25 ✅ (issue #98)
+## M7 step 7: the wave curve to 25 ✅ (merged, issue #98)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -654,6 +654,54 @@ tick p95 4.2 ms, client download 52.8 KB/s. Soak S (10 min): see the PR.
 - A bigger `max_alive` needs smaller enemy snapshots (bandwidth is the limit at 50).
 - **Not verified:** how the curve plays (step 15's playtests).
 
+## M7 step 8: bosses at waves 10, 20 and 25 ✅ (merged, issue #99)
+
+| Boss | Wave | Phases (health share where it starts) |
+|---|---|---|
+| **Brood Mother** (2400 hp) | 10 | Hungry (100%): bites · Brood (60%): hangs back, calls 4 Swarmers every 4 s (1.2 s warning) · Frenzy (25%): chases 1.7× faster |
+| **Warden** (5200 hp, armored) | 20 | Sentry: keeps range, fans of 5 bolts (0.8 s warning) · Lockdown (55%): chases, rings of 16 (1.2 s) · Overload (20%): fans of 7, fast (0.5 s) |
+| **Overlord** (9000 hp, armored) | 25 | Awakened: rings of 12 (1 s) · Summoner (66%): hangs back, calls 2 Shooters · Unbound (33%): chases, fans of 9 (0.6 s). **Killing it ends wave 25: the match is won** |
+
+| Framework | Where |
+|---|---|
+| `BossPhase` (health threshold, movement, attack, speed) on `EnemyData.phases`; the phase follows health on every peer (`BossPhase.index_for`, pure) | `enemies/behaviours/boss_phase.gd`, `enemies/enemy_data.gd`, `enemies/chaser.gd` |
+| **Telegraphed attacks:** `EnemyAttack.windup`. The enemy winds up first; the host sends how far (1 byte per enemy snapshot, protocol 12) and every peer draws a ring that fills before it fires | `enemies/chaser.gd`, `enemies/enemy_telegraph.gd`, `shared/network/states/enemy_net_state.gd` |
+| `VolleyAttack` (aimed fans, or rings that fire unseen) and `SummonAttack` (calls enemies through `enemy_split`, capped) | `enemies/behaviours/` |
+| Bosses are big: `body_scale` grows hitbox, touch area and body (`HitboxComponent.scale_size`) | `enemies/chaser.gd`, `shared/components/hitbox_component.gd` |
+| Boss waves: `WaveSchedule.boss_waves` + `bosses`; the boss comes first and is paid from the wave's budget. `ends_wave_on_death` stops the wave and clears its enemies | `modes/waves/wave_schedule.gd`, `wave_budget.gd`, `wave_spawner.gd` |
+| **Boss health bar:** name, phase and health, bottom centre, while a boss is alive | `ui/boss_bar.gd`, `ui/hud.tscn` |
+| Smoke **C** plays 3 waves: Splitter, Support, then a 2-phase boss; the host checks it reached phase 2 and its death won the match | `tests/net/wave_smoke.gd`, `tests/net/data/combo_boss.tres` |
+
+Protocol 12 (enemy snapshots 7 → 8 bytes). Smoke F: client download 55.3 KB/s (was 52.8;
+budget 60), host tick p95 4.7 ms.
+
+### Known limitations
+- **Not verified:** that 2 players can beat each boss (the roadmap's "done when"); the numbers
+  are a first guess for step 15's playtests. Only the smoke test's small boss was beaten.
+- The boss bar, the warning ring and the bosses' looks (tinted, scaled zombies) are not checked
+  in a window.
+- A boss's attack waits for its windup even if the target walks away; it then fires at where
+  the target is.
+
+## M7 step 9: downed and revive (co-op) ✅ (issue #102)
+
+| Feature | Status | Where |
+|---|---|---|
+| At 0 health during a wave a player **goes down** where they fell (greyed, enemies ignore them, can't act) instead of being out | Done, tested | `modes/wave_mode.gd`, `player/player.gd` |
+| A teammate within 70 px **holding E** (new `revive` action, `InputCommand.REVIVE`) fills a revive bar over 3 s; letting go or walking away empties it. Revived players come back with 30% health where they lie | Done, tested | `modes/waves/revive_rules.gd`, `modes/waves/downed_players.gd` |
+| **Bleed-out:** 20 s, paused while someone is reviving; then out until the break (as before) | Done, tested | same |
+| Everyone down = defeat (downed players don't count as living) | Done (WaveFlow unchanged) | `modes/waves/wave_flow.gd` |
+| Everyone sees it: `down_left` and `revive_progress` (1 byte each, also in the public form; protocol 13); a green ring fills over the downed player; HUD: "You're down · being revived 60%" for them, "Hold E to revive Yusuf" next to them | Done, tested | `shared/network/states/player_net_state.gd`, `player/player_net_sync.gd`, `ui/hud.gd` |
+| Numbers in `MatchSettings` (`bleed_out_seconds` 0 = off; Gun Game keeps it off) | Done | `modes/match_settings.gd`, `modes/data/default_match.tres` |
+| Smoke **C**: the host downs the client, teleports next to it and holds revive; the client sees itself go down and come back | Done | `tests/net/wave_smoke.gd` |
+
+Also: `project.godot` gets the `revive` input action (E).
+
+### Known limitations
+- Bots don't revive yet (step 10).
+- Reviving doesn't stop you moving or shooting; walking out of range interrupts it.
+- **Not verified:** how it feels in a window; the ring and the prompts' look.
+
 ## Shop rework: the see-through shop ✅ (issue #103)
 
 | Feature | Status | Where |
@@ -668,4 +716,4 @@ checks it. No network format change.
 
 ### Known limitations
 - No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
-- **Not verified:** how it looks and feels in a window, and in a 2-player match.
+- Tried in a window by Yusuf. **Not verified:** a 2-player match.

@@ -13,6 +13,8 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 @export var color: Color = Color.WHITE
 ## Drawn size (1 = the picture's size); looks only, the hitbox stays the same.
 @export_range(0.1, 4.0) var visual_scale: float = 1.0
+## Size of its hitbox, touch area and body (1 = a normal enemy's 32 px); bosses are bigger.
+@export_range(0.5, 4.0) var body_scale: float = 1.0
 @export_range(1, 100000) var max_health: int = 1
 ## Armor: damage it takes is multiplied by this (0.7 = 30% less). Stacks with wave modifiers.
 @export_range(0.05, 2.0) var damage_taken: float = 1.0
@@ -30,6 +32,13 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 ## with the wave's modifiers and count as enemies of the wave until killed.
 @export var split_into: EnemyData
 @export_range(0, 8) var split_count: int = 0
+
+@export_group("Boss")
+## A boss: its phases, first one first (BossPhase). While a phase is active its movement,
+## attack and speed replace the ones above. Empty = not a boss.
+@export var phases: Array[BossPhase] = []
+## Killing it ends the wave at once (the rest of the wave dies with it): the final boss.
+@export var ends_wave_on_death: bool = false
 
 @export_group("Knockback")
 ## How fast a push on this enemy dies down (px/s lost per second).
@@ -56,3 +65,24 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 @export_range(1, 12) var group_size: int = 1
 ## Credits for the player who kills it.
 @export_range(0, 100000) var bounty: int = 0
+
+
+func is_boss() -> bool:
+	return not phases.is_empty()
+
+
+## The movement, attack and speed multiplier of phase `index` (or the plain ones, not a boss).
+func movement_in(index: int) -> EnemyMovement:
+	if index < phases.size() and phases[index].movement != null:
+		return phases[index].movement
+	return movement
+
+
+func attack_in(index: int) -> EnemyAttack:
+	if index < phases.size() and phases[index].attack != null:
+		return phases[index].attack
+	return attack
+
+
+func speed_in(index: int) -> float:
+	return phases[index].speed_multiplier if index < phases.size() else 1.0

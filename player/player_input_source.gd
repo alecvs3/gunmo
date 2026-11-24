@@ -61,6 +61,8 @@ func _read_live_input(command: InputCommand) -> void:
 		command.buttons |= InputCommand.FIRE
 	if Input.is_action_pressed("reload"):
 		command.buttons |= InputCommand.RELOAD
+	if Input.is_action_pressed("revive"):
+		command.buttons |= InputCommand.REVIVE
 
 
 func _mouse_world_position() -> Vector2:

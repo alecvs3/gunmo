@@ -70,6 +70,7 @@ func _ready() -> void:
 	set_physics_process(multiplayer.is_server())
 	if multiplayer.is_server():
 		EventBus.enemy_split.connect(_on_enemy_split)
+		EventBus.enemy_killed.connect(_on_enemy_killed)
 
 
 ## Plans the wave (the same seed gives the same enemies) and starts releasing it. Every enemy
@@ -127,6 +128,14 @@ func _on_enemy_split(enemy: Node2D, into: Resource, count: int) -> void:
 		return
 	for at in split_positions(enemy.global_position, count):
 		_spawn(data, at, parent.modifier_mask)
+
+
+## Host: the final boss died, so the rest of its wave goes with it (the wave is won).
+func _on_enemy_killed(enemy: Node2D, _killer_peer_id: int) -> void:
+	var killed := enemy as ChaserEnemy
+	if _level != null and killed != null and killed.enemy_data.ends_wave_on_death:
+		stop()
+		_level.clear_enemies()
 
 
 func _pick_point() -> Vector2:

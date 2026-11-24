@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Script" path="res://enemies/behaviours/boss_phase.gd" id="2_phase"]
+[ext_resource type="Script" path="res://enemies/behaviours/melee_attack.gd" id="3_melee"]
+[ext_resource type="Script" path="res://enemies/behaviours/volley_attack.gd" id="4_volley"]
+[ext_resource type="Script" path="res://enemies/behaviours/summon_attack.gd" id="5_summon"]
+[ext_resource type="Script" path="res://enemies/behaviours/keep_distance_movement.gd" id="6_keep"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/chase.tres" id="7_chase"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/boss_bolt.tres" id="8_bolt"]
+[ext_resource type="Resource" path="res://enemies/data/shooter.tres" id="9_shooter"]
+
+[sub_resource type="Resource" id="Resource_ring"]
+script = ExtResource("4_volley")
+interval = 2.6
+windup = 1.0
+weapon = ExtResource("8_bolt")
+shots = 12
+spread_degrees = 360.0
+attack_range = 700.0
+muzzle_distance = 40.0
+
+[sub_resource type="Resource" id="Resource_back"]
+script = ExtResource("6_keep")
+min_distance = 380.0
+max_distance = 600.0
+retreat_margin = 60.0
+
+[sub_resource type="Resource" id="Resource_call"]
+script = ExtResource("5_summon")
+interval = 6.0
+windup = 1.5
+into = ExtResource("9_shooter")
+count = 2
+max_alive = 30
+
+[sub_resource type="Resource" id="Resource_wide"]
+script = ExtResource("4_volley")
+interval = 1.6
+windup = 0.6
+weapon = ExtResource("8_bolt")
+shots = 9
+spread_degrees = 90.0
+attack_range = 700.0
+muzzle_distance = 40.0
+
+[sub_resource type="Resource" id="Resource_p1"]
+script = ExtResource("2_phase")
+display_name = "Awakened"
+health_below = 1.0
+movement = ExtResource("7_chase")
+attack = SubResource("Resource_ring")
+speed_multiplier = 1.0
+
+[sub_resource type="Resource" id="Resource_p2"]
+script = ExtResource("2_phase")
+display_name = "Summoner"
+health_below = 0.66
+movement = SubResource("Resource_back")
+attack = SubResource("Resource_call")
+speed_multiplier = 1.0
+
+[sub_resource type="Resource" id="Resource_p3"]
+script = ExtResource("2_phase")
+display_name = "Unbound"
+health_below = 0.33
+movement = ExtResource("7_chase")
+attack = SubResource("Resource_wide")
+speed_multiplier = 1.3
+
+
+[resource]
+script = ExtResource("1_edata")
+display_name = "Overlord"
+color = Color(0.85, 0.4, 1, 1)
+visual_scale = 2.8
+body_scale = 2.5
+max_health = 9000
+damage_taken = 0.75
+move_speed = 80.0
+repath_interval = 0.3
+knockback_friction = 3000.0
+knockback_bounce = 0.1
+knockback_taken = 0.02
+flinch_degrees = 6.0
+cost = 40.0
+first_wave = 1
+spawn_weight = 1.0
+bounty = 2000
+ends_wave_on_death = true
+movement = ExtResource("7_chase")
+attack = SubResource("Resource_ring")
+phases = Array[ExtResource("2_phase")]([SubResource("Resource_p1"), SubResource("Resource_p2"), SubResource("Resource_p3")])

@@ -93,7 +93,7 @@ func test_default_schedule_shape() -> void:
 	var first: int = WaveBudget.plan(real, 1, _rng(1)).size()
 	var last: int = WaveBudget.plan(real, 25, _rng(1), 2.0).size()
 	assert_between(first, 4, 8, "wave 1 is a handful of grunts")
-	assert_between(last, 30, 90, "wave 25 is a crowd")
+	assert_between(last, 20, 90, "wave 25 is a crowd around its boss")
 	var previous: float = 0.0
 	for wave in range(1, 26):
 		assert_gt(WaveBudget.budget(real, wave), previous, "budgets grow every wave")
@@ -174,11 +174,14 @@ func test_default_curve_rises_every_wave_without_spikes() -> void:
 		step = grew
 
 
+## Boss waves spend much of their budget on the boss, so they may skip a role.
 func test_late_default_waves_have_every_role() -> void:
 	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	for seed_value in 10:
 		for row in WaveReport.build(real, catalog, seed_value).slice(19):
+			if real.boss_for(row.wave) != null:
+				continue
 			for name in ["Shooter", "Swarmer", "Support"]:
 				assert_gt(
 					row.counts.get(name, 0), 0, "seed %d wave %d %s" % [seed_value, row.wave, name]

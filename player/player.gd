@@ -9,6 +9,9 @@ extends CharacterBody2D
 
 ## How see-through a spawn-protected player is drawn.
 const PROTECTED_ALPHA: float = 0.45
+## Downed players are drawn greyed out.
+const DOWNED_TINT := Color(0.45, 0.45, 0.5, 0.8)
+const REVIVE_COLOR := Color(0.35, 1.0, 0.5, 0.9)
 
 @export var player_data: PlayerData
 
@@ -34,11 +37,26 @@ var is_protected: bool = false:
 		if is_node_ready():
 			_health.invulnerable = value
 			$Visual.modulate.a = PROTECTED_ALPHA if value else 1.0
-## Clients hide dead players too (it is replicated).
+## Clients hide dead players too (it is replicated). A downed player stays visible.
 var is_alive: bool = true:
 	set(value):
 		is_alive = value
-		visible = value
+		visible = value or down_left > 0
+## Co-op downed (replicated, set by the mode): bleed-out time left as a share (1..255; 0 = not
+## downed), and how full a teammate's revive is (0..255). Downed players lie greyed where
+## they fell, with the revive ring over them.
+var down_left: int = 0:
+	set(value):
+		down_left = value
+		visible = is_alive or value > 0
+		if is_node_ready():
+			$Visual.modulate = DOWNED_TINT if value > 0 else Color(1, 1, 1, $Visual.modulate.a)
+var revive_progress: int = 0:
+	set(value):
+		revive_progress = value
+		_revive_ring.progress = value / 255.0
+## Host: the buttons of the last command simulated (the mode reads REVIVE from it).
+var held_buttons: int = 0
 var teleport_count: int = 0
 ## The aim being simulated (the pivot's drawn rotation may lag behind it on the host).
 var aim: float = 0.0
@@ -47,6 +65,7 @@ var last_command: int = -1
 var move_velocity: Vector2 = Vector2.ZERO
 
 var _commands := CommandQueue.new()
+var _revive_ring := EnemyTelegraph.new()
 
 
 ## What the HUD shows about a player (hud_stats).
@@ -99,6 +118,8 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	_revive_ring.color = REVIVE_COLOR
+	add_child(_revive_ring)
 	_look.character = player_data.look_for(peer_id)
 	_hitbox.owner_id = peer_id
 	($NetEntity as NetEntity).owner_peer = peer_id
@@ -158,6 +179,7 @@ func _physics_process(_delta: float) -> void:
 ## already shown are not shown twice).
 func simulate(command: InputCommand, replaying: bool) -> void:
 	last_command = command.sequence
+	held_buttons = command.buttons
 	if not is_alive:
 		return
 	var delta: float = NetClock.tick_delta()
@@ -215,6 +237,31 @@ func make_spectator() -> void:
 	_set_alive(false)
 
 
+func is_downed() -> bool:
+	return down_left > 0
+
+
+## Host only: down at 0 health (co-op). Stays where it fell; enemies ignore it.
+func go_down() -> void:
+	down_left = 255
+	revive_progress = 0
+
+
+## Host only: a teammate revived us where we lie, with `health_share` of our max health.
+func revive_here(health_share: float) -> void:
+	down_left = 0
+	revive_progress = 0
+	_health.reset()
+	_health.set_health(roundi(_health.max_health * health_share))
+	_set_alive(true)
+
+
+## Host only: bled out; out of the fight until the break.
+func bleed_out() -> void:
+	down_left = 0
+	revive_progress = 0
+
+
 ## Host only.
 func respawn(at: Vector2) -> void:
 	position = at
@@ -224,6 +271,8 @@ func respawn(at: Vector2) -> void:
 	reset_physics_interpolation()
 	_display_delay.snap()
 	_health.reset()
+	down_left = 0
+	revive_progress = 0
 	_set_alive(true)
 
 
