@@ -136,19 +136,25 @@ func _strike_due(now: int) -> void:
 		var wizard: Array = wizard_of(owner)
 		if wizard[0] == null:
 			continue
-		for enemy: ChaserEnemy in strike[2]:
-			if is_instance_valid(enemy) and not enemy.is_queued_for_deletion():
-				var boss: bool = enemy.enemy_data.is_boss()
-				_deal(
-					enemy,
-					WizardRules.tempest_damage(wizard[0], enemy.max_health(), boss),
-					strike[1]
-				)
-				var sky: Vector2 = enemy.global_position + Vector2(0, -220)
-				PetEffects.broadcast(
-					PetEffects.Kind.ARC, PackedVector2Array([sky, enemy.global_position]), 0.0, 0.3
-				)
+		for enemy in still_standing(strike[2]):
+			var boss: bool = enemy.enemy_data.is_boss()
+			_deal(enemy, WizardRules.tempest_damage(wizard[0], enemy.max_health(), boss), strike[1])
+			var sky: Vector2 = enemy.global_position + Vector2(0, -220)
+			PetEffects.broadcast(
+				PetEffects.Kind.ARC, PackedVector2Array([sky, enemy.global_position]), 0.0, 0.3
+			)
 	_pending = still
+
+
+## The enemies a tempest marked that are still there when it strikes. Some die during the
+## warning, so each is checked before it is used as a ChaserEnemy: assigning a freed enemy
+## to a typed variable is itself an error (this crashed a two-player game on wave 22).
+static func still_standing(marked: Array) -> Array[ChaserEnemy]:
+	var standing: Array[ChaserEnemy] = []
+	for enemy: Variant in marked:
+		if is_instance_valid(enemy) and not (enemy as Node).is_queued_for_deletion():
+			standing.append(enemy as ChaserEnemy)
+	return standing
 
 
 func _deal(enemy: ChaserEnemy, damage: int, owner_id: int) -> void:
