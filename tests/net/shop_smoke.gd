@@ -52,6 +52,9 @@ func _run_host() -> void:
 	var pet_bought := func() -> bool: return _pet_of(client_id) == [WIZARD, 2]
 	await _wait_until(pet_bought, 15.0)
 	_check(pet_bought.call(), "client's pet not applied on the host: %s" % [_pet_of(client_id)])
+	# A Rally on the client that lasts the whole test (the way the Soldier pet gives one).
+	var soldier: RefCounted = _mode().get("_powers").get("_soldier")
+	soldier.get("_rallied")[client_id] = [1 << 30, 0.3]
 	_check(
 		bought.call(), "client's purchases not applied on the host: %s" % [_loadout_of(client_id)]
 	)
@@ -70,6 +73,12 @@ func _run_client() -> void:
 	await _wait_until(func() -> bool: return _own() != null and _state != null, 15.0)
 	await _buy_and_check()
 	await _buy_pet_and_check()
+	var loadout: Node = _own().get_node("PlayerLoadout")
+	var buffed := func() -> bool: return is_equal_approx(loadout.get("fire_rate_bonus"), 0.3)
+	await _wait_until(buffed, 5.0)
+	_check(buffed.call(), "the host's Rally never reached our own snapshot")
+	var rate: float = _own().get_node("WeaponComponent").weapon_data.fire_rate
+	_info("rallied fire rate %.2f" % rate)
 	await _refused_purchase_check("buying the gun already equipped", KIND_WEAPON, SHOTGUN)
 	var hits := root.get_node(_level_path() + "/ProjectileSystem")
 	hits.hit_confirmed.connect(func(_key: String, _at: Vector2) -> void: _confirmed += 1)

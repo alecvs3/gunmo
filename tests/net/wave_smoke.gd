@@ -16,6 +16,7 @@ extends "res://tests/net/smoke_script.gd"
 ## hurt, plus 3 bots, must clear a quick 3-wave schedule. The host downs a bot once; another
 ## bot must revive it. The bots must have spent credits between waves. The human votes to
 ## call every wave early once it can: at least one wave must start early (no break before it).
+## One bot gets a tier-5 Soldier: its pet's covering shots must show (pet effects).
 ## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient|botwavehost> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
@@ -23,6 +24,9 @@ const WATCHDOG_SECONDS: float = 110.0
 const MATCH_PATH: String = "res://tests/net/data/combo_match.tres"
 const BOT_MATCH_PATH: String = "res://tests/net/data/bot_coop_match.tres"
 const BOT_PORT_OFFSET: int = 50
+## PetCatalog index of the Soldier, and PetEffects.Kind.TRACER.
+const SOLDIER: int = 2
+const SOLDIER_TRACER: int = 8
 ## InputCommand.REVIVE.
 const REVIVE_BUTTON: int = 4
 ## Groups.BOSSES.
@@ -305,6 +309,13 @@ func _run_bot_coop() -> void:
 	var downed_one: bool = false
 	var revived_by_bot: bool = false
 	var victim: Node2D = null
+	var tracers: Array[int] = [0]
+	root.get_node("EventBus").pet_effect_shown.connect(
+		func(kind: int, _at: PackedVector2Array, _r: float, _s: float) -> void:
+			tracers[0] += 1 if kind == SOLDIER_TRACER else 0
+	)
+	for i in 5:
+		_bots()[0].get_node("PlayerLoadout").call("buy_pet_tier", SOLDIER)
 	var early_calls: int = 0
 	var last_wave: int = 0
 	var last_phase: int = -1
@@ -338,6 +349,8 @@ func _run_bot_coop() -> void:
 	_check(revived_by_bot, "no bot revived the downed bot during the wave")
 	_check(_bots_shopped(), "no bot spent credits in the shop")
 	_check(early_calls >= 1, "no wave was called early")
+	_check(tracers[0] > 0, "the bot's Soldier pet never fired")
+	_info("soldier pet shots: %d" % tracers[0])
 	_info("waves called early: %d" % early_calls)
 	_info("bots cleared the schedule, revived a teammate and shopped")
 	net.leave()

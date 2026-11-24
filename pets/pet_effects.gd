@@ -4,7 +4,7 @@ extends Node2D
 ## airstrikes). The host calls PetEffects.broadcast(): it shows here at once (EventBus
 ## pet_effect_shown) and goes to every client as a reliable NetChannel event. Looks only.
 
-enum Kind { HEAL, ARC, RUNE, HEX, STRIKE_WARNING, STRIKE, TEMPEST_WARNING }
+enum Kind { HEAL, ARC, RUNE, HEX, STRIKE_WARNING, STRIKE, TEMPEST_WARNING, RALLY, TRACER }
 
 ## NetChannel event topic (ProjectileSystem uses 1, the kill feed 3):
 ## [u8 kind, f32 radius, f32 seconds, u8 count, count x (f32, f32) points].
@@ -18,6 +18,8 @@ const COLORS: Dictionary = {
 	Kind.STRIKE_WARNING: Color(1, 0.45, 0.2),
 	Kind.STRIKE: Color(1, 0.85, 0.4),
 	Kind.TEMPEST_WARNING: Color(0.55, 0.75, 1),
+	Kind.RALLY: Color(1, 0.7, 0.35),
+	Kind.TRACER: Color(1, 0.9, 0.55),
 }
 
 
@@ -110,7 +112,7 @@ func _draw() -> void:
 				_draw_heal(shown, color)
 			Kind.ARC:
 				_draw_arc_chain(shown, color)
-			Kind.STRIKE_WARNING, Kind.STRIKE:
+			Kind.STRIKE_WARNING, Kind.STRIKE, Kind.TRACER:
 				_draw_strike(shown, color)
 			_:
 				_draw_ring(shown, color)
@@ -139,7 +141,7 @@ func _draw_arc_chain(shown: Shown, color: Color) -> void:
 
 
 func _draw_strike(shown: Shown, color: Color) -> void:
-	var width: float = maxf(shown.radius, 8.0)
+	var width: float = maxf(shown.radius, 2.0)
 	if shown.kind == Kind.STRIKE_WARNING:
 		var pulse: float = 0.35 + 0.25 * sin(shown.age * 20.0)
 		draw_line(shown.points[0], shown.points[1], Color(color, pulse), width)

@@ -18,6 +18,8 @@ const NOT_PUBLIC: Array[String] = [
 	"PlayerNetState.last_command",
 	"PlayerNetState.credits",
 	"PlayerNetState.upgrade_levels",
+	"PlayerNetState.buff_fire",
+	"PlayerNetState.buff_move",
 ]
 const KINDS: Array[int] = [NetKinds.PLAYER, NetKinds.ENEMY, NetKinds.MATCH]
 ## Integer fields packed into fewer bits: "Class.field" -> how many values fit.

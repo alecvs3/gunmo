@@ -35,6 +35,8 @@ func capture() -> PlayerNetState:
 	state.revive_progress = player.revive_progress
 	state.pet = loadout.pet_index + 1
 	state.pet_tier = loadout.pet_tier
+	state.buff_fire = roundi(loadout.fire_rate_bonus * 100.0)
+	state.buff_move = roundi(loadout.move_bonus * 100.0)
 	state.team_id = player.team_id
 	state.kills = score.kills
 	state.deaths = score.deaths
@@ -76,6 +78,7 @@ func restore(state: PlayerNetState) -> void:
 	player.teleport_count = state.teleport_count
 	player.last_command = state.last_command
 	player.is_alive = state.alive
+	loadout.set_buffs(state.buff_fire / 100.0, state.buff_move / 100.0)
 	_apply_shared(state)
 
 

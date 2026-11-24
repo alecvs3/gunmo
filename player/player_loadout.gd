@@ -15,6 +15,10 @@ var pets: PetCatalog = PetCatalog.load_default()
 ## Waves: the pet (index into the PetCatalog, -1 = none) and how many of its tiers are bought.
 var pet_index: int = -1
 var pet_tier: int = 0
+## Timed buffs from pets (0.15 = 15% more): fire rate and move speed. They change simulate(), so
+## the snapshot carries them to the predicting owner.
+var fire_rate_bonus: float = 0.0
+var move_bonus: float = 0.0
 var weapon_index: int = 0
 ## One level per catalog upgrade (fixed size, so it fits the snapshot).
 var levels := PackedByteArray()
@@ -64,6 +68,15 @@ func buy_pet_tier(index: int) -> void:
 		pet_tier = 1
 
 
+## Host (from pets) and clients (from snapshots): the buffs; recomputes the stats on a change.
+func set_buffs(fire_rate: float, move: float) -> void:
+	if is_equal_approx(fire_rate, fire_rate_bonus) and is_equal_approx(move, move_bonus):
+		return
+	fire_rate_bonus = fire_rate
+	move_bonus = move
+	_apply(false)
+
+
 ## The pet, or null.
 func pet() -> PetData:
 	return pets.pet(pet_index)
@@ -111,6 +124,7 @@ func current_weapon() -> WeaponData:
 
 func _apply(new_weapon: bool) -> void:
 	var stats: WeaponData = PlayerStats.effective_weapon(current_weapon(), catalog, levels)
+	stats.fire_rate *= 1.0 + fire_rate_bonus
 	if new_weapon:
 		weapon.equip(stats)
 	else:
@@ -119,4 +133,5 @@ func _apply(new_weapon: bool) -> void:
 	look.held_model = stats.held_model
 	if _base_player != null:
 		effective_player = PlayerStats.effective_player(_base_player, catalog, levels)
+		effective_player.move_speed *= 1.0 + move_bonus
 		health.max_health = effective_player.max_health

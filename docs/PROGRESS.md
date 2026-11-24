@@ -996,7 +996,7 @@ see its heals arrive.
 - Mending measures against the wave's planned enemy health (before modifiers and splits).
 - **Not verified:** how the heals look and feel in a window.
 
-## Pets & pacing 4: enemy status and the Wizard ✅ (issue #134)
+## Pets & pacing 4: enemy status and the Wizard ✅ (merged, issue #134)
 
 | Tier | What it does |
 |---|---|
@@ -1020,3 +1020,29 @@ tier-5 Wizard and the client must see its lightning or runes. Smoke F download 5
 ### Known limitations
 - Hex and runes don't check line of sight (they reach through walls).
 - **Not verified:** how the lightning, runes and marks look in a window.
+
+## Pets & pacing 5: player buffs and the Soldier ✅ (issue #136)
+
+| Tier | What it does |
+|---|---|
+| 1 Drill | You deal 8% more damage (10% from tier 2) |
+| 2 Rally | Every 12 kills, teammates within 400 px fire 15% faster for 6 s (you too from tier 4; 20% from tier 5) |
+| 3 Covering Fire | Every 0.8 s the pet shoots the nearest enemy within 350 px it can see, for 25% of your gun's damage (an instant tracer; the kill is yours) |
+| 4 Last Stand | While a teammate is down you deal 25% more damage and move 10% faster |
+| 5 Airstrike | 10 kills within 8 s call an airstrike: a 600 px line toward the thickest enemies, a 1.2 s warning, 300 + 20 per wave damage (a quarter on bosses) |
+
+| System | Where |
+|---|---|
+| **Player buffs:** fire rate and move speed on the loadout (`set_buffs`, applied to the effective stats) and in the owner's snapshot (`buff_fire`, `buff_move`, protocol 21), so the owner's prediction fires and moves at the host's speed | `player/player_loadout.gd`, `shared/network/states/player_net_state.gd`, `player/player_net_sync.gd` |
+| Damage bonus on the host only (`Player.damage_bonus` scales the shots it fires) | `player/player.gd` |
+| Pure rules and host powers; Rally from two Soldiers keeps the stronger | `pets/soldier_rules.gd`, `pets/soldier_powers.gd`, `pets/data/soldier.tres` |
+
+**Tests:** `tests/pets/test_soldier.gd` (every tier, the streak window, the strike line); smoke
+**C**: a bot with a tier-5 Soldier fights and its pet's shots must show (11 in a local run);
+smoke **D**: the host gives the client a Rally and its own snapshot must carry it (its shotgun
+then fires 1.69 shots a second, 1.3 × 1.3).
+
+### Known limitations
+- When a buff starts or ends, the owner's prediction can be off for one round trip (a small
+  correction), as for any state the host changes.
+- **Not verified:** how the tracers, rallies and airstrikes look and feel in a window.

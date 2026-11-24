@@ -14,11 +14,13 @@ var _mended: Dictionary = {}
 var _guarded: Dictionary = {}
 var _siphoned: Dictionary = {}
 var _wizard: WizardPowers
+var _soldier: SoldierPowers
 
 
 func _init(level: Level) -> void:
 	_level = level
 	_wizard = WizardPowers.new(level)
+	_soldier = SoldierPowers.new(level)
 
 
 ## The Healer data and tier a player has (tier 0 = no Healer).
@@ -49,13 +51,18 @@ static func show_heal(player: Player) -> void:
 
 func _ready() -> void:
 	EventBus.enemy_damaged.connect(_on_enemy_damaged)
+	EventBus.enemy_killed.connect(_on_enemy_killed)
 
 
 func _physics_process(_delta: float) -> void:
-	_wizard.tick(_level.players(), NetworkManager.clock.tick)
+	var players: Array[Player] = _level.players()
+	_wizard.tick(players, NetworkManager.clock.tick)
+	_soldier.tick(players, NetworkManager.clock.tick)
 
 
-func on_wave_started(planned_health: int) -> void:
+func on_wave_started(planned_health: int, wave: int = 0) -> void:
+	_soldier.wave = wave
+	_soldier.clear()
 	_dealt = 0
 	_wave_health = planned_health
 	_mended.clear()
@@ -100,6 +107,12 @@ func _on_enemy_damaged(enemy: Node2D, amount: int, source_id: int) -> void:
 	var any_healer: HealerData = _healer_data_any()
 	if any_healer != null and HealerRules.mending_ready(any_healer, _dealt, _wave_health):
 		_mend_everyone()
+
+
+func _on_enemy_killed(_enemy: Node2D, killer_id: int) -> void:
+	var killer: Player = _level.player(killer_id) if killer_id != 0 else null
+	if killer != null:
+		_soldier.on_kill(killer, NetworkManager.clock.tick)
 
 
 func _siphon(player: Player, amount: int) -> void:

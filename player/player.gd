@@ -60,6 +60,9 @@ var held_buttons: int = 0
 ## Which character it looks like (PlayerData.all_looks); picked by the host so nobody looks
 ## alike, sent once with the spawn. -1 = from the peer id.
 var look_index: int = -1
+## Host: extra damage from pets (0.1 = +10%) on the shots it fires; only the host's shots deal
+## damage, so nobody else needs it.
+var damage_bonus: float = 0.0
 var teleport_count: int = 0
 ## The aim being simulated (the pivot's drawn rotation may lag behind it on the host).
 var aim: float = 0.0
@@ -347,6 +350,9 @@ func _make_shot(command: InputCommand, origin: Vector2, shot_id: int) -> Shot:
 	shot.team = _hitbox.team
 	shot.fire_tick = NetworkManager.clock.server_tick_now()
 	shot.view_tick = command.view_tick
+	if multiplayer.is_server() and damage_bonus > 0.0:
+		shot.damage = roundi(shot.damage * (1.0 + damage_bonus))
+		shot.blast_damage = roundi(shot.blast_damage * (1.0 + damage_bonus))
 	return shot
 
 
