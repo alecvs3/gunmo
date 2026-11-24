@@ -11,6 +11,8 @@ const DATA_FOLDER: String = "res://enemies/data/"
 const TEAM: StringName = &"enemies"
 ## Walls, for line of sight.
 const WORLD_MASK: int = 1
+## Tint on top of its colour while slowed.
+const FROSTED := Color(0.65, 0.85, 1.3)
 
 ## How fast the sprite turns towards its facing (higher = snappier). Looks only.
 @export_range(1.0, 60.0) var turn_rate: float = 12.0
@@ -24,6 +26,8 @@ const WORLD_MASK: int = 1
 var data_path: String = ""
 ## The wave's modifiers (ModifierCatalog bitmask); set before spawning, synced once.
 var modifier_mask: int = 0
+## Host: slowed and hexed by pets (EnemyStatus). Clients: the flags from the snapshot.
+var status := EnemyStatus.new()
 
 var _attack_cooldown_left: float = 0.0
 var _shots_fired: int = 0
@@ -34,6 +38,8 @@ var _windup_left: float = 0.0
 var _windup_total: float = 0.0
 ## Every peer: the ring that shows a windup (the host's own, or from snapshots).
 var _telegraph := EnemyTelegraph.new()
+var _status_flags: int = 0
+var _base_damage_taken: float = 1.0
 var _repath_left: float = 0.0
 var _speed: float = 0.0
 var _regen_per_second: float = 0.0
@@ -78,6 +84,9 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_regenerate(delta)
+	var now: int = NetworkManager.clock.tick
+	_health.damage_taken_multiplier = _base_damage_taken * status.damage_factor(now)
+	_show_status(status.flags(now))
 	_phase = phase_index()
 	var target: Node2D = _find_nearest_target()
 	_move(target, delta)
@@ -97,6 +106,7 @@ func capture_net_state() -> NetState:
 	state.health = _health.current_health
 	state.facing = EnemyNetState.to_facing(_facing_target)
 	state.telegraph = EnemyNetState.to_telegraph(_windup_left, _windup_total)
+	state.status = status.flags(NetworkManager.clock.tick)
 	return state
 
 
@@ -105,8 +115,22 @@ func apply_net_state(state: NetState) -> void:
 	position = enemy_state.position
 	_health.apply_replicated(enemy_state.health)
 	_facing_target = EnemyNetState.facing_angle(enemy_state.facing)
-	_telegraph.progress = enemy_state.telegraph / 255.0
+	_telegraph.progress = enemy_state.telegraph / float(EnemyNetState.TELEGRAPH_STEPS)
+	_show_status(enemy_state.status)
 	visible = true
+
+
+## Every peer: slowed enemies look frosty, hexed ones wear a purple mark.
+func _show_status(flags: int) -> void:
+	if flags == _status_flags:
+		return
+	_status_flags = flags
+	_body.self_modulate = FROSTED if flags & EnemyStatus.FLAG_SLOWED else Color.WHITE
+	_telegraph.hexed = flags & EnemyStatus.FLAG_HEXED != 0
+
+
+func hitbox() -> HitboxComponent:
+	return $HitboxComponent
 
 
 ## Share of its health left (0..1), on every peer (clients get health in snapshots).
@@ -125,7 +149,8 @@ func _move(target: Node2D, delta: float) -> void:
 		var movement: EnemyMovement = enemy_data.movement_in(_phase)
 		var goal: Vector2 = movement.goal(global_position, target.global_position)
 		if global_position.distance_squared_to(goal) > 1.0:
-			chase = _direction_towards(goal, delta) * _speed * enemy_data.speed_in(_phase)
+			var slow: float = status.speed_factor(NetworkManager.clock.tick)
+			chase = _direction_towards(goal, delta) * _speed * enemy_data.speed_in(_phase) * slow
 	velocity = chase + _knockback.velocity
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
@@ -170,7 +195,10 @@ func _attack(target: Node2D, delta: float) -> void:
 		if _windup_left <= 0.0:
 			_attack_cooldown_left = attack.interval
 			attack.perform(self, target, _touching_hitboxes())
-		_telegraph.progress = EnemyNetState.to_telegraph(_windup_left, _windup_total) / 255.0
+		_telegraph.progress = (
+			EnemyNetState.to_telegraph(_windup_left, _windup_total)
+			/ float(EnemyNetState.TELEGRAPH_STEPS)
+		)
 		return
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	if _attack_cooldown_left > 0.0:
@@ -272,7 +300,8 @@ func _apply_modifiers(combined: WaveModifier) -> void:
 	_body.modulate = tinted
 	_body.scale = Vector2.ONE * enemy_data.visual_scale
 	_health.max_health = combined.scaled_health(enemy_data.max_health)
-	_health.damage_taken_multiplier = combined.damage_taken_multiplier * enemy_data.damage_taken
+	_base_damage_taken = combined.damage_taken_multiplier * enemy_data.damage_taken
+	_health.damage_taken_multiplier = _base_damage_taken
 	_speed = enemy_data.move_speed * combined.speed_multiplier
 	_regen_per_second = combined.regen_per_second
 

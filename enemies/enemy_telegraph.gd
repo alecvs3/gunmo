@@ -13,9 +13,21 @@ var progress: float = 0.0:
 			queue_redraw()
 ## Ring radius (px); bosses scale it with their body.
 var radius: float = 30.0
+## A Wizard's hex: a purple diamond above it.
+var hexed: bool = false:
+	set(value):
+		if value != hexed:
+			hexed = value
+			queue_redraw()
 
 
 func _draw() -> void:
+	if hexed:
+		var top := Vector2(0, -radius * 1.9)
+		var mark := PackedVector2Array(
+			[top + Vector2(0, -9), top + Vector2(7, 0), top + Vector2(0, 9), top + Vector2(-7, 0)]
+		)
+		draw_colored_polygon(mark, Color(0.8, 0.4, 1, 0.9))
 	if progress <= 0.0:
 		return
 	draw_arc(Vector2.ZERO, radius * 1.4, 0.0, TAU, 48, Color(color, 0.25), 3.0)

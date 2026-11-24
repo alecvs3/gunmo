@@ -1,6 +1,6 @@
-[gd_resource type="Resource" script_class="PetData" format=3]
+[gd_resource type="Resource" script_class="WizardData" format=3]
 
-[ext_resource type="Script" path="res://pets/pet_data.gd" id="1_pet"]
+[ext_resource type="Script" path="res://pets/wizard_data.gd" id="1_pet"]
 [ext_resource type="Script" path="res://pets/pet_tier.gd" id="2_tier"]
 
 [sub_resource type="Resource" id="Tier_1"]
@@ -40,4 +40,30 @@ role = "Control"
 blurb = "Hits many enemies at once and links them together: slow them, they conduct, mark the big one, then it all chains."
 kind = 1
 color = Color(0.5, 0.65, 1, 1)
+arc_chance = 0.15
+arc_chance_upgraded = 0.2
+arc_jumps = 2
+arc_jumps_upgraded = 3
+arc_radius = 140.0
+arc_damage_share = 0.4
+arc_cooldown = 1.0
+rune_interval = 8.0
+rune_interval_upgraded = 6.0
+rune_radius = 110.0
+rune_reach = 450.0
+rune_slow = 0.35
+rune_seconds = 3.0
+conduction_bonus = 0.25
+conduction_extra_jumps = 1
+hex_interval = 12.0
+hex_interval_upgraded = 7.0
+hex_reach = 600.0
+hex_bonus = 0.2
+hex_seconds = 5.0
+tempest_interval = 25.0
+tempest_warning = 1.0
+tempest_bolts = 6
+tempest_reach = 400.0
+tempest_share = 0.08
+tempest_boss_share = 0.02
 tiers = Array[ExtResource("2_tier")]([SubResource("Tier_1"), SubResource("Tier_2"), SubResource("Tier_3"), SubResource("Tier_4"), SubResource("Tier_5")])

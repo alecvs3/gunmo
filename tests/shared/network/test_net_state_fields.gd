@@ -20,6 +20,8 @@ const NOT_PUBLIC: Array[String] = [
 	"PlayerNetState.upgrade_levels",
 ]
 const KINDS: Array[int] = [NetKinds.PLAYER, NetKinds.ENEMY, NetKinds.MATCH]
+## Integer fields packed into fewer bits: "Class.field" -> how many values fit.
+const NARROW: Dictionary = {"EnemyNetState.status": 4, "EnemyNetState.telegraph": 64}
 
 var _rng := RandomNumberGenerator.new()
 
@@ -70,6 +72,9 @@ func _fill(state: NetState) -> Array[String]:
 		if "%s.%s" % [_class_name(state), field] in LOCAL_ONLY:
 			continue
 		var value: Variant = _value_unlike(state.get(field))
+		var label: String = "%s.%s" % [_class_name(state), field]
+		if NARROW.has(label):
+			value = 1 + int(value) % (NARROW[label] - 1)
 		assert_ne(
 			value, state.get(field), "%s.%s got a different value" % [_class_name(state), field]
 		)
