@@ -29,6 +29,9 @@ reloading are `shared/components/weapon_component.gd`.
   its front end at the muzzle (`models/*.tscn`: one per gun), set
   by `player/player_look.gd`. It must cover the gun painted into the character picture for
   its pose, on every character in `player/looks/`.
+- `WeaponData.fire_sound` (a `SoundCue`, `shared/feedback/data/guns/`) plays once per trigger
+  pull on every peer: `projectile_system.gd` emits EventBus `shot_shown` for each bullet it
+  spawns, and the FeedbackSystem plays the shooter's gun for the first pellet only.
 - `blast_radius` + `blast_damage`: where the shot lands (a hit, a wall or the end of its range)
   the host runs `explosion.gd` (everyone else in the radius takes the blast and is pushed
   away; never the shooter or teammates) and tells every peer (`EVENT_BLAST`), who draws

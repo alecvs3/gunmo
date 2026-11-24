@@ -19,6 +19,8 @@ var _banner_left: float = 0.0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
 ## Gun Game: the tier our player was on last frame (-1 = unknown), for the next-gun banner.
 var _last_tier: int = -1
+var _sounds: SoundData = SoundData.load_default()
+var _sound := SoundPlayback.new()
 
 @onready var _health_bar: ProgressBar = %HealthBar
 @onready var _health_label: Label = %HealthLabel
@@ -74,6 +76,7 @@ static func banner_for(previous_phase: int, previous_wave: int, state: MatchNetS
 func _ready() -> void:
 	hide()
 	_banner.hide()
+	add_child(_sound)
 	EventBus.match_state_changed.connect(_on_match_state_changed)
 	EventBus.local_ready_changed.connect(func(is_ready: bool) -> void: _local_ready = is_ready)
 	EventBus.spectating_changed.connect(func(peer_id: int) -> void: _spectating = peer_id)
@@ -211,3 +214,4 @@ func _gun_game_banner(state: MatchNetState) -> String:
 func _show_banner(text: String) -> void:
 	_banner.text = text
 	_banner_left = BANNER_SECONDS
+	_sound.play(_sounds.banner)

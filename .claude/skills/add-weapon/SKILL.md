@@ -27,6 +27,10 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
      and check it on every character). `projectile` (BULLET, ROCKET, PELLET or RIFLE_ROUND)
      picks what flies. A new projectile look = a new scene, a new value at the END of
      `WeaponData.Projectile` and an entry in `PROJECTILE_SCENES` (`weapons/projectile_system.gd`).
+   - **Sound:** set `fire_sound` to a `SoundCue` in `shared/feedback/data/guns/` (a new kind of
+     gun can share one, e.g. any rifle uses `rifle_shot.tres`). A new sound file goes in
+     `assets/pixabay_sounds/` with its source in that folder's README. Every shop gun needs one
+     (`tests/shared/feedback/test_sounds.gd` checks).
 4. **Needs a new mechanic** (burst, charge...)?
    - Add an `@export` field to `WeaponData` and use it in `shared/components/weapon_component.gd`
      or `weapons/bullet.gd`.

@@ -879,3 +879,27 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
   where it last saw the enemy.
 - Tried in a window by Yusuf (test arena). **Not verified:** a 2-player match, and the new maps by eye.
+
+## Sounds: hits, kills, explosions, shop and banners ✅ (issue #114)
+
+| Feature | Status | Where |
+|---|---|---|
+| **World sounds**, placed where they happen (louder near your camera): enemy death (thud), explosions, gunshots. Hits are silent for now: the punch sounded like a drum, none of the Kenney or generated options fit, and a tin clank on big hits played on nearly every hit (see below) | Done | `shared/feedback/feedback_system.gd` |
+| Your player hit (a short metal clink) | Done | `shared/feedback/feedback_system.gd` |
+| **Shop:** open/close, a click when you ask to buy, coins when the host confirms the purchase | Done | `ui/shop_panel.gd` |
+| **HUD banners** (wave started/cleared, Gun Game next gun) play a chime | Done | `ui/hud.gd` |
+| Every play picks a random variant and nudges the pitch; at most N of one sound at once (an SMG into a crowd stays readable); silent on headless peers | Done, tested | `shared/feedback/sound_playback.gd`, `sound_cue.gd` |
+| All picks and volumes in one Resource | Done, tested | `shared/feedback/data/default_sounds.tres` (`SoundData`) |
+| **Gunshots:** every gun has its own sound (`WeaponData.fire_sound`, a `SoundCue` in `shared/feedback/data/guns/` that future guns can share): pistol (3 variants of one creator's shot; two others sounded different and were dropped), SMG (only the first shot of a P90 burst, quieter so fast fire stays clear), shotgun, rifle (3 variants), rocket launcher (an RPG-7 whoosh). One bang per trigger pull, not per pellet; enemies' shots are silent. Every peer hears every gun where it fires | Done, tested | `shared/feedback/feedback_system.gd`, `weapons/projectile_system.gd` (EventBus `shot_shown`) |
+| **Explosions** use one Pixabay boom (two alternating sounded odd); **boss deaths** play a monster death grunt (normal enemies keep the quiet thud). The death event carries a boss flag: `Handshake.PROTOCOL` 15 → 16 | Done, tested | `shared/feedback/data/default_sounds.tres`, `feedback_system.gd` |
+| 11 sounds Yusuf picked on Pixabay (free, no credit required), saved as trimmed WAVs: the downloads started with up to 1.3 s of silence (the SMG played nothing at all, the shotgun fired late), so a one-off Godot script decoded each one (directly: a first try recorded them live, which dropped chunks and cut into the start of the pistol shots, making them sound fluttery), cut the silence and long tails and evened out the loudness, keeping stereo. Sources in the folder's README | Done | `assets/pixabay_sounds/` |
+| 19 sounds from Kenney's CC0 packs (Impact Sounds, Interface Sounds, RPG Audio) | Done | `assets/kenney_sounds/` |
+
+### Known limitations
+- No sound on hits yet (to decide once the guns are heard together; idea: a quiet tick for your own hits).
+- The files are levelled to the same loudness; each gun's `volume_db` (in its `.tres`) sets how
+  loud it is against the others (Yusuf turned the rifle and shotgun down 6 dB by ear).
+- Gold "big hit" numbers were too common at 30% of max health (one pistol shot is 33% of a grunt);
+  now 50% of the enemy's starting health (#109).
+- No volume setting; everything plays on the Master bus.
+- Tried in a window by Yusuf (every gun, explosions). **Not verified:** a 2-player match, boss deaths.

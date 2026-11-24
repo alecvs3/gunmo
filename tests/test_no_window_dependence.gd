@@ -28,6 +28,7 @@ const ALLOWED: Dictionary = {
 	"res://player/player_camera.gd": "zooms to the fair view box (FairView)",
 	"res://modes/game_mode.gd": "marks the ready key as handled",
 	"res://shared/network/net_log.gd": "skips log files when headless",
+	"res://shared/feedback/sound_playback.gd": "stays silent when headless (sounds only)",
 	"res://shared/window_rules.gd": "the window's own rules (modes, size), used by GameSettings",
 }
 

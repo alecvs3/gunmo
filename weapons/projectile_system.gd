@@ -70,6 +70,7 @@ func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
 		bullet.hit_landed.connect(_on_bullet_hit_explode)
 	_bullets[shot.key()] = bullet
 	projectiles_root.add_child(bullet)
+	EventBus.shot_shown.emit(shot)
 
 
 func _on_bullet_finished(

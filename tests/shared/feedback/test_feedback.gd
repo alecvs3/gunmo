@@ -70,22 +70,33 @@ func test_shake_offset_grows_with_the_square() -> void:
 
 func test_death_event_round_trip() -> void:
 	var color := Color(0.8, 0.2, 0.4, 1.0)
-	var payload: PackedByteArray = FeedbackSystem.encode_death(Vector2(10, -20), color, 2.5)
+	var payload: PackedByteArray = FeedbackSystem.encode_death(Vector2(10, -20), color, 2.5, true)
 	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload)
 	assert_eq(buffer.get_u8(), FeedbackSystem.EVENT_DEATH)
 	var death: Array = FeedbackSystem.decode_death(buffer)
 	assert_eq(death[0], Vector2(10, -20))
 	assert_eq((death[1] as Color).to_rgba32(), color.to_rgba32())
 	assert_almost_eq(death[2], 2.5, 0.001)
+	assert_true(death[3], "a boss")
 
 
 func test_bad_death_events_are_dropped() -> void:
 	assert_eq(FeedbackSystem.decode_death(NetCodec.buffer_from(PackedByteArray([1, 2]))), [])
-	var payload: PackedByteArray = FeedbackSystem.encode_death(Vector2(INF, 0), Color.RED, 1.0)
+	var payload: PackedByteArray = FeedbackSystem.encode_death(
+		Vector2(INF, 0), Color.RED, 1.0, false
+	)
 	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload)
 	buffer.get_u8()
 	assert_eq(FeedbackSystem.decode_death(buffer), [], "not a real place")
-	payload = FeedbackSystem.encode_death(Vector2.ZERO, Color.RED, 999.0)
+	payload = FeedbackSystem.encode_death(Vector2.ZERO, Color.RED, 999.0, false)
 	buffer = NetCodec.buffer_from(payload)
 	buffer.get_u8()
 	assert_eq(FeedbackSystem.decode_death(buffer)[2], FeedbackSystem.MAX_BURST_SCALE, "capped")
+
+
+func test_one_gunshot_per_trigger_pull() -> void:
+	var first: int = Shot.make_id(40, 0)
+	assert_true(FeedbackSystem.plays_gunshot(2, first), "a player's shot")
+	assert_true(FeedbackSystem.plays_gunshot(-3, first), "a bot's shot")
+	assert_false(FeedbackSystem.plays_gunshot(2, Shot.make_id(40, 3)), "another shotgun pellet")
+	assert_false(FeedbackSystem.plays_gunshot(Shot.enemy_shooter_id(7), first), "an enemy")
