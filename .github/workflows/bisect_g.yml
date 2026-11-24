@@ -1,5 +1,6 @@
-# Temporary: runs smoke scenario G (latency) four times on each listed commit, in parallel, and
-# prints its clean-phase metrics. Lives only on the bisect/g branch.
+# Temporary: an A/B of smoke scenario G (latency) on the same machine. Each job checks out the
+# code from before today (base) and the code under test (main, with one variant change) side by
+# side and alternates G runs between them, so the machine's speed cancels out.
 name: bisect-g
 
 on:
@@ -9,17 +10,23 @@ on:
 jobs:
   g:
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        variant: [control, no_effects, no_panel, no_follower, none]
+        variant: [control, no_effects, no_panel, no_follower, none, pets_131]
     env:
       GODOT_VERSION: 4.7.2-stable
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 27fcc0f9f59ffe0edbd04bb922f96de8a1e2c907
+          ref: 0654072587b91ee7475fa671cf6572fcce1caf5d
+          path: base
+          lfs: true
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.variant == 'pets_131' && '4ad4acfdd621bac16cbbc0b3fd4baccc3b4f4963' || '27fcc0f9f59ffe0edbd04bb922f96de8a1e2c907' }}
+          path: test
           lfs: true
       - name: Download Godot
         run: |
@@ -27,7 +34,8 @@ jobs:
           Invoke-WebRequest "https://github.com/godotengine/godot/releases/download/$($env:GODOT_VERSION)/$zip" -OutFile $zip
           Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\godot"
           "GODOT=$env:RUNNER_TEMP\godot\Godot_v$($env:GODOT_VERSION)_win64_console.exe" | Out-File $env:GITHUB_ENV -Append
-      - name: Remove the suspect
+      - name: Variant
+        working-directory: test
         run: |
           $v = "${{ matrix.variant }}"
           if ($v -eq "no_effects" -or $v -eq "none") {
@@ -40,12 +48,16 @@ jobs:
             (Get-Content player/player.gd -Raw).Replace("`tadd_child(PetFollower.new())`n", "") | Set-Content player/player.gd -NoNewline
           }
           git diff --stat
-      - name: Import
-        run: .\tools\check.ps1 -Only import -LogDir "$env:RUNNER_TEMP\logs"
-      - name: G four times
+      - name: Import both
+        run: |
+          .\base\tools\check.ps1 -Only import -LogDir "$env:RUNNER_TEMP\ib"
+          .\test\tools\check.ps1 -Only import -LogDir "$env:RUNNER_TEMP\it"
+      - name: Alternate G runs
         run: |
           foreach ($i in 1..4) {
-            $out = & .\tests\net\run_smoke.ps1 -Godot $env:GODOT -LogDir "$env:RUNNER_TEMP\g$i" -Only G *>&1 | ForEach-Object { "$_" }
-            $m = @($out | Select-String "clean_smoothing_p95_ms|clean_smoothing_excess_ms|clean_snapshot_jitter_ms|clean_smoothing_avg_ms" | ForEach-Object { ($_.Line -replace '\s+', ' ').Trim() })
-            Write-Host "BISECT ${{ matrix.variant }} run $i : $($m -join ' | ')"
+            foreach ($side in @("base", "test")) {
+              $out = & ".\$side\tests\net\run_smoke.ps1" -Godot $env:GODOT -LogDir "$env:RUNNER_TEMP\$side$i" -Only G *>&1 | ForEach-Object { "$_" }
+              $m = @($out | Select-String "clean_smoothing_p95_ms|clean_smoothing_excess_ms" | ForEach-Object { ($_.Line -replace '\s+', ' ').Trim() })
+              Write-Host "AB ${{ matrix.variant }} $side $i : $($m -join ' | ')"
+            }
           }
