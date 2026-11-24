@@ -38,6 +38,8 @@ var _own_positions: Dictionary = {}
 var _hurt_pending: int = 0
 var _fair: int = 0
 var _unfair: int = 0
+## Host: enemy bolts fired (shooter ids at or below ENEMY_SHOOTER_BASE).
+var _enemy_bolts: int = 0
 var _enemy_fair: int = 0
 var _enemy_unfair: int = 0
 
@@ -61,6 +63,7 @@ func _run_host() -> void:
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
 	await create_timer(3.0).timeout
+	root.get_node("EventBus").shot_fired.connect(_count_enemy_bolt)
 	_spawn_spitters()
 	while net.peers.size() >= 2:
 		for player: Node in _players():
@@ -79,8 +82,14 @@ func _run_host() -> void:
 			# On the bots' team, so the bots keep hunting the client instead of the spitters.
 			enemy.get_node("HitboxComponent").team = StringName("team_%d" % BOT_TEAM)
 		await process_frame
+	_info("spitters alive %d, enemy bolts fired %d" % [_enemies().size(), _enemy_bolts])
 	net.leave()
 	await create_timer(0.5).timeout
+
+
+func _count_enemy_bolt(shot: RefCounted) -> void:
+	if shot.get("shooter_id") <= ENEMY_SHOOTER_BASE:
+		_enemy_bolts += 1
 
 
 func _run_client() -> void:
