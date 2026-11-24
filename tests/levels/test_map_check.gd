@@ -54,6 +54,16 @@ func test_the_check_catches_a_spawn_inside_a_wall() -> void:
 	assert_has(found, "RespawnPoints/InPillar is inside a wall")
 
 
+func test_the_check_catches_a_missing_system() -> void:
+	var arena: Level = load(MAPS_FOLDER + "test_arena.tres").scene.instantiate()
+	add_child_autofree(arena)
+	assert_eq(MapCheck.missing_systems(arena), PackedStringArray())
+	var feedback: Node = arena.get_node("FeedbackSystem")
+	arena.remove_child(feedback)
+	feedback.free()
+	assert_eq(MapCheck.missing_systems(arena), PackedStringArray(["no FeedbackSystem"]))
+
+
 func test_match_settings_pick_a_map() -> void:
 	for path in ["res://modes/data/default_match.tres", "res://modes/data/gun_game_match.tres"]:
 		var settings: MatchSettings = load(path)

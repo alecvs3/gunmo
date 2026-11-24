@@ -144,7 +144,7 @@ are requests (`WaveMode.REQUEST_BUY`) checked with `ShopRules` on the host.
 
 **A one-off event** (pickup taken): host sends
 `NetworkManager.channel.send_event(peer_id, TOPIC, bytes)`; clients listen to
-`channel.event_received`. Pick a new topic number (bullets use 1).
+`channel.event_received`. Pick a new topic number (bullets use 1, enemy death bursts 2, the Gun Game kill feed 3).
 
 **Names, teams and scores:** a joiner's name travels in the join hello; the host spawns the
 player with it and `SpawnSync` sends `display_name` and `is_bot` once with the spawn. Team id,

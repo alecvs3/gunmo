@@ -23,8 +23,14 @@ var spectate_follow_time: float = 0.15
 var view_size: Vector2 = Vector2(1152, 648)
 var view_max_crop: float = 0.0
 
+## Screen shake tuning (looks only; `offset` moves the view, never the player).
+var feedback: FeedbackData = FeedbackData.load_default()
+
 var _previous_tick_position: Vector2 = Vector2.ZERO
 var _current_tick_position: Vector2 = Vector2.ZERO
+## Screen shake, 0..1; the offset grows with its square, so small shakes stay subtle.
+var _shake: float = 0.0
+var _shake_rng := RandomNumberGenerator.new()
 
 
 ## Places itself every frame from our own blend, so the engine must not blend it too.
@@ -35,6 +41,18 @@ func _ready() -> void:
 	position_smoothing_enabled = false
 	process_physics_priority = 50
 	snap_to_body()
+	EventBus.local_player_hurt.connect(_on_local_player_hurt.unbind(1))
+	EventBus.blast_shown.connect(_on_blast_shown)
+
+
+## Adds shake (0..1, capped at 1). Only the camera in use shows it.
+func add_shake(amount: float) -> void:
+	_shake = clampf(_shake + amount, 0.0, 1.0)
+
+
+## The camera offset for `shake` (0..1) in direction `angle`.
+static func shake_offset(shake: float, max_offset: float, angle: float) -> Vector2:
+	return Vector2.from_angle(angle) * max_offset * shake * shake
 
 
 func snap_to_body() -> void:
@@ -58,6 +76,18 @@ func _process(delta: float) -> void:
 		global_position = follow(global_position, watched, delta, spectate_follow_time)
 	else:
 		global_position = follow(global_position, drawn_position(), delta, follow_time)
+	_shake = maxf(_shake - feedback.shake_decay * delta, 0.0)
+	var angle: float = _shake_rng.randf() * TAU
+	offset = shake_offset(_shake, feedback.shake_max_offset, angle)
+
+
+func _on_local_player_hurt() -> void:
+	add_shake(feedback.shake_on_hurt)
+
+
+func _on_blast_shown(at: Vector2, radius: float) -> void:
+	if is_current():
+		add_shake(feedback.blast_shake(global_position.distance_to(at), radius))
 
 
 ## Where the engine draws the body this frame: between the last two ticks.

@@ -25,6 +25,8 @@ autoloads/       EventBus (signals only), NetworkManager (connection, clock, cha
 shared/network/* netcode: clock, channel, snapshots, prediction history, lag compensation
 shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback, Wallet, Score,
                  DisplayDelay: the parts players, bots and enemies are built from
+shared/feedback/ looks only: HitFeedback (hit flash, damage numbers), FeedbackSystem (numbers,
+                 death bursts), FeedbackData (tuning, also the camera's shake)
 player/*         Player scene: input, movement (PlayerMotor), prediction, snapshot (PlayerNetSync)
 weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, rockets (Explosion), fair dodging
                  (TimelineHits)

@@ -1,9 +1,9 @@
 class_name MapCheck
 extends RefCounted
-## The automatic check every map must pass (tests/levels/test_map_check.gd): every spawn point
-## (player starts, respawns, enemy spawns, bot points of interest) stands on the navigation
-## mesh, not inside a wall, and can walk to every other one. Needs the level in the tree with
-## its navigation synced.
+## The automatic check every map must pass (tests/levels/test_map_check.gd): the level has the
+## systems every map needs (bullets, game-feel effects), and every spawn point (player starts,
+## respawns, enemy spawns, bot points of interest) stands on the navigation mesh, not inside a
+## wall, and can walk to every other one. Needs the level in the tree with its navigation synced.
 
 ## A point this far from the navigation mesh is "off" it (px): the mesh keeps a margin from
 ## walls, so points right next to one sit a little outside it.
@@ -30,12 +30,29 @@ static func points(level: Level) -> Dictionary:
 	return found
 
 
+## The systems a level is missing: every map needs a ProjectileSystem (bullets) and a
+## FeedbackSystem (damage numbers, death bursts, world sounds), each a direct child.
+static func missing_systems(level: Level) -> PackedStringArray:
+	var has_projectiles: bool = false
+	var has_feedback: bool = false
+	for child in level.get_children():
+		has_projectiles = has_projectiles or child is ProjectileSystem
+		has_feedback = has_feedback or child is FeedbackSystem
+	var missing := PackedStringArray()
+	if not has_projectiles:
+		missing.append("no ProjectileSystem")
+	if not has_feedback:
+		missing.append("no FeedbackSystem")
+	return missing
+
+
 ## What is wrong with the map (empty = it passes).
 static func problems(level: Level) -> PackedStringArray:
-	var found := PackedStringArray()
+	var found: PackedStringArray = missing_systems(level)
 	var all: Dictionary = points(level)
 	if all.is_empty() or level.player_spawn_points.get_child_count() == 0:
-		return PackedStringArray(["no spawn points"])
+		found.append("no spawn points")
+		return found
 	var map: RID = level.navigation_region.get_navigation_map()
 	var space: PhysicsDirectSpaceState2D = level.get_world_2d().direct_space_state
 	var hub: Vector2 = all.values()[0]

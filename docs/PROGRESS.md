@@ -857,3 +857,25 @@ can be checked without people. Things to watch for when you play:
 - whether the Support is focused and whether it should heal less (12% every 1.5 s);
 - the bosses' telegraphs: is the ring readable in time;
 - bots' shopping: they buy the Rocket Launcher (the dearest gun), which is weak against single targets.
+
+## Game feel: hit flash, damage numbers, death bursts, screen shake ✅ (issue #109)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Hit flash:** enemies and players flash bright when they lose health (healing and respawns don't). Every peer watches the health the host decided, so it needs no network data | Done, tested | `shared/feedback/hit_feedback.gd`, `enemies/chaser.tscn`, `player/player.tscn` |
+| **Damage numbers** pop from enemies, rise and fade; hits in the same frame add up. A hit taking 50%+ of the enemy's starting health (Yusuf's rule; the health it actually lost counts) is a **big hit**: bigger and gold (a crit look, no randomness) | Done, tested | `shared/feedback/damage_number.gd`, `feedback_system.gd` |
+| **Death bursts:** a dying enemy bursts into pieces in its colour (wave modifier tint included), bigger for bosses. The host sends every client one small event (where, colour, size), so a match reset never sets off bursts | Done, tested | `shared/feedback/feedback_system.gd`, `death_burst.gd`, `levels/test_arena.tscn` |
+| **Screen shake** when your player is hit and when an explosion goes off near you (fades with distance) | Done, tested | `player/player_camera.gd` |
+| All tuning in one Resource | Done | `shared/feedback/data/default_feedback.tres` (`FeedbackData`) |
+
+Network: new event topic 2 (`FeedbackSystem.EVENT_DEATH`), `Handshake.PROTOCOL` 14 → 15 (the kill feed
+had taken 14 while this branch waited).
+Every map has the `Effects` layer and `FeedbackSystem` (test arena, Outpost, The Pit), and the map
+check now fails a map without a `ProjectileSystem` or `FeedbackSystem`.
+EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
+
+### Known limitations
+- No sounds yet (next issue), and no setting to turn screen shake off.
+- A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
+  where it last saw the enemy.
+- Tried in a window by Yusuf (test arena). **Not verified:** a 2-player match, and the new maps by eye.

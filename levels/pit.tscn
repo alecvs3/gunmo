@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" path="res://levels/level.gd" id="1_level"]
 [ext_resource type="Script" path="res://weapons/projectile_system.gd" id="2_proj"]
+[ext_resource type="Script" path="res://shared/feedback/feedback_system.gd" id="5_feedback"]
 [ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/tiles/floor_concrete.png" id="3_floor"]
 [ext_resource type="Texture2D" path="res://assets/kenney_top_down_shooter/tiles/wall_planks.png" id="4_wall"]
 
@@ -254,3 +255,9 @@ spawn_path = NodePath("../Enemies")
 [node name="ProjectileSystem" type="Node" parent="." node_paths=PackedStringArray("projectiles_root")]
 script = ExtResource("2_proj")
 projectiles_root = NodePath("../Projectiles")
+
+[node name="Effects" type="Node2D" parent="."]
+
+[node name="FeedbackSystem" type="Node" parent="." node_paths=PackedStringArray("effects_root")]
+script = ExtResource("5_feedback")
+effects_root = NodePath("../Effects")

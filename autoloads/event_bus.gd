@@ -36,3 +36,8 @@ signal spectating_changed(peer_id: int)
 signal shop_purchase_requested(kind: int, index: int)
 ## Host UI: the host asked to play the match again (results screen).
 signal match_restart_requested
+## Every peer, looks only: something drawn at `at` lost `amount` health (a HitFeedback saw it
+## in the host's numbers); `big` = a big share of its max health. The FeedbackSystem shows it.
+signal damage_seen(at: Vector2, amount: int, big: bool)
+## Every peer, looks only: an explosion of `radius` was shown at `at` (camera shake).
+signal blast_shown(at: Vector2, radius: float)

@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://player/own_player_drawing.gd" id="21_drawing"]
 [ext_resource type="Script" path="res://player/player_look.gd" id="22_look"]
 [ext_resource type="Script" path="res://player/player_net_sync.gd" id="23_netsync"]
+[ext_resource type="Script" path="res://shared/feedback/hit_feedback.gd" id="24_feedback"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 18.0
@@ -146,6 +147,11 @@ loadout = NodePath("../PlayerLoadout")
 wallet = NodePath("../WalletComponent")
 score = NodePath("../ScoreComponent")
 knockback = NodePath("../KnockbackComponent")
+
+[node name="HitFeedback" type="Node" parent="." node_paths=PackedStringArray("health", "target")]
+script = ExtResource("24_feedback")
+health = NodePath("../HealthComponent")
+target = NodePath("../Visual/Pivot/Look")
 
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("10_netentity")
