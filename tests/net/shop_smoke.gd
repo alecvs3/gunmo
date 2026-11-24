@@ -119,7 +119,6 @@ func _refused_purchase_check(what: String, kind: int, index: int) -> void:
 	_check(_credits() == before, "the host allowed %s" % what)
 
 
-## Shoots the nearest enemy until the match is won or lost.
 ## Shoots the nearest enemy until the match is over. The host holds fire (its pistol would kill
 ## everything before the client's short-range shotgun gets a hit) and keeps everyone alive.
 func _fight_until_over() -> void:
