@@ -14,6 +14,7 @@ var _age: float = 0.0
 
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	z_index = 1  # over the characters: the bullets it shares a parent with draw under them
 
 
 func _process(delta: float) -> void:
