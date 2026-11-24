@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
 [ext_resource type="Script" path="res://ui/boss_bar.gd" id="2_boss"]
+[ext_resource type="Script" path="res://ui/kill_feed.gd" id="3_feed"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_back"]
 bg_color = Color(0.08, 0.08, 0.1, 0.8)
@@ -200,3 +201,18 @@ theme_override_styles/background = SubResource("StyleBoxFlat_bar_back")
 theme_override_styles/fill = SubResource("StyleBoxFlat_boss_fill")
 value = 100.0
 show_percentage = false
+
+[node name="KillFeed" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -360.0
+offset_top = 44.0
+offset_right = -16.0
+offset_bottom = 184.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 2
+alignment = 0
+script = ExtResource("3_feed")

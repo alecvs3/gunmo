@@ -16,7 +16,6 @@ extends "res://tests/net/smoke_script.gd"
 
 const WATCHDOG_SECONDS: float = 75.0
 const HOST_SECONDS: float = 16.0
-const ARENA_PATH: String = "Main/LevelContainer/TestArena"
 
 var _sim: Array = []
 var _counts: Dictionary = {"remote_bullets": 0, "predicted": 0, "confirmed": 0, "kills": 0}
@@ -224,7 +223,7 @@ func _closer(from: Vector2, a: Node2D, b: Node2D) -> bool:
 
 
 func _arena() -> Node:
-	return root.get_node_or_null(ARENA_PATH)
+	return root.get_node_or_null(_level_path())
 
 
 func _other_player() -> Node2D:

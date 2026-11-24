@@ -15,3 +15,7 @@ preferred_distance = 260.0
 strafe = 0.2
 strafe_period = 2.0
 repath_interval = 0.8
+dodge = 0.0
+cover_health = 0.0
+flank_degrees = 0.0
+hunts = false

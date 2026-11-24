@@ -23,7 +23,7 @@ source_geometry_mode = 1
 source_geometry_group_name = &"navigation_obstacles"
 agent_radius = 20.0
 
-[node name="TestArena" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points", "navigation_region", "respawn_points")]
+[node name="TestArena" type="Node2D" node_paths=PackedStringArray("players_root", "enemies_root", "player_spawn_points", "enemy_spawn_points", "navigation_region", "respawn_points", "points_of_interest")]
 script = ExtResource("1_arena")
 players_root = NodePath("Players")
 enemies_root = NodePath("Enemies")
@@ -31,6 +31,7 @@ player_spawn_points = NodePath("PlayerSpawnPoints")
 enemy_spawn_points = NodePath("EnemySpawnPoints")
 navigation_region = NodePath("NavigationRegion")
 respawn_points = NodePath("RespawnPoints")
+points_of_interest = NodePath("PointsOfInterest")
 
 [node name="Floor" type="Polygon2D" parent="."]
 texture_repeat = 2
@@ -148,6 +149,20 @@ position = Vector2(100, 1100)
 
 [node name="SouthEast" type="Marker2D" parent="EnemySpawnPoints"]
 position = Vector2(1900, 1100)
+
+[node name="PointsOfInterest" type="Node2D" parent="."]
+
+[node name="BehindPillarLeftNorth" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(600, 460)
+
+[node name="BehindPillarLeftSouth" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(600, 740)
+
+[node name="BehindPillarRightNorth" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(1400, 460)
+
+[node name="BehindPillarRightSouth" type="Marker2D" parent="PointsOfInterest"]
+position = Vector2(1400, 740)
 
 [node name="Enemies" type="Node2D" parent="."]
 

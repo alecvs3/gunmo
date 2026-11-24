@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–10 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | steps 1–15 merged; **step 15 playtests by Alex + Yusuf still to do** |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -93,33 +93,33 @@ balance at the end, when everything that affects balance exists.
   bots clear a quick schedule.
 - **Done when:** bots are useful teammates, not just targets.
 
-### 11. Smarter bots (both modes)
+### 11. Smarter bots (both modes) ✅ (#107)
 - **Adds:** dodging incoming bullets, moving toward a goal (cover, flanking, pickups) instead of
   roaming between spawns, aiming from the barrel instead of the body's center.
 - **Test:** GUT for the dodge and goal choice; smoke **E** still produces a winner; compare bot
   hit rate before/after in the PR.
 - **Done when:** a hard bot beats a medium bot most of the time in Gun Game.
 
-### 12. Gun Game polish
+### 12. Gun Game polish ✅ (#111)
 - **Adds:** spawn protection (short, ends when you fire), a kill feed, a different character per
   player, and a results screen at the end.
 - **Test:** GUT for spawn protection rules and character assignment; smoke **E** checks both
   sides see the same kill feed entries and results.
 - **Done when:** a Gun Game match reads clearly from start to winner.
 
-### 13. Maps: the framework
+### 13. Maps: the framework ✅ (#113)
 - **Adds:** maps as data (spawn points per mode, enemy spawn zones, bot points of interest) and
   a map choice in `MatchSettings` (the lobby picker comes in M6).
 - **Test:** an automatic map check for every map: every spawn point is on the navigation mesh
   and every one can reach every other one; no spawn inside a wall.
 - **Done when:** `test_arena` passes the check and a second map can be added without code.
 
-### 14. Two new maps
+### 14. Two new maps ✅ (#116)
 - **Adds:** one co-op map with chokepoints and open areas, one compact free-for-all arena.
 - **Test:** the map check; smoke **C** and **E** run on each new map.
 - **Done when:** both maps are playable in both modes.
 
-### 15. Balance and playtest pass
+### 15. Balance and playtest pass (paper pass ✅ #118; playtests open)
 - **Adds:** tuning only (`.tres` files): enemy numbers, costs, modifiers, boss health, credits.
 - **Test:** wave report, soak **S**, and two real playtests (Alex + Yusuf) of a full run to wave
   25, notes in the PR.

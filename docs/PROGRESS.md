@@ -702,7 +702,7 @@ Also: `project.godot` gets the `revive` input action (E).
 - Reviving doesn't stop you moving or shooting; walking out of range interrupts it.
 - **Not verified:** how it feels in a window; the ring and the prompts' look.
 
-## M7 step 10: bots in co-op ✅ (issue #105)
+## M7 step 10: bots in co-op ✅ (merged, issue #105)
 
 | Feature | Status | Where |
 |---|---|---|
@@ -741,6 +741,123 @@ checks it. No network format change.
 - No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
 - Tried in a window by Yusuf. **Not verified:** a 2-player match.
 
+## M7 step 11: smarter bots ✅ (merged, issue #107)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Aim from the barrel:** the aim is turned so the shot from the barrel (about 10 px to the gun side) passes through the target, not the body's centre | Done, tested | `bots/bot_brain.gd` `barrel_aim`, `player/player.gd` `muzzle_offset` |
+| **Dodge:** bullets that will pass within 30 px in the next 0.3–0.4 s make it sidestep away from their line, blended into its move by `dodge` (Easy 0, Normal 0.2, Hard 0.5) | Done, tested | `BotBrain.dodge`, `bots/bot_controller.gd`, `Groups.BULLETS` |
+| **Cover:** below `cover_health` (Normal 25%, Hard 40%) under fire it runs to the nearest respawn point the threat can't see for 2–2.5 s (then not again for 8 s), still shooting | Done, tested | `BotBrain.cover_point` |
+| **Goals instead of roaming:** with nobody in sight it hunts the nearest opponent (`hunts`), coming in `flank_degrees` round from the side (Normal 25°, Hard 45°, switching sides after cover) | Done, tested | `BotBrain.flank_point` |
+| Smoke **E** gets a `botduel` role: a Hard bot vs a Normal bot with SMGs for 45 s on a dedicated server; fails unless Hard has more kills | Done | `tests/net/gun_smoke.gd`, `tests/net/data/bot_duel_match.tres` |
+
+**Measured (3 duels each, 45 s, SMG vs SMG):**
+
+| | Hard kills : Normal kills | Hard hit rate | Normal hit rate |
+|---|---|---|---|
+| Before | 5:3, 6:3, 5:3 | 41–50% | 28–36% |
+| After | 5:2, 5:2, 4:1 | 39–49% | 9–24% |
+
+Hard beat Normal in every duel before and after; now by a wider margin, mostly because
+Normal's shots get dodged. A first version had Hard dodge at 0.8: two Hard bots then barely hit
+each other and smoke E stopped finding a winner, so it is 0.5. Gun Game matches take a little
+longer: smoke E now allows 95 s for a winner (was 70).
+
+### Known limitations
+- Cover means the level's respawn points (maps with real points of interest come in step 13).
+- Hunting uses what the host knows (every opponent's position), not what the bot could see.
+- Bots dodge on the host's timeline; against a lagged human's bullets that is a little early.
+- `bot_controller.gd` is long (about 370 lines); a split into senses and actions would help.
+- **Not verified:** how they feel to fight in a window.
+
+## M7 step 12: Gun Game polish ✅ (merged, issue #111)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Spawn protection ends when you fire** (it was a fixed 0.5 s): no shooting from safety | Done, tested | `modes/gun_game/spawn_protection.gd`, `modes/gun_game/gun_game_mode.gd` |
+| **Kill feed:** the host reports every kill (killer, victim, gun) to every peer (event topic 3, protocol 14); the HUD shows the last 5 top right, "Killer [SMG] Victim", fading after 5 s. Reports stop once someone has won | Done, tested | `gun_game_mode.gd`, EventBus `kill_reported`, `ui/kill_feed.gd`, `ui/hud.tscn` |
+| **A different character per player:** the host gives each new player a look nobody has yet (humans from the human looks first, bots from the bot looks), sent once with the spawn (`look_index`); repeats only when all 6 are taken. Fixes "two players can get the same one" | Done, tested | `player/character_assignment.gd`, `player/player_data.gd`, `levels/level.gd`, `player/player.tscn` |
+| **Results screen at the end:** already there (M4: winner, scoreboard); smoke E keeps checking it | Done (M4) | `ui/results_screen.*` |
+| Smoke **E**: both sides print the last 5 kill feed entries; run_smoke checks they are the same | Done | `tests/net/gun_smoke.gd`, `tests/net/run_smoke.ps1` |
+
+### Known limitations
+- The kill feed is Gun Game only (Waves has no feed of enemy kills).
+- **Not verified:** the kill feed's look and the characters in a window.
+
+## M7 step 13: maps, the framework ✅ (merged, issue #113)
+
+| Feature | Status | Where |
+|---|---|---|
+| **Maps as data:** `MapData` (name, level scene, which modes it suits) in `levels/data/*.tres`; `MatchSettings.map` picks one (the lobby picker is M6) and Main loads its scene | Done | `levels/map_data.gd`, `levels/data/test_arena.tres`, `modes/match_settings.gd`, `main.gd` |
+| A level holds every kind of spawn point: player starts (co-op), respawns (free-for-all), enemy spawn zones, and new **bot points of interest** (cover behind the pillars), which bots use for hunting and cover | Done | `levels/level.gd`, `levels/test_arena.tscn` |
+| **Map check** for every map: every point is on the navigation mesh (within 40 px), not inside a wall, and can walk to and from every other one | Done, tested | `levels/map_check.gd`, `tests/levels/test_map_check.gd` |
+| Smoke scripts find the loaded level instead of naming `TestArena`, so they run on any map | Done | `tests/net/smoke_script.gd` (`_level_path()`) and the scenarios |
+
+**Adding a map without code:** make a level scene like `test_arena.tscn` (walls in the
+`navigation_obstacles` group, the four point groups), add it to Main's `LevelSpawner`, and add a
+`MapData` `.tres` in `levels/data/`. The map check runs on it automatically.
+
+### Known limitations
+- No map picker yet (M6); a map is chosen in the match settings `.tres` or with `--match`.
+- **Not verified:** nothing visible changed.
+
+## M7 step 14: two new maps ✅ (merged, issue #116)
+
+Both added without code: a level scene, a `MapData` `.tres`, and a line in Main's `LevelSpawner`.
+
+| Map | For | Layout |
+|---|---|---|
+| **Outpost** (2400×1500) | Co-op first | Players start in a walled central hall reached only through three 160–180 px gaps (chokepoints); open yards west and east with pillars, where enemies arrive from six spawn zones at the edges. Points of interest just inside each gap and behind cover |
+| **The Pit** (1400×1000) | Free-for-all first | Compact and symmetric: a centre block, four low walls and two side pillars for cover; ten respawn points all round, four starts in the corners |
+
+| Check | Result |
+|---|---|
+| Map check (on the mesh, not in a wall, every point reaches every other) | Both pass (`tests/levels/test_map_check.gd` runs on every map in `levels/data/`) |
+| Smoke **C** (waves) | Main wave run (Splitter, Support, boss, revive) on **The Pit**; 1 human + 3 bots clear the quick schedule on **Outpost** |
+| Smoke **E** (Gun Game) | Main match (host, client, 2 bots: winner, kill feed, restart) on **The Pit**; Hard-vs-Normal bot duel on **Outpost** |
+
+The test arena keeps scenarios A, B, D, F, G and H.
+
+### Known limitations
+- On Outpost a Support that hangs back behind the hall's walls has to be hunted down: the smoke
+  test's players (who stand still) couldn't clear it there, so its main wave run is on The Pit.
+- Both maps reuse the concrete floor (tinted) and plank walls; real art is M10.
+- No picker yet (M6): choose a map in the match settings `.tres`.
+- **Not verified:** how they play in a window (sight lines, whether the chokepoints feel right).
+
+## M7 step 15: balance pass, on paper ⚠️ (issue #118; playtests still to do)
+
+Tuning only (`.tres`). Without people playing, this pass works from the numbers: the wave
+report, the economy (bounties are about 10 credits per budget point, plus the wave bonus), and
+a model of two players' damage as they buy the SMG and upgrades (70% of shots landing,
+magazine and reload counted).
+
+| Change | Why |
+|---|---|
+| Regenerating: 5% of max health per second → **1.5%**; the stacking cap 8% → **3%** | On a boss it was unbeatable: the Warden at wave 20 with Fast · Regenerating healed about 276/s against about 232 damage/s from two well-upgraded players. On normal enemies 1.5% still matters for Tanks and Splitters |
+| Overlord (wave 25) 9000 → **6500** health | With wave 25's three modifiers (Armored · Tough · Frenzied) it was about 24,000 effective health: about 94 s of nonstop focused fire before its summons and rings |
+| Warden (wave 20) 5200 → **7000** health | With regeneration fixed it fell in about 36 s, shorter than wave 10's boss feels relative to the players' growth |
+
+**Boss fights on paper (seed 1's modifiers, 2 players, focused fire):** Brood Mother about 25 s,
+Warden about 61 s, Overlord about 68 s, plus the time lost to dodging rings and fighting summons.
+
+**Economy check:** by wave 10 a player has about 2,000 credits (an SMG and about 8 upgrade
+levels); everything is close to maxed by wave 22. Left as it is.
+
+**Checked:** wave report before and after (only regeneration waves and boss waves change), all
+smoke scenarios, the 10-minute soak (numbers in the PR).
+Also: smoke E's quick ladder is 1 kill per gun now (was 2): with smarter bots, CI's slower
+machines sometimes ran out of time before anyone finished it.
+
+### Not done: the playtests
+The roadmap's test for this step is two real playtests by Alex and Yusuf of a full run to wave
+25, and its "done when" is "winnable by 2 players who play well, lost by ones who don't". Neither
+can be checked without people. Things to watch for when you play:
+- whether waves 6–9 (the first modifiers, Shooters and Swarmers) are a difficulty jump;
+- whether the Support is focused and whether it should heal less (12% every 1.5 s);
+- the bosses' telegraphs: is the ring readable in time;
+- bots' shopping: they buy the Rocket Launcher (the dearest gun), which is weak against single targets.
+
 ## Game feel: hit flash, damage numbers, death bursts, screen shake ✅ (issue #109)
 
 | Feature | Status | Where |
@@ -751,7 +868,10 @@ checks it. No network format change.
 | **Screen shake** when your player is hit and when an explosion goes off near you (fades with distance) | Done, tested | `player/player_camera.gd` |
 | All tuning in one Resource | Done | `shared/feedback/data/default_feedback.tres` (`FeedbackData`) |
 
-Network: new event topic 2 (`FeedbackSystem.EVENT_DEATH`), `Handshake.PROTOCOL` 13 → 14.
+Network: new event topic 2 (`FeedbackSystem.EVENT_DEATH`), `Handshake.PROTOCOL` 14 → 15 (the kill feed
+had taken 14 while this branch waited).
+Every map has the `Effects` layer and `FeedbackSystem` (test arena, Outpost, The Pit), and the map
+check now fails a map without a `ProjectileSystem` or `FeedbackSystem`.
 EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 
 ### Known limitations

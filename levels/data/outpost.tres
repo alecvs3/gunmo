@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="MapData" format=3]
+
+[ext_resource type="Script" path="res://levels/map_data.gd" id="1_map"]
+[ext_resource type="PackedScene" path="res://levels/outpost.tscn" id="2_scene"]
+
+[resource]
+script = ExtResource("1_map")
+display_name = "Outpost"
+scene = ExtResource("2_scene")
+supports_waves = true
+supports_gun_game = true

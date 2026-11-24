@@ -38,7 +38,8 @@ enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, be
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings
 ui/*             menus, HUD, scoreboard, shop, results, F3 overlay
-levels/          maps (Level: where things spawn, never when)
+levels/          maps: MapData (levels/data/*.tres, picked by MatchSettings.map) → a Level scene
+                 (where things spawn, never when); MapCheck validates every map
 tests/           GUT tests mirroring the folders; tests/net/ = multiplayer smoke scenarios
 ```
 **One tick on the host** (60 Hz): NetChannel reads packets first → each Player takes its next

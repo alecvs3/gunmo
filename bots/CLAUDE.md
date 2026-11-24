@@ -9,7 +9,7 @@ a `BotController` to it (`Level.spawn_bot`). Clients see bots exactly like human
 | `bot_controller.gd` | Host only. Gathers facts each tick (targets, line of sight, paths) and builds an `InputCommand` like a human's |
 | `bot_brain.gd` | Pure decisions, unit-tested: choose a target (`Candidate`, weighed by danger), turn the aim (leading a moving target is `weapons/aim_lead.gd`), when to fire, where to move; co-op: regroup with the team, which downed teammate to revive |
 | `bot_shopping.gd` | Pure: what a bot buys between waves (a dearer gun, else the cheapest upgrade); `WaveMode` sends it through the normal purchase path |
-| `bot_profile.gd`, `profiles/*.tres` | Skill: reaction time, aim error, turn speed, fire cone, awareness, distance, strafing |
+| `bot_profile.gd`, `profiles/*.tres` | Skill: reaction time, aim error, turn speed, fire cone, awareness, distance, strafing; smarts: dodge, cover, flanking, hunting |
 
 ## Rules that aren't obvious
 - **Bots only make input commands.** They never touch health, position or the weapon
@@ -28,5 +28,10 @@ a `BotController` to it (`Level.spawn_bot`). Clients see bots exactly like human
   (`Player.timeline_lead()`), and their bullets use fair dodging (`weapons/timeline_hits.gd`).
 - A new skill number goes in `BotProfile` as an `@export`, with values in each profile `.tres`.
 
+- Bots aim so the shot leaves the **barrel** on target (`BotBrain.barrel_aim`,
+  `Player.muzzle_offset()`), dodge the host's live bullets (`Groups.BULLETS`), hide behind the
+  level's respawn points when hurt, and hunt (`hunts`) by flanking the nearest opponent.
+
 ## Tests
-`tests/bots/test_bot_brain.gd`, plus smoke scenarios E (gun game) and H (fairness at 160 ms).
+`tests/bots/test_bot_brain.gd`, `test_bot_shopping.gd`, plus smoke scenarios C (co-op bots),
+E (gun game, and the Hard-vs-Normal duel `botduel`) and H (fairness at 160 ms).

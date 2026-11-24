@@ -24,6 +24,7 @@ wallet, score, loadout.
 | `player_camera.gd`, `player_spectate.gd` | Camera (plus screen shake through its `offset`: hurt, nearby blasts; `FeedbackData`), and watching a teammate once out (a downed player keeps its own camera) |
 | `fair_view.gd` | Every window shape sees the same world box (`PlayerData.view_size`): the camera's zoom, and where `ui/view_mask.gd` puts its bars |
 | `player_look.gd`, `character_look.gd`, `looks/` | The sprite per weapon pose and where its barrel ends |
+| `character_assignment.gd` | Pure: the host gives each new player a look nobody has yet (`Player.look_index`, sent once with the spawn) |
 | `data/default_player.tres` | `PlayerData`: speed, health, knockback, camera |
 
 ## Rules that aren't obvious
