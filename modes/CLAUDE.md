@@ -14,7 +14,9 @@ reviewed by both developers.
   asks which mode is running (rule 7). `MatchNetState.mode_kind` only picks the UI layout.
 - Phases: `LOBBY`, `BREAK`, `ACTIVE`, `VICTORY`, `DEFEAT`. Ready-up works in LOBBY and BREAK.
 - Hooks a mode overrides: `_start()`, `restart()`, `_on_ready_changed()`, `_on_peer_joined()`,
-  `_on_player_killed()`, `_on_request()`.
+  `_on_player_killed()`, `_on_request()`, `_prepare_new_bot()`, `_on_bot_removed()`.
+- Bots: the base fills empty slots up to `bot_fill_to` (`_sync_bots()`); a mode calls it when
+  peers join or leave.
 
 ## Pure rule classes (unit-tested, no nodes)
 | File | Rules |

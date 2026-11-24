@@ -8,8 +8,6 @@ extends GameMode
 ## leave again as humans join). The ladder, kill targets, timings and bot profiles come from
 ## MatchSettings.
 
-const FALLBACK_BOT_PROFILE: String = "res://bots/profiles/normal.tres"
-
 ## Ladder guns as ShopCatalog weapon indices (what PlayerLoadout equips and snapshots carry).
 var _ladder_weapons: Array[int] = []
 var _ladder := GunGameLadder.new()
@@ -77,39 +75,13 @@ func _forget(peer_id: int) -> void:
 	_protected_until.erase(peer_id)
 
 
-## Adds or removes bots so humans + bots = bot_fill_to (never removes humans).
-func _sync_bots() -> void:
-	var bots: Array[Player] = []
-	var humans: int = 0
-	for player in level.players():
-		if player.is_bot:
-			bots.append(player)
-		else:
-			humans += 1
-	var wanted: int = maxi(settings.bot_fill_to - humans, 0)
-	while bots.size() > wanted:
-		var leaving: Player = bots.pop_back()
-		_forget(leaving.peer_id)
-		level.remove_player(leaving.peer_id)
-	while bots.size() < wanted:
-		bots.append(_add_bot())
-
-
-func _add_bot() -> Player:
-	var number: int = 1
-	while level.player(-number) != null:
-		number += 1
-	var profile: BotProfile = _bot_profile(number)
-	var name_text: String = "Bot %d · %s" % [number, profile.display_name]
-	var bot: Player = level.spawn_bot(-number, name_text, profile)
+## A new bot gets the same fresh start as anyone.
+func _prepare_new_bot(bot: Player) -> void:
 	_prepare(bot)
-	return bot
 
 
-func _bot_profile(number: int) -> BotProfile:
-	if settings.bot_profiles.is_empty():
-		return load(FALLBACK_BOT_PROFILE)
-	return settings.bot_profiles[(number - 1) % settings.bot_profiles.size()]
+func _on_bot_removed(peer_id: int) -> void:
+	_forget(peer_id)
 
 
 ## A fresh start for one player: own team, first gun, no score, a spawn away from others.
