@@ -81,10 +81,17 @@ func test_names() -> void:
 
 func test_default_catalog_and_schedule() -> void:
 	var real: ModifierCatalog = ModifierCatalog.load_default()
-	assert_eq(real.modifiers.size(), 3)
+	assert_eq(real.modifiers.size(), 5)
 	assert_lte(real.modifiers.size(), ModifierCatalog.MAX_MODIFIERS)
 	var schedule: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
-	assert_eq([schedule.first_modifier_wave, schedule.double_modifier_wave], [6, 16])
+	assert_eq(
+		[
+			schedule.first_modifier_wave,
+			schedule.double_modifier_wave,
+			schedule.triple_modifier_wave
+		],
+		[6, 16, 21]
+	)
 
 
 func test_pick_for_wave_uses_the_schedule_and_its_own_seed() -> void:
@@ -101,3 +108,73 @@ func test_pick_for_wave_uses_the_schedule_and_its_own_seed() -> void:
 func test_scaled_health_rounds_and_never_hits_zero() -> void:
 	assert_eq(_modifier("x", 1.5, 1.0, 1.0, 0.0).scaled_health(101), 152)
 	assert_eq(_modifier("x", 0.1, 1.0, 1.0, 0.0).scaled_health(1), 1)
+
+
+func test_three_modifiers_from_the_triple_wave() -> void:
+	assert_eq(ModifierCatalog.count_for_wave(20, 6, 16, 21), 2)
+	assert_eq(ModifierCatalog.count_for_wave(21, 6, 16, 21), 3)
+	assert_eq(ModifierCatalog.count_for_wave(25, 6, 16, 21), 3)
+	assert_eq(ModifierCatalog.count_for_wave(25, 6, 16), 2, "no triple wave = at most two")
+
+
+func test_stacking_order_does_not_matter() -> void:
+	var a: WaveModifier = _modifier("A", 1.3, 1.1, 0.8, 0.01)
+	var b: WaveModifier = _modifier("B", 1.2, 1.2, 0.9, 0.02)
+	var c: WaveModifier = _modifier("C", 0.9, 1.05, 1.1, 0.0)
+	var forward := ModifierCatalog.new()
+	forward.modifiers.assign([a, b, c])
+	var backward := ModifierCatalog.new()
+	backward.modifiers.assign([c, b, a])
+	var one: WaveModifier = forward.combined(0b111)
+	var two: WaveModifier = backward.combined(0b111)
+	assert_almost_eq(one.health_multiplier, two.health_multiplier, 1e-6)
+	assert_almost_eq(one.speed_multiplier, two.speed_multiplier, 1e-6)
+	assert_almost_eq(one.damage_taken_multiplier, two.damage_taken_multiplier, 1e-6)
+	assert_almost_eq(one.regen_per_second, two.regen_per_second, 1e-6)
+
+
+func test_caps_hold_however_many_stack() -> void:
+	var huge := ModifierCatalog.new()
+	(
+		huge
+		. modifiers
+		. assign(
+			[
+				_modifier("X", 2.0, 1.6, 0.5, 0.06),
+				_modifier("Y", 2.0, 1.6, 0.5, 0.06),
+				_modifier("Z", 2.0, 1.6, 0.5, 0.06),
+			]
+		)
+	)
+	var all: WaveModifier = huge.combined(0b111)
+	assert_eq(all.health_multiplier, huge.max_health_multiplier)
+	assert_eq(all.speed_multiplier, huge.max_speed_multiplier)
+	assert_eq(all.damage_taken_multiplier, huge.min_damage_taken_multiplier)
+	assert_eq(all.regen_per_second, huge.max_regen_per_second)
+
+
+func test_conflicting_modifiers_never_share_a_wave() -> void:
+	var real: ModifierCatalog = ModifierCatalog.load_default()
+	var fast: int = -1
+	var frenzied: int = -1
+	for i in real.modifiers.size():
+		if real.modifiers[i].display_name == "Fast":
+			fast = i
+		if real.modifiers[i].display_name == "Frenzied":
+			frenzied = i
+	assert_true(real.modifiers[frenzied].conflicts(real.modifiers[fast]), "either side counts")
+	assert_true(real.modifiers[fast].conflicts(real.modifiers[frenzied]))
+	var both: int = (1 << fast) | (1 << frenzied)
+	for seed_value in 300:
+		var mask: int = real.pick(3, _rng(seed_value))
+		assert_ne(mask & both, both, "seed %d picked Fast and Frenzied" % seed_value)
+		assert_eq(_bits(mask), 3, "still three from five")
+
+
+func test_conflicts_can_leave_fewer() -> void:
+	var tight := ModifierCatalog.new()
+	var a: WaveModifier = _modifier("A", 1.0, 1.0, 1.0, 0.0)
+	var b: WaveModifier = _modifier("B", 1.0, 1.0, 1.0, 0.0)
+	a.conflicts_with = PackedStringArray(["B"])
+	tight.modifiers.assign([a, b])
+	assert_eq(_bits(tight.pick(2, _rng(1))), 1)
