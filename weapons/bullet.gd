@@ -90,14 +90,15 @@ func _ready() -> void:
 		_timeline = null if hits.is_empty() else hits
 
 
-## AUTHORITATIVE and PREDICTED: one tick of flight along the swept path.
+## AUTHORITATIVE and PREDICTED: one tick of flight along the swept path. The first tick sweeps
+## from the shot's hit_origin (the shooter's body), so point-blank enemies and walls count.
 func _physics_process(_delta: float) -> void:
 	if _done:
 		return
 	if _stop_tick >= 0:
 		_settle()
 		return
-	var from: Vector2 = position
+	var from: Vector2 = shot.hit_origin if _age_ticks == 0.0 else position
 	_age_ticks += 1.0
 	var to: Vector2 = shot.point_at(_age_ticks)
 	var wall: float = _wall_fraction(from, to)

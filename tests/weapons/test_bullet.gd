@@ -73,6 +73,28 @@ func test_bullet_ends_after_lifetime() -> void:
 	assert_signal_emitted(bullet, "finished")
 
 
+## An enemy standing inside the shooter, between their body and the muzzle (#124).
+func test_target_between_body_and_muzzle_is_hit() -> void:
+	var target: Dictionary = _make_target(Vector2(12, 0), 100)
+	var bullet: Bullet = _fire(Vector2(38, 0), Vector2.RIGHT)
+	bullet.shot.hit_origin = Vector2.ZERO
+	_tick(bullet, 10)
+	assert_eq((target["health"] as HealthComponent).current_health, 65)
+
+
+func test_target_behind_the_shooter_is_not_hit() -> void:
+	var target: Dictionary = _make_target(Vector2(-30, 0), 100)
+	var bullet: Bullet = _fire(Vector2(38, 0), Vector2.RIGHT)
+	bullet.shot.hit_origin = Vector2.ZERO
+	_tick(bullet, 10)
+	assert_eq((target["health"] as HealthComponent).current_health, 100)
+
+
+func test_hit_origin_defaults_to_the_muzzle() -> void:
+	var shot: Shot = Shot.from_weapon(data, Vector2(38, 5), Vector2.RIGHT)
+	assert_eq(shot.hit_origin, Vector2(38, 5), "enemies' shots keep testing from where they start")
+
+
 func _fire(origin: Vector2, direction: Vector2, team: StringName = &"tests") -> Bullet:
 	var shot: Shot = Shot.from_weapon(data, origin, direction)
 	shot.shooter_id = 4
