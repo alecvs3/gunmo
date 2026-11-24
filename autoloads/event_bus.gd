@@ -5,9 +5,12 @@ extends Node
 @warning_ignore_start("unused_signal")
 
 ## A player was killed; killer_id is the peer (or bot) id of whoever dealt the last hit
-## (0 = not a player, e.g. an enemy).
+## (0 = an enemy's touch; an enemy's bullet = Shot.enemy_shooter_id, never a player's id).
 signal player_killed(victim: Node2D, killer_id: int)
 signal enemy_killed(enemy: Node2D, killer_peer_id: int)
+## A dying enemy splits into `count` enemies of type `into` (an EnemyData) where it stood.
+## Emitted before it is freed, so the wave never looks empty in between.
+signal enemy_split(enemy: Node2D, into: Resource, count: int)
 ## Host: something fired a real bullet (a Shot). The level's ProjectileSystem simulates it
 ## and tells the other peers.
 ## Shot signals are typed RefCounted, not Shot: an autoload signal typed with a script class

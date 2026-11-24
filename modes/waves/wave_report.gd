@@ -13,7 +13,8 @@ class Row:
 	var enemies: int = 0
 	## Enemy display name -> how many of that type this wave buys.
 	var counts: Dictionary = {}
-	## Sum of the enemies' max health after the wave's modifiers.
+	## Sum of the enemies' max health after the wave's modifiers, splits included (a Splitter's
+	## children are health the players must also chew through).
 	var total_health: int = 0
 	## Each enemy's health divided by its damage-taken multipliers (its own armor and the
 	## wave's): the damage it takes to kill them all (regeneration doesn't count).
@@ -48,14 +49,24 @@ static func row(
 	var effective: float = 0.0
 	for type in planned:
 		result.counts[type.display_name] = result.counts.get(type.display_name, 0) + 1
-		var health: int = combined.scaled_health(type.max_health)
-		result.total_health += health
-		effective += health / (combined.damage_taken_multiplier * type.damage_taken)
+		for each in with_splits(type):
+			var health: int = combined.scaled_health(each.max_health)
+			result.total_health += health
+			effective += health / (combined.damage_taken_multiplier * each.damage_taken)
 	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
 	result.peak_alive = mini(planned.size(), schedule.max_alive)
 	result.spawn_seconds = maxi(planned.size() - 1, 0) * schedule.spawn_interval(wave)
 	return result
+
+
+## `type` and every enemy it splits into when it dies (and they into theirs, a few levels deep).
+static func with_splits(type: EnemyData, depth: int = 0) -> Array[EnemyData]:
+	var found: Array[EnemyData] = [type]
+	if depth < 3 and type.split_into != null:
+		for i in type.split_count:
+			found.append_array(with_splits(type.split_into, depth + 1))
+	return found
 
 
 ## The rows as a markdown table, one column per enemy type of the schedule.

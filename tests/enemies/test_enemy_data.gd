@@ -1,6 +1,10 @@
 extends GutTest
 
-const TYPES: Array[String] = ["grunt", "runner", "brute", "shooter", "tank", "swarmer"]
+const TYPES: Array[String] = [
+	"grunt", "runner", "brute", "shooter", "tank", "swarmer", "splitter", "support"
+]
+## Types the waves never buy directly (they come from others).
+const SPAWNED_ONLY: Array[String] = ["splitling"]
 
 
 func _load(type_name: String) -> EnemyData:
@@ -8,7 +12,7 @@ func _load(type_name: String) -> EnemyData:
 
 
 func test_every_type_is_complete() -> void:
-	for type_name in TYPES:
+	for type_name in TYPES + SPAWNED_ONLY:
 		var data: EnemyData = _load(type_name)
 		assert_false(data.display_name.is_empty(), type_name)
 		assert_gt(data.max_health, 0, type_name)
@@ -52,3 +56,14 @@ func test_every_type_is_in_the_default_schedule() -> void:
 	var schedule: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
 	for type_name in TYPES:
 		assert_has(schedule.enemy_types, _load(type_name), type_name)
+
+
+func test_splitter_and_support() -> void:
+	var splitter: EnemyData = _load("splitter")
+	assert_eq(splitter.split_into, _load("splitling"))
+	assert_eq(splitter.split_count, 2, "dies into two small ones")
+	assert_lt(splitter.split_into.max_health, splitter.max_health)
+	assert_null(splitter.split_into.split_into, "splitlings don't split again")
+	var support: EnemyData = _load("support")
+	assert_true(support.attack is HealPulseAttack, "support heals")
+	assert_true(support.movement is KeepDistanceMovement, "support hangs back")

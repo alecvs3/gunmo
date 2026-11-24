@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="WaveSchedule" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Resource" path="res://tests/net/data/combo_splitter.tres" id="2_splitter"]
+[ext_resource type="Resource" path="res://tests/net/data/combo_support.tres" id="3_support"]
+[ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="4_schedule"]
+
+[resource]
+script = ExtResource("4_schedule")
+total_waves = 2
+base_budget = 3.0
+budget_growth = 1.0
+budget_curve = 1.0
+first_spawn_interval = 0.2
+last_spawn_interval = 0.2
+max_alive = 10
+min_spawn_distance = 0.0
+first_modifier_wave = 1
+double_modifier_wave = 2
+enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_splitter"), ExtResource("3_support")])

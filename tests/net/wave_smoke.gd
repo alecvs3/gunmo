@@ -1,14 +1,16 @@
 extends "res://tests/net/smoke_script.gd"
-## Headless smoke test of the whole wave loop with a host and a client, using the quick
-## 2-wave match (tests/net/data/quick_match.tres). Both sides:
+## Headless smoke test of the whole wave loop with a host and a client, using a quick 2-wave
+## match (tests/net/data/combo_match.tres: wave 1 is a Splitter, wave 2 a Support, so the
+## enemies that change other enemies run over the network too). Both sides:
 ##   1. ready up (the 20 s lobby must be skipped)       2. shoot through both waves: VICTORY
 ##   3. host presses "Play again": back to the LOBBY    4. stand still: DEFEAT
 ## Each side records the phases it sees (the client through replication) and checks them.
+## The host also checks a Splitter split, and that its children had to die before wave 1 cleared.
 ## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
 const WATCHDOG_SECONDS: float = 110.0
-const MATCH_PATH: String = "res://tests/net/data/quick_match.tres"
+const MATCH_PATH: String = "res://tests/net/data/combo_match.tres"
 
 var _seen: Array[String] = []
 var _state: RefCounted = null
@@ -16,6 +18,10 @@ var _end_reason: String = ""
 var _saw_wave_two_hud: bool = false
 var _saw_results: bool = false
 var _wave_one_msec: int = -1
+var _splits: int = 0
+var _kills: int = 0
+## Host: kills seen when wave 1 ended (a split's children must die too).
+var _kills_by_wave_two: int = -1
 
 
 func _initialize() -> void:
@@ -37,6 +43,9 @@ func _run() -> void:
 func _run_host() -> void:
 	var net: Node = root.get_node("NetworkManager")
 	root.get_node("Main").call("_load_match_settings", MATCH_PATH)
+	var bus: Node = root.get_node("EventBus")
+	bus.enemy_split.connect(func(_e: Node2D, _into: Resource, _count: int) -> void: _splits += 1)
+	bus.enemy_killed.connect(func(_e: Node2D, _killer: int) -> void: _kills += 1)
 	_check(net.host(_port) == OK, "host() failed")
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
@@ -45,6 +54,11 @@ func _run_host() -> void:
 	var lobby_seconds: float = (_wave_one_msec - joined_msec) / 1000.0
 	_info("wave 1 started %.1f s after both joined (lobby timer is 20 s)" % lobby_seconds)
 	_check(lobby_seconds < 8.0, "ready-up did not skip the lobby (%.1f s)" % lobby_seconds)
+	_check(_splits >= 1, "the Splitter never split")
+	_check(
+		_kills_by_wave_two >= 3,
+		"wave 1 cleared after %d kills; the Splitter and its 2 children make 3" % _kills_by_wave_two
+	)
 	await create_timer(1.0).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
 	await _wait_until(func() -> bool: return _is_phase("LOBBY"), 5.0)
@@ -135,6 +149,8 @@ func _on_state(state: RefCounted) -> void:
 		_seen.append(token)
 		if token == "ACTIVE 1" and _wave_one_msec < 0:
 			_wave_one_msec = Time.get_ticks_msec()
+		if token == "BREAK 1" and _kills_by_wave_two < 0:
+			_kills_by_wave_two = _kills
 		_info(
 			(
 				"%.1f s: %s (%d/%d ready, %d alive)"

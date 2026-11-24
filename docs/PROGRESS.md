@@ -565,7 +565,7 @@ for every enemy every tick (p95 9.7 ms); now only a ranged enemy whose attack is
 - Enemies lead from where the host has the target (not the target's own screen, as bots do).
 - Line of sight is one ray from the enemy's center; a bolt can still clip a pillar's corner.
 
-## M7 step 4: enemy roster, part 1: roles ✅ (issue #92)
+## M7 step 4: enemy roster, part 1: roles ✅ (merged, issue #92)
 
 Three new enemy types, each a combination of parts plus numbers (`enemies/data/*.tres`), all
 bought by the default schedule.
@@ -589,3 +589,29 @@ No network format change (clients load the new types from `enemies/data/` like t
   26). Composition rules per wave come in step 7.
 - All enemies use the zombie picture, told apart by tint and size.
 - **Not verified:** how the three play in a window.
+
+## M7 step 5: enemy roster, part 2: Splitter and Support ✅ (issue #94)
+
+Enemies that change other enemies, so the fight becomes about what to kill first.
+
+| Enemy | What it does | Numbers |
+|---|---|---|
+| **Splitter** (from wave 7, cost 3) | Dies into 2 Splitlings where it fell | 140 health, melee 15; Splitling: 35 health, fast, melee 6 |
+| **Support** (from wave 8, cost 4) | Hangs back (380–620 px) and every 1.5 s heals every wounded enemy within 240 px (itself too) by 12% of their max health. Never hurts players | 90 health |
+
+| System | Where |
+|---|---|
+| `EnemyData.split_into` + `split_count`; the dying enemy emits EventBus `enemy_split` before it is freed, and the host's `WaveSpawner` spawns the children around it at once, with the wave's modifiers | `enemies/enemy_data.gd`, `enemies/chaser.gd`, `autoloads/event_bus.gd`, `modes/waves/wave_spawner.gd` |
+| Splits never count twice: children don't go into the spawn queue, they're alive enemies of the wave until killed, so a wave with a Splitter clears only after its children die | `modes/waves/wave_spawner.gd` |
+| `HealPulseAttack` (pure `heal_amount`, `reaches`); enemies join `Groups.ENEMIES` | `enemies/behaviours/heal_pulse_attack.gd`, `shared/groups.gd` |
+| The wave report counts a split enemy's children in Health and Effective | `modes/waves/wave_report.gd` |
+| Smoke **C** now plays a Splitter (wave 1) and a Support (wave 2) over the network, and checks that the Splitter split and that wave 1 needed 3 kills to clear | `tests/net/wave_smoke.gd`, `tests/net/data/combo_*.tres` |
+
+No network format change (the split children are normal enemy spawns).
+
+### Known limitations
+- A split ignores `max_alive` (the children appear at once, at most 2 per Splitter).
+- Heals have no visual yet (health bars aren't drawn; a pulse ring would help, M10).
+- **Not verified:** that a wave with a Support is noticeably harder unless it is focused. That
+  needs people playing (the roadmap's "done when"); on paper a Support adds about 12% of the
+  nearby enemies' health every 1.5 s.

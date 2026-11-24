@@ -18,7 +18,10 @@ a range and a lead).
    `display_name`, `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
    `move_speed`, `repath_interval`, the Behaviours group
    (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
-   group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`). It **must** live in `enemies/data/`: clients only load enemy data from
+   group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`).
+   `split_into` + `split_count` make it die into other enemies (Splitter → Splitling); a
+   `HealPulseAttack` makes a support that heals enemies near it (they find each other through
+   the `Groups.ENEMIES` group). It **must** live in `enemies/data/`: clients only load enemy data from
    `Chaser.DATA_FOLDER`.
 2. **Let the waves buy it:** add it to `enemy_types` in `modes/waves/data/default_waves.tres`
    (`WaveSchedule`). `cost` and `first_wave` decide when it shows up (`modes/waves/wave_budget.gd`).

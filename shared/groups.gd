@@ -4,5 +4,7 @@ extends RefCounted
 
 ## Players that are alive and can be targeted (enemies and, later, bots read this).
 const LIVING_PLAYERS: StringName = &"living_players"
+## Every enemy in the level (support enemies look for wounded ones here).
+const ENEMIES: StringName = &"enemies"
 ## Every player character, alive or not, on every peer (the HUD and spectating read this).
 const PLAYERS: StringName = &"players"

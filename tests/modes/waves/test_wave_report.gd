@@ -123,3 +123,16 @@ func test_effective_health_counts_an_enemy_s_own_armor() -> void:
 	for type in _plan(1):
 		expected += type.max_health / type.damage_taken
 	assert_eq(row.effective_health, roundi(expected))
+
+
+func test_health_includes_what_an_enemy_splits_into() -> void:
+	var small: EnemyData = _type("Small", 1.0, 7)
+	ogre.split_into = small
+	ogre.split_count = 2
+	assert_eq(WaveReport.with_splits(ogre).size(), 3)
+	var row: WaveReport.Row = WaveReport.row(schedule, catalog, MATCH_SEED, 1)
+	var expected: int = 0
+	for type in _plan(1):
+		expected += type.max_health + (14 if type == ogre else 0)
+	assert_eq(row.total_health, expected)
+	assert_eq(row.enemies, _plan(1).size(), "the enemy count is what the wave buys")
