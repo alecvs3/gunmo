@@ -878,4 +878,4 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - No sounds yet (next issue), and no setting to turn screen shake off.
 - A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
   where it last saw the enemy.
-- **Not verified:** how it feels in a window and in a 2-player match.
+- Tried in a window by Yusuf (test arena). **Not verified:** a 2-player match, and the new maps by eye.
