@@ -6,7 +6,9 @@ extends RefCounted
 
 const FIRE: int = 1
 const RELOAD: int = 2
-const ALL_BUTTONS: int = FIRE | RELOAD
+## Held next to a downed teammate: revive them (co-op).
+const REVIVE: int = 4
+const ALL_BUTTONS: int = FIRE | RELOAD | REVIVE
 ## u32 sequence, 2 x f32 move, f64 aim, u8 buttons, f64 view tick, f64 client tick.
 const ENCODED_SIZE: int = 37
 const MAX_PER_PACKET: int = 16

@@ -654,7 +654,7 @@ tick p95 4.2 ms, client download 52.8 KB/s. Soak S (10 min): see the PR.
 - A bigger `max_alive` needs smaller enemy snapshots (bandwidth is the limit at 50).
 - **Not verified:** how the curve plays (step 15's playtests).
 
-## M7 step 8: bosses at waves 10, 20 and 25 ✅ (issue #99)
+## M7 step 8: bosses at waves 10, 20 and 25 ✅ (merged, issue #99)
 
 | Boss | Wave | Phases (health share where it starts) |
 |---|---|---|
@@ -682,3 +682,22 @@ budget 60), host tick p95 4.7 ms.
   in a window.
 - A boss's attack waits for its windup even if the target walks away; it then fires at where
   the target is.
+
+## M7 step 9: downed and revive (co-op) ✅ (issue #102)
+
+| Feature | Status | Where |
+|---|---|---|
+| At 0 health during a wave a player **goes down** where they fell (greyed, enemies ignore them, can't act) instead of being out | Done, tested | `modes/wave_mode.gd`, `player/player.gd` |
+| A teammate within 70 px **holding E** (new `revive` action, `InputCommand.REVIVE`) fills a revive bar over 3 s; letting go or walking away empties it. Revived players come back with 30% health where they lie | Done, tested | `modes/waves/revive_rules.gd`, `modes/waves/downed_players.gd` |
+| **Bleed-out:** 20 s, paused while someone is reviving; then out until the break (as before) | Done, tested | same |
+| Everyone down = defeat (downed players don't count as living) | Done (WaveFlow unchanged) | `modes/waves/wave_flow.gd` |
+| Everyone sees it: `down_left` and `revive_progress` (1 byte each, also in the public form; protocol 13); a green ring fills over the downed player; HUD: "You're down · being revived 60%" for them, "Hold E to revive Yusuf" next to them | Done, tested | `shared/network/states/player_net_state.gd`, `player/player_net_sync.gd`, `ui/hud.gd` |
+| Numbers in `MatchSettings` (`bleed_out_seconds` 0 = off; Gun Game keeps it off) | Done | `modes/match_settings.gd`, `modes/data/default_match.tres` |
+| Smoke **C**: the host downs the client, teleports next to it and holds revive; the client sees itself go down and come back | Done | `tests/net/wave_smoke.gd` |
+
+Also: `project.godot` gets the `revive` input action (E).
+
+### Known limitations
+- Bots don't revive yet (step 10).
+- Reviving doesn't stop you moving or shooting; walking out of range interrupts it.
+- **Not verified:** how it feels in a window; the ring and the prompts' look.

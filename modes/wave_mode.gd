@@ -16,6 +16,7 @@ var _ready_peers: Dictionary = {}
 var _match_seed: int = 0
 var _modifier_mask: int = 0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
+var _downed: DownedPlayers = null
 
 @onready var _spawner: WaveSpawner = $WaveSpawner
 
@@ -33,8 +34,9 @@ func shop_open() -> bool:
 	return can_ready_up()
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var players: Array[Player] = level.players()
+	_downed.update(players, delta)
 	var living: int = _count_living(players)
 	var wave_done: bool = _spawner.is_finished() and level.enemy_count() == 0
 	var ready: int = _count_ready(players)
@@ -58,6 +60,9 @@ func _start() -> void:
 	var schedule: WaveSchedule = settings.wave_schedule
 	_flow.configure(schedule.total_waves, settings.first_break_seconds, settings.break_seconds)
 	_flow.reset()
+	if _downed == null:
+		_downed = DownedPlayers.new(settings)
+	_downed.clear()
 	_match_seed = randi()
 	_ready_peers.clear()
 	_spawner.stop()
@@ -80,6 +85,7 @@ func _handle(event: WaveFlow.Event) -> void:
 			)
 		WaveFlow.Event.WAVE_CLEARED:
 			_ready_peers.clear()
+			_downed.clear()
 			_pay_wave_bonus()
 			if settings.revive_at_break:
 				_revive(false)
@@ -93,6 +99,16 @@ func _revive(everyone: bool) -> void:
 	for i in players.size():
 		if everyone or not players[i].is_alive:
 			players[i].respawn(level.player_spawn_position(i))
+
+
+## Co-op: at 0 health a player goes down during a wave (a teammate can revive them) instead of
+## being out at once.
+func _on_player_killed(victim: Node2D, killer_id: int) -> Player:
+	var killer: Player = super(victim, killer_id)
+	var player := victim as Player
+	if player != null and _downed.enabled() and _flow.phase == GameMode.Phase.ACTIVE:
+		_downed.start(player)
+	return killer
 
 
 func _on_ready_changed(peer_id: int, is_ready: bool) -> void:
@@ -185,6 +201,8 @@ func _purchase_problem(
 func _on_peer_left(peer_id: int) -> void:
 	super(peer_id)
 	_ready_peers.erase(peer_id)
+	if _downed != null:
+		_downed.forget(peer_id)
 
 
 func _count_living(players: Array[Player]) -> int:

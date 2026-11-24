@@ -6,12 +6,16 @@ extends "res://tests/net/smoke_script.gd"
 ##   3. host presses "Play again": back to the LOBBY    4. stand still: DEFEAT
 ## Each side records the phases it sees (the client through replication) and checks them.
 ## The host also checks a Splitter split, that its children had to die before wave 1 cleared,
-## and that the boss reached its second phase and was killed.
+## and that the boss reached its second phase and was killed. In the second run the host
+## downs the client and revives it (holding revive next to it); the client must see itself go
+## down and come back.
 ## Usage: -s res://tests/net/wave_smoke.gd -- <wavehost|waveclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
 const WATCHDOG_SECONDS: float = 110.0
 const MATCH_PATH: String = "res://tests/net/data/combo_match.tres"
+## InputCommand.REVIVE.
+const REVIVE_BUTTON: int = 4
 ## Groups.BOSSES.
 const BOSS_GROUP: StringName = &"bosses"
 
@@ -25,6 +29,9 @@ var _splits: int = 0
 ## Host: the highest boss phase seen, and whether a boss died.
 var _boss_phase: int = -1
 var _boss_killed: bool = false
+## Client: saw its own player downed, then alive again.
+var _saw_self_downed: bool = false
+var _saw_self_revived: bool = false
 var _kills: int = 0
 ## Host: kills seen when wave 1 ended (a split's children must die too).
 var _kills_by_wave_two: int = -1
@@ -70,7 +77,9 @@ func _run_host() -> void:
 	await create_timer(1.0).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
 	await _wait_until(func() -> bool: return _is_phase("LOBBY"), 5.0)
-	await _play_until(_phase["DEFEAT"], false, 40.0)
+	await _play_until(_phase["ACTIVE"], false, 10.0)
+	await _down_and_revive_client()
+	await _play_until(_phase["DEFEAT"], false, 60.0)
 	_check_sequence()
 	await create_timer(1.0).timeout
 	net.leave()
@@ -87,6 +96,8 @@ func _run_client() -> void:
 	await _play_until(_phase["DEFEAT"], false, 45.0)
 	_check_sequence()
 	_check(_saw_last_wave_hud, "the HUD never showed 'Wave 3 / 3'")
+	_check(_saw_self_downed, "never saw our own player downed")
+	_check(_saw_self_revived, "never saw our own player revived")
 	_check(_saw_results, "the results screen never appeared")
 	await _wait_until(func() -> bool: return not _end_reason.is_empty(), 15.0)
 	_check(
@@ -102,6 +113,7 @@ func _play_until(target_phase: int, shooting: bool, timeout: float) -> void:
 		_drive(shooting)
 		_watch_ui()
 		_watch_boss()
+		_watch_downed()
 		await create_timer(0.1).timeout
 		time_left -= 0.1
 	_script(_own_player(), 0.0, 0)
@@ -222,3 +234,36 @@ func _watch_boss() -> void:
 	var boss: Node = get_first_node_in_group(BOSS_GROUP) if _role == "wavehost" else null
 	if boss != null:
 		_boss_phase = maxi(_boss_phase, boss.call("phase_index"))
+
+
+## Host: knocks the client down, walks over (a teleport) and holds revive until it is back.
+func _down_and_revive_client() -> void:
+	var client: Node2D = null
+	for player: Node in root.get_node("%s/Players" % LEVEL_PATH).get_children():
+		if player.name != "1":
+			client = player
+	_check(client != null, "no client player to revive")
+	if client == null:
+		return
+	client.get_node("HealthComponent").take_damage(100000, 0)
+	await _wait_until(func() -> bool: return client.call("is_downed"), 3.0)
+	_check(client.call("is_downed"), "the client did not go down at 0 health")
+	var own: Node2D = _own_player()
+	own.call("respawn", client.global_position + Vector2(30, 0))
+	_script(own, 0.0, REVIVE_BUTTON)
+	await _wait_until(func() -> bool: return client.get("is_alive"), 6.0)
+	_script(own, 0.0, 0)
+	_check(client.get("is_alive"), "holding revive next to the client did not revive it")
+	_info("client downed and revived by the host")
+	await create_timer(1.0).timeout
+
+
+## Client: our own player's downed state as replication shows it.
+func _watch_downed() -> void:
+	var own: Node2D = _own_player()
+	if _role != "waveclient" or own == null:
+		return
+	if own.call("is_downed"):
+		_saw_self_downed = true
+	elif _saw_self_downed and own.get("is_alive"):
+		_saw_self_revived = true

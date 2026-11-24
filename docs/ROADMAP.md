@@ -7,7 +7,7 @@ starts. No new guns in any of these steps: guns are added one at a time, separat
 | Milestone | What | Status |
 |---|---|---|
 | Hardening | rate limits, garbage-input test, soak test (#47) | merged |
-| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–8 done) |
+| **M7 Content** | the old M7 (waves to 25), M8 (Gun Game complete) and M9 (maps) together | in progress (steps 1–9 done) |
 | M5 Server hosting | Linux builds (#48), dedicated match loop, systemd + `SERVER.md` | later |
 | M6 Lobby | mode/map picker, ready-up, countdown, results → lobby, rejoin (#46), settings (#49) | later |
 | M10 Feel | sounds (#2), hit marker, VFX, real art (#1, needs the art style decided) | later |
@@ -79,7 +79,7 @@ balance at the end, when everything that affects balance exists.
   that reaches a boss wave and wins; protocol bump if a state layout changes.
 - **Done when:** each boss can be beaten by 2 players and has at least 2 phases.
 
-### 9. Downed and revive (co-op)
+### 9. Downed and revive (co-op) ✅ (#102)
 - **Adds:** players at 0 health go down instead of dying; a teammate holds a key nearby to
   revive; a bleed-out timer; everyone down = defeat. Host decides everything.
 - **Test:** GUT for the revive timer, range and interruption; a new smoke check in **C**: client

@@ -7,6 +7,8 @@ extends Control
 ## announces each new gun.
 
 const BANNER_SECONDS: float = 2.5
+## Show the revive prompt this close to a downed teammate (px; the host's range decides).
+const REVIVE_HINT_RANGE: float = 80.0
 
 var _state: MatchNetState = null
 var _previous_phase: int = -1
@@ -135,10 +137,39 @@ func _show_player(player: Player) -> void:
 	if down and _state.mode_kind == MatchNetState.ModeKind.GUN_GAME:
 		_status_label.text = "Respawning…"
 	elif down:
-		var watching: String = "spectating a teammate · click to switch"
-		_status_label.text = (
-			"You're down · " + (watching if _spectating != 0 else "nobody left to watch")
-		)
+		_status_label.text = down_text(player.down_left, player.revive_progress, _spectating)
+	else:
+		var near: Player = _downed_teammate_near(player)
+		_status_label.visible = near != null and _state.phase == GameMode.Phase.ACTIVE
+		if near != null:
+			_status_label.text = revive_prompt(near.display_name, near.revive_progress)
+
+
+## Co-op status while down: bleeding out (being revived), or out and spectating.
+static func down_text(down_left: int, revive_progress: int, spectating: int) -> String:
+	if down_left > 0 and revive_progress > 0:
+		return "You're down · being revived %d%%" % roundi(revive_progress / 2.55)
+	if down_left > 0:
+		return "You're down · a teammate can revive you (%d%% left)" % roundi(down_left / 2.55)
+	var watching: String = "spectating a teammate · click to switch"
+	return "You're down · " + (watching if spectating != 0 else "nobody left to watch")
+
+
+## Co-op prompt next to a downed teammate.
+static func revive_prompt(teammate: String, revive_progress: int) -> String:
+	if revive_progress > 0:
+		return "Reviving %s… %d%%" % [teammate, roundi(revive_progress / 2.55)]
+	return "Hold E to revive %s" % teammate
+
+
+## A downed teammate close enough to revive (the host decides; this only shows the prompt).
+func _downed_teammate_near(player: Player) -> Player:
+	for node in get_tree().get_nodes_in_group(Groups.PLAYERS):
+		var teammate := node as Player
+		if teammate != null and teammate != player and teammate.is_downed():
+			if player.global_position.distance_to(teammate.global_position) <= REVIVE_HINT_RANGE:
+				return teammate
+	return null
 
 
 func _show_match() -> void:
