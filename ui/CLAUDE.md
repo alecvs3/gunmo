@@ -18,7 +18,8 @@ gameplay.
 | `main_menu.gd` | Name, mode (`MODES`), bots, Host / Join |
 | `hud.gd`, `gun_game_hud_text.gd` | In-match HUD. Text is built in static functions so it can be tested |
 | `scoreboard.gd` | Tab board and the results board, ranked by `Scoreboard.Row.ranks_above` |
-| `shop_panel.gd` | Emits EventBus `shop_purchase_requested`; the mode turns it into a request the host checks |
+| `shop_panel.gd` | The see-through shop window (B opens it). Emits EventBus `shop_purchase_requested`; the mode turns it into a request the host checks |
+| `shop_weapon_card.*`, `shop_gun_picture.gd`, `shop_upgrade_row.*`, `shop_pips.gd`, `shop_seen.gd` | The shop's gun cards (each gun's own `held_model`), upgrade rows with level dots, and which confirmed purchase pops |
 | `results_screen.gd`, `game_menu.gd`, `hurt_indicator.gd`, `net_overlay.gd` (F3) | |
 | `fullscreen_check.gd`, `ui_scale_option.gd` | Display choices in both menus (`GameSettings`) |
 | `view_mask.gd` | Bars over the world outside the fair view box (`player/fair_view.gd`), under the rest of the UI |

@@ -653,3 +653,19 @@ tick p95 4.2 ms, client download 52.8 KB/s. Soak S (10 min): see the PR.
 - Swarmers are cheap, so their 10% share is still 15–24 of a late wave's 40.
 - A bigger `max_alive` needs smaller enemy snapshots (bandwidth is the limit at 50).
 - **Not verified:** how the curve plays (step 15's playtests).
+
+## Shop rework: the see-through shop ✅ (issue #103)
+
+| Feature | Status | Where |
+|---|---|---|
+| The shop is a big see-through window over the game. While it's open (lobby, breaks) a gold "B: Shop" hint shows top right; **B** opens it, **B**, **Esc** or a click outside closes it. A new lobby or break starts with it closed | Done | `ui/shop_panel.*` |
+| **Gun cards:** each gun's own drawn model (`WeaponData.held_model`) shown big, its name and price (Free / Equipped); the gun you hold has a blue frame, guns you can't afford are dimmed | Done, tested | `ui/shop_weapon_card.*`, `ui/shop_gun_picture.gd` |
+| **Upgrade rows** for the gun you hold: level dots (gold = bought), what the next level gives, a buy button with the price (MAX at the cap) | Done, tested | `ui/shop_upgrade_row.*`, `ui/shop_pips.gd` |
+| **Buy feedback:** when the host confirms a purchase (your weapon or a level actually changes), that card swells and settles, or the new dot pops. A refused request pops nothing | Done, tested | `ui/shop_seen.gd` |
+
+Nothing about buying changed: the buttons still only send `shop_purchase_requested` and the host
+checks it. No network format change.
+
+### Known limitations
+- No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
+- **Not verified:** how it looks and feels in a window, and in a 2-player match.
