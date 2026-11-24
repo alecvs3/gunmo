@@ -6,6 +6,7 @@ extends "res://tests/net/smoke_script.gd"
 ## purchases
 ## the host must refuse, then both clear the waves: the client's shotgun fires 6 pellets per
 ## trigger pull, its hits are confirmed, it earns credits, and the wave's modifiers reach it.
+## The host holds fire in the fight, so the client's shotgun must make the kills.
 ## Usage: -s res://tests/net/shop_smoke.gd -- <shophost|shopclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
@@ -110,12 +111,18 @@ func _refused_purchase_check(what: String, kind: int, index: int) -> void:
 
 
 ## Shoots the nearest enemy until the match is won or lost.
+## Shoots the nearest enemy until the match is over. The host holds fire (its pistol would kill
+## everything before the client's short-range shotgun gets a hit) and keeps everyone alive.
 func _fight_until_over() -> void:
 	var time_left: float = 60.0
+	var shooting: bool = _role == "shopclient"
 	while time_left > 0.0 and not (_is_phase("VICTORY") or _is_phase("DEFEAT")) and _own() != null:
+		if not shooting:
+			for player: Node in root.get_node(_level_path() + "/Players").get_children():
+				player.get_node("HealthComponent").invulnerable = true
 		var target: Node2D = _nearest_enemy()
 		var command: RefCounted = _input_command_script.new()
-		if target != null:
+		if target != null and shooting:
 			command.aim = (target.global_position - _own().global_position).angle()
 			command.buttons = _fire_button
 			_saw_tinted_enemy = _saw_tinted_enemy or target.get("modifier_mask") != 0
