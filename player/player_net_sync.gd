@@ -33,6 +33,8 @@ func capture() -> PlayerNetState:
 	state.protected = player.is_protected
 	state.down_left = player.down_left
 	state.revive_progress = player.revive_progress
+	state.pet = loadout.pet_index + 1
+	state.pet_tier = loadout.pet_tier
 	state.team_id = player.team_id
 	state.kills = score.kills
 	state.deaths = score.deaths
@@ -82,6 +84,7 @@ func _apply_shared(state: PlayerNetState) -> void:
 	player.is_protected = state.protected
 	player.down_left = state.down_left
 	player.revive_progress = state.revive_progress
+	loadout.load_pet(state.pet, state.pet_tier)
 	if player.team_id != state.team_id:
 		player.team_id = state.team_id
 	score.apply_replicated(state.kills, state.deaths, state.tier, state.tier_kills)

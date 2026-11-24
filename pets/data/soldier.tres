@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="PetData" format=3]
+
+[ext_resource type="Script" path="res://pets/pet_data.gd" id="1_pet"]
+[ext_resource type="Script" path="res://pets/pet_tier.gd" id="2_tier"]
+
+[sub_resource type="Resource" id="Tier_1"]
+script = ExtResource("2_tier")
+display_name = "Drill"
+description = "You deal 8% more damage."
+price = 200
+
+[sub_resource type="Resource" id="Tier_2"]
+script = ExtResource("2_tier")
+display_name = "Rally"
+description = "Every 12 kills, teammates within 400 px fire 15% faster for 6 s. Drill: +10%."
+price = 400
+
+[sub_resource type="Resource" id="Tier_3"]
+script = ExtResource("2_tier")
+display_name = "Covering Fire"
+description = "The soldier shoots the nearest enemy coming for you, for 25% of your gun's damage."
+price = 700
+
+[sub_resource type="Resource" id="Tier_4"]
+script = ExtResource("2_tier")
+display_name = "Last Stand"
+description = "While a teammate is down, you deal 25% more damage and move 10% faster. Rally also lifts you."
+price = 1100
+
+[sub_resource type="Resource" id="Tier_5"]
+script = ExtResource("2_tier")
+display_name = "Airstrike"
+description = "10 kills within 8 s call an airstrike: a 600 px line, 1.2 s warning, heavy damage (less on bosses). Rally: +20%."
+price = 1600
+
+[resource]
+script = ExtResource("1_pet")
+display_name = "Soldier"
+role = "Offense"
+blurb = "Hits hard and pushes the whole team forward, especially when things go wrong."
+kind = 2
+color = Color(1, 0.7, 0.35, 1)
+tiers = Array[ExtResource("2_tier")]([SubResource("Tier_1"), SubResource("Tier_2"), SubResource("Tier_3"), SubResource("Tier_4"), SubResource("Tier_5")])

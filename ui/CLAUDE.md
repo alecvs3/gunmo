@@ -20,6 +20,7 @@ gameplay.
 | `scoreboard.gd` | Tab board and the results board, ranked by `Scoreboard.Row.ranks_above` |
 | `shop_panel.gd` | The see-through shop window (B opens it). Emits EventBus `shop_purchase_requested`; the mode turns it into a request the host checks |
 | `shop_weapon_card.*`, `shop_gun_picture.gd`, `shop_upgrade_row.*`, `shop_pips.gd`, `shop_seen.gd` | The shop's gun cards (each gun's own `held_model`), upgrade rows with level dots, and which confirmed purchase pops |
+| `pet_panel.gd`, `pet_card.gd`, `pet_tier_row.gd`, `pet_portrait.gd` | The Pets window (P): pick a pet, see its five-tier ladder, adopt or buy the next tier (`ShopRules.KIND_PET`) |
 | `kill_feed.gd` | Last 5 kills ("Killer [SMG] Victim"), top right, from EventBus `kill_reported` |
 | `boss_bar.gd` | Boss name, phase and health from the replicated boss (`Groups.BOSSES`), bottom centre |
 | `results_screen.gd`, `game_menu.gd`, `hurt_indicator.gd`, `net_overlay.gd` (F3) | |

@@ -220,6 +220,11 @@ func _bots_shop(players: Array[Player]) -> void:
 		var choice: Array[int] = BotShopping.choose(
 			loadout.catalog, loadout.weapon_index, loadout.levels, player.get_wallet().credits
 		)
+		var pet_choice: int = BotShopping.pet_tier_to_buy(
+			loadout, player.get_wallet().credits, absi(player.peer_id) % loadout.pets.pets.size()
+		)
+		if pet_choice >= 0 and (choice.is_empty() or choice[0] != ShopRules.KIND_WEAPON):
+			choice = [ShopRules.KIND_PET, pet_choice]
 		if not choice.is_empty():
 			_buy(player.peer_id, choice[0], choice[1])
 
@@ -277,6 +282,10 @@ func _buy(peer_id: int, kind: int, index: int) -> void:
 	if not reason.is_empty():
 		NetLog.write("purchase by %d refused: %s" % [peer_id, reason])
 		return
+	if kind == ShopRules.KIND_PET:
+		wallet.spend(ShopRules.pet_price(loadout.pets, index, loadout.pet_index, loadout.pet_tier))
+		loadout.buy_pet_tier(index)
+		return
 	wallet.spend(ShopRules.price(loadout.catalog, kind, index, loadout.level(index)))
 	if kind == ShopRules.KIND_UPGRADE:
 		loadout.add_level(index)
@@ -295,6 +304,10 @@ func _purchase_problem(
 	if kind == ShopRules.KIND_WEAPON:
 		return ShopRules.check_weapon(
 			shop_open(), catalog, index, loadout.weapon_index, wallet.credits
+		)
+	if kind == ShopRules.KIND_PET:
+		return ShopRules.check_pet(
+			shop_open(), loadout.pets, index, loadout.pet_index, loadout.pet_tier, wallet.credits
 		)
 	return "Unknown purchase."
 

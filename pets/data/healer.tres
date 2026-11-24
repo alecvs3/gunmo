@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="PetData" format=3]
+
+[ext_resource type="Script" path="res://pets/pet_data.gd" id="1_pet"]
+[ext_resource type="Script" path="res://pets/pet_tier.gd" id="2_tier"]
+
+[sub_resource type="Resource" id="Tier_1"]
+script = ExtResource("2_tier")
+display_name = "Mending"
+description = "Once the team has dealt half of the wave's enemy health, heals you 12% of your max health. Once a wave."
+price = 200
+
+[sub_resource type="Resource" id="Tier_2"]
+script = ExtResource("2_tier")
+display_name = "Wave's End"
+description = "When a wave is cleared, you and every teammate heal 8%. Mending heals 15%."
+price = 400
+
+[sub_resource type="Resource" id="Tier_3"]
+script = ExtResource("2_tier")
+display_name = "Triage"
+description = "Anyone you revive comes back with 20% more health, and your revives are 25% faster. Wave's End heals 10%."
+price = 700
+
+[sub_resource type="Resource" id="Tier_4"]
+script = ExtResource("2_tier")
+display_name = "Siphon"
+description = "2% of the damage you deal heals you, at most 10% of your max health a wave."
+price = 1100
+
+[sub_resource type="Resource" id="Tier_5"]
+script = ExtResource("2_tier")
+display_name = "Guardian"
+description = "The first time each wave you would go down, you stay up at 20% health instead. Siphon heals up to 15%."
+price = 1600
+
+[resource]
+script = ExtResource("1_pet")
+display_name = "Healer"
+role = "Support"
+blurb = "Keeps the team standing. Heals are shares of max health with a limit each wave, so it never makes anyone unkillable."
+kind = 0
+color = Color(0.45, 1, 0.6, 1)
+tiers = Array[ExtResource("2_tier")]([SubResource("Tier_1"), SubResource("Tier_2"), SubResource("Tier_3"), SubResource("Tier_4"), SubResource("Tier_5")])

@@ -38,6 +38,7 @@ upgrades/        ShopCatalog, UpgradeData (stats), PlayerStats (each gun's per-l
 enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, behaviours/
                  (movement + attack parts an EnemyData combines)
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
+pets/*           Waves pets: PetData/PetCatalog (pets/data/*.tres), PetLook, PetFollower
 modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings
 ui/*             menus, HUD, scoreboard, shop, results, F3 overlay
 levels/          maps: MapData (levels/data/*.tres, picked by MatchSettings.map) → a Level scene

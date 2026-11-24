@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="PetData" format=3]
+
+[ext_resource type="Script" path="res://pets/pet_data.gd" id="1_pet"]
+[ext_resource type="Script" path="res://pets/pet_tier.gd" id="2_tier"]
+
+[sub_resource type="Resource" id="Tier_1"]
+script = ExtResource("2_tier")
+display_name = "Arc Spark"
+description = "A hit has a 15% chance (at most once a second) to arc blue lightning to 2 enemies within 140 px, for 40% of the hit's damage."
+price = 200
+
+[sub_resource type="Resource" id="Tier_2"]
+script = ExtResource("2_tier")
+display_name = "Frost Rune"
+description = "Every 8 s a rune lands where enemies are thickest near you: 35% slower for 3 s. Arc Spark: 20%, 3 jumps."
+price = 400
+
+[sub_resource type="Resource" id="Tier_3"]
+script = ExtResource("2_tier")
+display_name = "Conduction"
+description = "Slowed enemies take 25% more lightning damage, and arcs from them jump once more."
+price = 700
+
+[sub_resource type="Resource" id="Tier_4"]
+script = ExtResource("2_tier")
+display_name = "Hex"
+description = "Every 12 s it marks the toughest enemy in sight: +20% damage from everyone for 5 s, and arcs always start from it. Runes every 6 s."
+price = 1100
+
+[sub_resource type="Resource" id="Tier_5"]
+script = ExtResource("2_tier")
+display_name = "Tempest"
+description = "Every 25 s, after a 1 s warning, 6 bolts strike enemies for 8% of their max health (2% on bosses). Hex every 7 s."
+price = 1600
+
+[resource]
+script = ExtResource("1_pet")
+display_name = "Wizard"
+role = "Control"
+blurb = "Hits many enemies at once and links them together: slow them, they conduct, mark the big one, then it all chains."
+kind = 1
+color = Color(0.5, 0.65, 1, 1)
+tiers = Array[ExtResource("2_tier")]([SubResource("Tier_1"), SubResource("Tier_2"), SubResource("Tier_3"), SubResource("Tier_4"), SubResource("Tier_5")])
