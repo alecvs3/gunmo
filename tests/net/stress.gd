@@ -1,7 +1,8 @@
 extends "res://tests/net/smoke_script.gd"
 ## Headless stress test and performance budget: a host and a client, plus 6 bots, so 8
-## players fire at up to 40 enemies at once (tests/net/data/stress_match.tres). Players can't
-## die, so the fight never stops. After a warm-up it samples every frame for MEASURE_SECONDS:
+## players, each with a tier-5 pet, fire at up to 40 enemies at once
+## (tests/net/data/stress_match.tres). Players can't die, so the fight never stops. After a
+## warm-up it samples every frame for MEASURE_SECONDS:
 ##   host    game-logic time per physics tick (every node's _physics_process, measured between
 ##           a probe that runs first and one that runs last), enemies alive, shots fired per
 ##           second, bytes sent per second
@@ -17,6 +18,7 @@ extends "res://tests/net/smoke_script.gd"
 const WATCHDOG_EXTRA_SECONDS: float = 90.0
 const MATCH_PATH: String = "res://tests/net/data/stress_match.tres"
 const BOTS: int = 6
+const PET_TIERS: int = 5
 const WARM_UP_SECONDS: float = 6.0
 const MEASURE_SECONDS: float = 12.0
 ## Budgets. A 60 Hz tick has 16.7 ms; the host must leave room for rendering, the physics
@@ -77,6 +79,7 @@ func _run_host() -> void:
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
 	_add_bots()
+	_give_pets()
 	await _fight(WARM_UP_SECONDS, false)
 	await _fight(_measure_seconds, true)
 	_report_host()
@@ -114,6 +117,15 @@ func _add_bots() -> void:
 	var profile: Resource = load("res://bots/profiles/hard.tres")
 	for number in range(1, BOTS + 1):
 		level.call("spawn_bot", -number, "Stress bot %d" % number, profile)
+
+
+## Every player gets a tier-5 pet (Healer, Wizard, Soldier in turn), so the pets' per-tick
+## work and their effect events are part of the budget.
+func _give_pets() -> void:
+	var players: Array[Node] = _level().get_node("Players").get_children()
+	for i in players.size():
+		for tier in PET_TIERS:
+			players[i].get_node("PlayerLoadout").call("buy_pet_tier", i % 3)
 
 
 ## Every frame: keep players alive and our own player shooting; when `measuring`, sample.

@@ -44,7 +44,7 @@ static func rally_includes_owner(tier: int) -> bool:
 static func cover_damage(data: SoldierData, tier: int, gun_damage: int) -> int:
 	if tier < COVER:
 		return 0
-	return maxi(roundi(gun_damage * data.cover_damage_share), 1)
+	return maxi(roundi(gun_damage * data.cover_damage_share), maxi(data.cover_min_damage, 1))
 
 
 ## Tier 5: whether the owner's recent kill ticks (oldest first) call an airstrike.

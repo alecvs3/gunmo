@@ -17,6 +17,8 @@ extends PetData
 @export_range(0.1, 10.0) var cover_interval: float = 0.8
 ## Share of your gun's damage per pet shot.
 @export_range(0.0, 2.0) var cover_damage_share: float = 0.25
+## At least this much per shot, so fast guns with small hits (the SMG) still get real help.
+@export_range(0, 1000) var cover_min_damage: int = 10
 @export_range(50.0, 2000.0) var cover_reach: float = 350.0
 
 @export_group("Last Stand (tier 4)")

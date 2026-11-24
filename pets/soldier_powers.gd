@@ -5,6 +5,10 @@ extends RefCounted
 ## the loadout, which the snapshot carries to the predicting owner; damage on the host), and
 ## fires the pet's covering shots. SoldierRules decides; this applies it.
 
+## Nothing to shoot: look again after this many ticks. At most this many sight rays per look.
+const RETRY_TICKS: int = 15
+const SIGHT_CHECKS: int = 3
+
 var wave: int = 0
 
 var _level: Level
@@ -99,6 +103,7 @@ func _cover(player: Player, data: SoldierData, tier: int, now: int) -> void:
 		return
 	var target: ChaserEnemy = _nearest_enemy(player, data.cover_reach)
 	if target == null:
+		_cover_ready[player.peer_id] = now + RETRY_TICKS
 		return
 	_cover_ready[player.peer_id] = now + roundi(data.cover_interval * NetClock.tick_rate())
 	var gun: int = player.get_loadout().weapon.weapon_data.damage
@@ -162,18 +167,28 @@ func _strike_due(now: int) -> void:
 	_pending = still
 
 
+## The nearest enemy within `reach` the player can see: candidates closest first, at most
+## SIGHT_CHECKS rays (line-of-sight tests are the expensive part).
 func _nearest_enemy(player: Player, reach: float) -> ChaserEnemy:
-	var best: ChaserEnemy = null
-	var best_distance: float = reach
+	var near: Array[ChaserEnemy] = []
 	for node in _level.get_tree().get_nodes_in_group(Groups.ENEMIES):
 		var enemy := node as ChaserEnemy
 		if enemy == null or enemy.is_queued_for_deletion():
 			continue
-		var distance: float = enemy.global_position.distance_to(player.global_position)
-		if distance <= best_distance and _clear_line(player.global_position, enemy.global_position):
-			best = enemy
-			best_distance = distance
-	return best
+		if enemy.global_position.distance_to(player.global_position) <= reach:
+			near.append(enemy)
+	var from: Vector2 = player.global_position
+	near.sort_custom(
+		func(a: ChaserEnemy, b: ChaserEnemy) -> bool:
+			return (
+				a.global_position.distance_squared_to(from)
+				< b.global_position.distance_squared_to(from)
+			)
+	)
+	for enemy in near.slice(0, SIGHT_CHECKS):
+		if _clear_line(from, enemy.global_position):
+			return enemy
+	return null
 
 
 func _clear_line(from: Vector2, to: Vector2) -> bool:

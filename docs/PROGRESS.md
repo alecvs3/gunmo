@@ -1021,7 +1021,7 @@ tier-5 Wizard and the client must see its lightning or runes. Smoke F download 5
 - Hex and runes don't check line of sight (they reach through walls).
 - **Not verified:** how the lightning, runes and marks look in a window.
 
-## Pets & pacing 5: player buffs and the Soldier ✅ (issue #136)
+## Pets & pacing 5: player buffs and the Soldier ✅ (merged, issue #136)
 
 | Tier | What it does |
 |---|---|
@@ -1046,3 +1046,25 @@ then fires 1.69 shots a second, 1.3 × 1.3).
 - When a buff starts or ends, the owner's prediction can be off for one round trip (a small
   correction), as for any state the host changes.
 - **Not verified:** how the tracers, rallies and airstrikes look and feel in a window.
+
+## Pets & pacing 6: balance pass ⚠️ (issue #138; playtests to do)
+
+On paper, from the numbers (no people played it):
+
+| Question | Finding | Change |
+|---|---|---|
+| Do pets compete with upgrades for credits? | All five tiers cost about 4,000; maxed upgrades about 9,500; a player earns about 10,000 by wave 22. You can't max both, so a pet is a real choice | None |
+| Tier 1 against a damage level of the same price | Drill: +8% for 200. Arc Spark with an SMG: about +8% (40% of a 14-damage hit, 2 jumps, at most once a second). A damage level: about +7% for 225 | None |
+| Covering Fire | 25% of the gun's damage per shot is about 4 damage a second with an SMG (3%) for 700 credits, against about +20% with the rifle | **At least 10 damage a shot** (`cover_min_damage`): about +10% with an SMG, the rifle unchanged |
+| Calling early | 6 per enemy alive + 3 per second of break: about 100 credits a call in waves 1–5, enough for an early pet tier | None |
+| Do pets break the late waves? | Two players with maxed pets deal roughly 20% more: boss fights on paper about 20 / 50 / 55 s instead of 25 / 61 / 68 s | None until the playtests say so |
+
+**Performance:** smoke F now gives all 8 players a tier-5 pet. With pets the host's tick rose by
+about 2.5 ms on this PC (while two other Godot processes ran here; without pets the same run was
+also over budget, so local timings were unreliable). Pets that find no target now wait 0.25 s
+before looking again, and covering fire casts at most 3 sight rays per look. CI's clean machines
+judge the 10 ms budget (see the PR).
+
+### Not done
+- The playtests: whether pets feel worth their price, whether any is a must-pick, and whether
+  calling early feels good.
