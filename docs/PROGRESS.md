@@ -894,7 +894,7 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 
 ### Known limitations
 - **No gunshots yet**: none of these packs has gun sounds. No sound on hits yet.
-- "Big hit" (30%+ of the enemy's max health) is too easy with today's numbers: one pistol shot is 33% of
-  a grunt, so most hits show gold numbers. The rule needs rethinking.
+- Gold "big hit" numbers were too common at 30% of max health (one pistol shot is 33% of a grunt);
+  now 50% of the enemy's starting health (#109).
 - No volume setting; everything plays on the Master bus.
 - **Not verified:** how it sounds in a window (the volumes are first guesses).
