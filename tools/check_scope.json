@@ -20,6 +20,7 @@
 		"modes/gun_game": ["E"],
 		"modes/wave_mode": ["C", "D"],
 		"modes/waves/": ["C", "D"],
+		"path/": ["C", "D"],
 		"pets/": ["C", "D", "F"],
 		"player/": "all",
 		"project.godot": "all",

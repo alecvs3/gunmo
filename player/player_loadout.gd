@@ -12,6 +12,10 @@ extends Node
 
 var catalog: ShopCatalog = ShopCatalog.load_default()
 var pets: PetCatalog = PetCatalog.load_default()
+var path_tree: PathTree = PathTree.load_default()
+## Waves: the Path nodes owned, the Cores to spend and whether this break's step is used. The
+## owned nodes' StatEffects change the stats, so they travel in the snapshot like upgrades.
+var path := PathProgress.new()
 ## Waves: the pet (index into the PetCatalog, -1 = none) and how many of its tiers are bought.
 var pet_index: int = -1
 var pet_tier: int = 0
@@ -68,6 +72,30 @@ func buy_pet_tier(index: int) -> void:
 		pet_tier = 1
 
 
+## Host: take a Path node (PathRules.take decides). More max health heals by the amount gained.
+func take_path_node(index: int, in_break: bool) -> bool:
+	var old_max: int = health.max_health
+	if not PathRules.take(path_tree, path, index, in_break):
+		return false
+	_apply(false)
+	health.heal(health.max_health - old_max)
+	return true
+
+
+## Clients: the Path from a snapshot; recomputes the stats when the owned nodes changed.
+func load_path(owned: int, cores: int, stepped: bool) -> void:
+	path.cores = cores
+	path.stepped = stepped
+	if owned != path.owned:
+		path.owned = owned
+		_apply(false)
+
+
+## What shop upgrades cost this player (the Path's discounts), 1 = full price.
+func shop_price_multiplier() -> float:
+	return path_tree.shop_price_multiplier(path.owned)
+
+
 ## Host (from pets) and clients (from snapshots): the buffs; recomputes the stats on a change.
 func set_buffs(fire_rate: float, move: float) -> void:
 	if is_equal_approx(fire_rate, fire_rate_bonus) and is_equal_approx(move, move_bonus):
@@ -88,12 +116,13 @@ func load_pet(pet: int, tier: int) -> void:
 	pet_tier = clampi(tier, 0, PetData.TIERS) if pet_index >= 0 else 0
 
 
-## Back to the starting weapon with no upgrades and no pet.
+## Back to the starting weapon with no upgrades, no pet and an empty Path.
 func reset() -> void:
 	weapon_index = 0
 	levels.fill(0)
 	pet_index = -1
 	pet_tier = 0
+	path.reset()
 	_apply(true)
 
 
@@ -123,7 +152,8 @@ func current_weapon() -> WeaponData:
 
 
 func _apply(new_weapon: bool) -> void:
-	var stats: WeaponData = PlayerStats.effective_weapon(current_weapon(), catalog, levels)
+	var bonuses: PackedFloat32Array = path_tree.stat_bonuses(path.owned)
+	var stats: WeaponData = PlayerStats.effective_weapon(current_weapon(), catalog, levels, bonuses)
 	stats.fire_rate *= 1.0 + fire_rate_bonus
 	if new_weapon:
 		weapon.equip(stats)
@@ -132,6 +162,6 @@ func _apply(new_weapon: bool) -> void:
 	look.pose = stats.pose
 	look.held_model = stats.held_model
 	if _base_player != null:
-		effective_player = PlayerStats.effective_player(_base_player, catalog, levels)
+		effective_player = PlayerStats.effective_player(_base_player, catalog, levels, bonuses)
 		effective_player.move_speed *= 1.0 + move_bonus
 		health.max_health = effective_player.max_health

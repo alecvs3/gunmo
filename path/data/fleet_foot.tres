@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="PathNode" format=3]
+
+[ext_resource type="Script" path="res://path/path_node.gd" id="1_node"]
+[ext_resource type="Script" path="res://path/path_effect.gd" id="2_effect"]
+[ext_resource type="Script" path="res://path/stat_effect.gd" id="3_kind"]
+[ext_resource type="Resource" path="res://path/data/quick_hands.tres" id="4_quick_hands"]
+[ext_resource type="Resource" path="res://path/data/scavenger.tres" id="5_scavenger"]
+
+[sub_resource type="Resource" id="Resource_effect"]
+script = ExtResource("3_kind")
+stat = 4
+amount = 0.1
+
+[resource]
+script = ExtResource("1_node")
+display_name = "Fleet foot"
+description = "Travel light: +10% move speed. Locks out Scavenger."
+branch = "Logistics"
+tier = 3
+core_cost = 3
+requires = Array[ExtResource("1_node")]([ExtResource("4_quick_hands")])
+excludes = Array[ExtResource("1_node")]([ExtResource("5_scavenger")])
+effects = Array[ExtResource("2_effect")]([SubResource("Resource_effect")])

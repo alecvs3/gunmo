@@ -28,6 +28,7 @@ reviewed by both developers.
 | `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
 | `waves/early_call.gd` | Calling the next wave early: when it's allowed (only up to `MatchSettings.early_call_last_wave`, 5 by default), the vote, the bonus (per enemy of the called-away wave still alive: `WaveSpawner.alive_count`) |
 | `waves/interest.gd` | Interest on held credits after each clear bonus: per step held, up to a cap (`MatchSettings.interest_*`) |
+| `waves/wave_path.gd` | The Path in a match (host): Cores per wave, boss and solo bonus, one step per break, taking a node (rules in `path/path_rules.gd`) |
 | `waves/revive_rules.gd` | Downed and revive: bleed-out timer, revive bar, range, interruption (`waves/downed_players.gd` applies it on the host) |
 | `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |
 | `waves/difficulty/difficulty_model.gd` | How hard a wave is, 0–10, from its enemies' own numbers (see "Wave difficulty" below) |
@@ -107,7 +108,7 @@ That's kept on purpose: splitting it would change the network format for little 
 ## Requests
 Clients ask through `NetChannel.send_request(topic, data)`. `GameMode._on_request_received`
 ignores peers without a player, handles `REQUEST_READY` (1) and passes the rest to
-`_on_request()`. `WaveMode` uses `REQUEST_BUY` (2) and `REQUEST_CALL` (3, early-call vote). Check every request against the rules.
+`_on_request()`. `WaveMode` uses `REQUEST_BUY` (2), `REQUEST_CALL` (3, early-call vote) and `REQUEST_PATH` (4, take a Path node). Check every request against the rules.
 Host-to-client events: `GunGameMode.KILL_FEED_TOPIC` (3) reports each kill to everyone
 (ProjectileSystem uses topic 1).
 

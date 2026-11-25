@@ -42,6 +42,8 @@ wallet, score, loadout.
   `bleed_out()` (host). A downed player is not alive (enemies ignore it, it can't act) but stays
   visible; `down_left` and `revive_progress` are in the snapshot. `held_buttons` lets the mode
   see who holds revive (`InputCommand.REVIVE`, key E).
+- **Path nodes:** `PlayerLoadout.path` (a `PathProgress`: owned mask, Cores, this break's step)
+  travels in the snapshot; `_apply` turns the owned StatEffects into stats on every peer.
 - **Pet buffs:** fire rate and move speed come from the loadout (`set_buffs`, in the snapshot);
   `damage_bonus` is host only (scales the shots the host fires).
 - Shots start at the drawn barrel: `CharacterLook.muzzle_for(pose)`, rotated by the aim. Their

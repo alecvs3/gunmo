@@ -47,6 +47,9 @@ func capture() -> PlayerNetState:
 	state.weapon_index = loadout.weapon_index
 	state.upgrade_levels = loadout.levels.duplicate()
 	state.credits = wallet.credits
+	state.path_owned = loadout.path.owned
+	state.cores = loadout.path.cores
+	state.path_stepped = loadout.path.stepped
 	return state
 
 
@@ -88,6 +91,7 @@ func _apply_shared(state: PlayerNetState) -> void:
 	player.down_left = state.down_left
 	player.revive_progress = state.revive_progress
 	loadout.load_pet(state.pet, state.pet_tier)
+	loadout.load_path(state.path_owned, state.cores, state.path_stepped)
 	if player.team_id != state.team_id:
 		player.team_id = state.team_id
 	score.apply_replicated(state.kills, state.deaths, state.tier, state.tier_kills)

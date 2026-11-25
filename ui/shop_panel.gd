@@ -148,10 +148,11 @@ func _refresh(player: Player) -> void:
 		if _seen != null and _seen.weapon_bought(now) == i:
 			_cards[i].pop()
 			_sound.play(_sounds.bought)
+	var discount: float = loadout.shop_price_multiplier()
 	for i in _rows.size():
 		var level: int = loadout.level(i)
-		var problem: String = ShopRules.check_upgrade(true, _catalog, i, level, credits)
-		_rows[i].show_upgrade(_catalog.upgrades[i], level, held, problem.is_empty())
+		var problem: String = ShopRules.check_upgrade(true, _catalog, i, level, credits, discount)
+		_rows[i].show_upgrade(_catalog.upgrades[i], level, held, problem.is_empty(), discount)
 		if _seen != null and _seen.level_bought(now, i):
 			_rows[i].pop()
 			_sound.play(_sounds.bought)

@@ -45,6 +45,13 @@ extends Resource
 @export_range(0, 100000) var interest_step: int = 0
 @export_range(0, 10000) var interest_per_step: int = 0
 @export_range(0, 100000) var interest_cap: int = 0
+## The Path's Cores (wave mode), for every player in the match: this many per wave cleared (a
+## wave called early counts once it is called away) and per boss killed. Solo (one human, no
+## bots) gets cores_solo_bonus more every cores_solo_every waves. 0 = none.
+@export_range(0, 20) var cores_per_wave: int = 0
+@export_range(0, 20) var cores_per_boss: int = 0
+@export_range(0, 20) var cores_solo_bonus: int = 0
+@export_range(0, 25) var cores_solo_every: int = 0
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
 

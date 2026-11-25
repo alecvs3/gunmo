@@ -9,9 +9,15 @@ const KIND_WEAPON: int = 1
 const KIND_PET: int = 2
 
 
-## "" if the next level may be bought, otherwise why not.
+## "" if the next level may be bought, otherwise why not. `discount` multiplies upgrade prices
+## (the Path's EconomyEffects; 1 = full price).
 static func check_upgrade(
-	shop_open: bool, catalog: ShopCatalog, index: int, level: int, credits: int
+	shop_open: bool,
+	catalog: ShopCatalog,
+	index: int,
+	level: int,
+	credits: int,
+	discount: float = 1.0
 ) -> String:
 	if not shop_open:
 		return "The shop is only open between waves."
@@ -20,7 +26,7 @@ static func check_upgrade(
 	var upgrade: UpgradeData = catalog.upgrades[index]
 	if level >= upgrade.max_level:
 		return "Already at the highest level."
-	if credits < upgrade.cost(level):
+	if credits < upgrade.cost(level, discount):
 		return "Not enough credits."
 	return ""
 
@@ -40,10 +46,12 @@ static func check_weapon(
 	return ""
 
 
-## Credits the purchase costs (assumes it was allowed).
-static func price(catalog: ShopCatalog, kind: int, index: int, level: int) -> int:
+## Credits the purchase costs (assumes it was allowed); `discount` applies to upgrades only.
+static func price(
+	catalog: ShopCatalog, kind: int, index: int, level: int, discount: float = 1.0
+) -> int:
 	if kind == KIND_UPGRADE:
-		return catalog.upgrades[index].cost(level)
+		return catalog.upgrades[index].cost(level, discount)
 	return catalog.weapons[index].price
 
 

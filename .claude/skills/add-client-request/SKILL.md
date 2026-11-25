@@ -9,7 +9,8 @@ Clients never change gameplay state themselves (rule 1). They ask, and the host 
 rules. Movement, aiming, firing and reloading are **not** requests: they're `InputCommand` buttons.
 
 1. **Pick a topic number** that's unused. Existing ones: `GameMode.REQUEST_READY` = 1
-   (`modes/game_mode.gd`), `WaveMode.REQUEST_BUY` = 2 (`modes/wave_mode.gd`). Add a
+   (`modes/game_mode.gd`), `WaveMode.REQUEST_BUY` = 2, `REQUEST_CALL` = 3,
+   `REQUEST_PATH` = 4 (`modes/wave_mode.gd`). Add a
    `REQUEST_<NAME>` constant where it's handled.
 2. **Client side:** the UI emits an EventBus signal (UI never calls into a mode; see
    `shop_purchase_requested`). The mode (or system) that owns it turns that into

@@ -6,12 +6,15 @@ extends GameMode
 ## settings say so), lets late joiners spectate until the break, keeps the replicated
 ## MatchState current, and pays credits: each enemy's bounty to its killer and a bonus to
 ## everyone standing when a wave is cleared. Each wave's enemies come from a seed made of the
-## match seed and the wave number, so a match can be replayed exactly.
+## match seed and the wave number, so a match can be replayed exactly. Pays the Path's
+## Cores and checks Path steps (WavePath, PathRules).
 
 ## NetChannel request topic: [kind (ShopRules.KIND_*), index].
 const REQUEST_BUY: int = 2
 ## NetChannel request topic: [1 = vote to call the next wave early, 0 = take it back].
 const REQUEST_CALL: int = 3
+## NetChannel request topic: [PathTree node index] to take that Path step.
+const REQUEST_PATH: int = 4
 ## Bots buy at most one thing this often while the shop is open (ticks).
 const BOT_SHOP_TICKS: int = 30
 
@@ -40,6 +43,7 @@ func _ready() -> void:
 	super()
 	set_physics_process(multiplayer.is_server())
 	EventBus.shop_purchase_requested.connect(_on_shop_purchase_requested)
+	EventBus.path_step_requested.connect(_on_path_step_requested)
 	if multiplayer.is_server():
 		EventBus.enemy_killed.connect(_on_enemy_killed)
 		_powers = PetPowers.new(level)
@@ -93,6 +97,7 @@ func _handle(event: WaveFlow.Event) -> void:
 	match event:
 		WaveFlow.Event.EARLY_CALLED:
 			_pay_early_call()
+			WavePath.pay_wave(level.players(), settings, _flow.wave - 1)
 			_powers.on_wave_cleared()
 			_start_wave()
 		WaveFlow.Event.WAVE_STARTED:
@@ -102,6 +107,8 @@ func _handle(event: WaveFlow.Event) -> void:
 			_ready_peers.clear()
 			_downed.clear()
 			_pay_wave_bonus()
+			WavePath.pay_wave(level.players(), settings, _flow.wave)
+			WavePath.start_break(level.players())
 			_powers.on_wave_cleared()
 			_forecast_wave(_flow.wave + 1)
 			if settings.revive_at_break:
@@ -292,6 +299,8 @@ func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:
 	var chaser := enemy as ChaserEnemy
 	if chaser != null:
 		killer.get_wallet().add(chaser.enemy_data.bounty)
+		if chaser.enemy_data.is_boss():
+			WavePath.pay_boss(level.players(), settings)
 
 
 ## This peer's shop asked to buy: the host applies it, a client asks the host.
@@ -307,6 +316,26 @@ func _on_request(peer_id: int, topic: int, data: PackedByteArray) -> void:
 		_buy(peer_id, data[0], data[1])
 	elif topic == REQUEST_CALL and data.size() == 1:
 		_on_call_vote(peer_id, data[0] == 1)
+	elif topic == REQUEST_PATH and data.size() == 1:
+		_take_path_step(peer_id, data[0])
+
+
+## This peer's Path window asked for a step: the host applies it, a client asks the host.
+func _on_path_step_requested(index: int) -> void:
+	if multiplayer.is_server():
+		_take_path_step(multiplayer.get_unique_id(), index)
+	elif index >= 0 and index < PathTree.MAX_NODES:
+		NetworkManager.channel.send_request(REQUEST_PATH, PackedByteArray([index]))
+
+
+## Host: PathRules decide (a step only in a break, one per break).
+func _take_path_step(peer_id: int, index: int) -> void:
+	var player: Player = level.player(peer_id)
+	if player == null:
+		return
+	var problem: String = WavePath.take(player, index, _flow.phase == GameMode.Phase.BREAK)
+	if not problem.is_empty():
+		NetLog.write("Path step %d by %d refused: %s" % [index, peer_id, problem])
 
 
 ## Host: the rules decide; only then are credits taken and the item applied.
@@ -324,7 +353,8 @@ func _buy(peer_id: int, kind: int, index: int) -> void:
 		wallet.spend(ShopRules.pet_price(loadout.pets, index, loadout.pet_index, loadout.pet_tier))
 		loadout.buy_pet_tier(index)
 		return
-	wallet.spend(ShopRules.price(loadout.catalog, kind, index, loadout.level(index)))
+	var discount: float = loadout.shop_price_multiplier()
+	wallet.spend(ShopRules.price(loadout.catalog, kind, index, loadout.level(index), discount))
 	if kind == ShopRules.KIND_UPGRADE:
 		loadout.add_level(index)
 	else:
@@ -337,7 +367,12 @@ func _purchase_problem(
 	var catalog: ShopCatalog = loadout.catalog
 	if kind == ShopRules.KIND_UPGRADE:
 		return ShopRules.check_upgrade(
-			shop_open(), catalog, index, loadout.level(index), wallet.credits
+			shop_open(),
+			catalog,
+			index,
+			loadout.level(index),
+			wallet.credits,
+			loadout.shop_price_multiplier()
 		)
 	if kind == ShopRules.KIND_WEAPON:
 		return ShopRules.check_weapon(

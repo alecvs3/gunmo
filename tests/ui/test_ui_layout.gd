@@ -20,6 +20,7 @@ const SCENES: Array[String] = [
 	"res://ui/scoreboard.tscn",
 	"res://ui/shop_panel.tscn",
 	"res://ui/pet_panel.tscn",
+	"res://ui/path_panel.tscn",
 	"res://ui/results_screen.tscn",
 	"res://ui/net_overlay.tscn",
 ]

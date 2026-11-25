@@ -9,13 +9,13 @@ const FLAG_PROTECTED: int = 2
 ## 3 vectors (24) + f64 aim + u16 health + u16 ammo + 2 x f64 timers + u8 flags + u8 teleports
 ## + u32 last command + u8 weapon index + u32 credits + 16 upgrade levels + i32 team
 ## + 2 x u16 kills/deaths + 2 x u8 tier/tier kills + u16 max health + 2 x u8 downed
-## + 2 x u8 pet + 2 x u8 buffs.
-const SIZE: int = 97
+## + 2 x u8 pet + 2 x u8 buffs + u64 Path owned + u8 Cores (7 bits) and Path stepped (top bit).
+const SIZE: int = 106
 ## The public form, for everyone but the player's owner: f32 position + f32 aim + u16 health
 ## + u16 max health + u8 flags + u8 teleports + u8 weapon + i32 team + 2 x u16 + 2 x u8 score
-## + 2 x u8 downed + 2 x u8 pet. Not sent to others: velocities, ammo, weapon timers, last
-## command, credits, upgrades.
-const PUBLIC_SIZE: int = 33
+## + 2 x u8 downed + 2 x u8 pet + u64 Path owned. Not sent to others: velocities, ammo, weapon
+## timers, last command, credits, upgrades, buffs, Cores, Path stepped.
+const PUBLIC_SIZE: int = 41
 
 var position: Vector2 = Vector2.ZERO
 var move_velocity: Vector2 = Vector2.ZERO
@@ -55,6 +55,11 @@ var pet_tier: int = 0
 ## Pet buffs in percent (fire rate, move speed); only the owner needs them (prediction).
 var buff_fire: int = 0
 var buff_move: int = 0
+## Waves: the Path nodes owned (bit i = PathTree node i; everyone sees your route), and (owner
+## only) the Cores left (0..127) and whether this break's step is used, packed in one byte.
+var path_owned: int = 0
+var cores: int = 0
+var path_stepped: bool = false
 
 
 func _init() -> void:
@@ -90,6 +95,8 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(clampi(pet_tier, 0, 255))
 	buffer.put_u8(clampi(buff_fire, 0, 255))
 	buffer.put_u8(clampi(buff_move, 0, 255))
+	buffer.put_u64(path_owned)
+	buffer.put_u8(clampi(cores, 0, 127) | (0x80 if path_stepped else 0))
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -121,6 +128,10 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	pet_tier = buffer.get_u8()
 	buff_fire = buffer.get_u8()
 	buff_move = buffer.get_u8()
+	path_owned = buffer.get_u64()
+	var path_byte: int = buffer.get_u8()
+	cores = path_byte & 0x7F
+	path_stepped = path_byte & 0x80 != 0
 
 
 func byte_size() -> int:
@@ -144,6 +155,7 @@ func encode_public(buffer: StreamPeerBuffer) -> void:
 	buffer.put_u8(clampi(revive_progress, 0, 255))
 	buffer.put_u8(clampi(pet, 0, 255))
 	buffer.put_u8(clampi(pet_tier, 0, 255))
+	buffer.put_u64(path_owned)
 
 
 func decode_public(buffer: StreamPeerBuffer) -> void:
@@ -165,6 +177,7 @@ func decode_public(buffer: StreamPeerBuffer) -> void:
 	revive_progress = buffer.get_u8()
 	pet = buffer.get_u8()
 	pet_tier = buffer.get_u8()
+	path_owned = buffer.get_u64()
 
 
 func public_byte_size() -> int:
@@ -212,4 +225,7 @@ func copy() -> PlayerNetState:
 	duplicate.pet_tier = pet_tier
 	duplicate.buff_fire = buff_fire
 	duplicate.buff_move = buff_move
+	duplicate.path_owned = path_owned
+	duplicate.cores = cores
+	duplicate.path_stepped = path_stepped
 	return duplicate

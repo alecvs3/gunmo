@@ -25,6 +25,7 @@ static func is_weapon_stat(stat: Stat) -> bool:
 	return stat not in [Stat.MOVE_SPEED, Stat.MAX_HEALTH]
 
 
-## Price of the next level when the player already has `current_level`.
-func cost(current_level: int) -> int:
-	return roundi(base_cost * pow(cost_growth, current_level))
+## Price of the next level when the player already has `current_level`, times `discount`
+## (the Path's shop discounts; 1 = full price).
+func cost(current_level: int, discount: float = 1.0) -> int:
+	return roundi(base_cost * pow(cost_growth, current_level) * discount)

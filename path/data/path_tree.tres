@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PathTree" format=3]
+
+[ext_resource type="Script" path="res://path/path_tree.gd" id="1_tree"]
+[ext_resource type="Script" path="res://path/path_node.gd" id="2_node"]
+[ext_resource type="Resource" path="res://path/data/fortitude.tres" id="3_fortitude"]
+[ext_resource type="Resource" path="res://path/data/quick_hands.tres" id="4_quick_hands"]
+[ext_resource type="Resource" path="res://path/data/quartermaster.tres" id="5_quartermaster"]
+[ext_resource type="Resource" path="res://path/data/scavenger.tres" id="6_scavenger"]
+[ext_resource type="Resource" path="res://path/data/fleet_foot.tres" id="7_fleet_foot"]
+
+[resource]
+script = ExtResource("1_tree")
+nodes = Array[ExtResource("2_node")]([ExtResource("3_fortitude"), ExtResource("4_quick_hands"), ExtResource("5_quartermaster"), ExtResource("6_scavenger"), ExtResource("7_fleet_foot")])
