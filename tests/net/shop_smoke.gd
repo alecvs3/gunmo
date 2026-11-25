@@ -31,6 +31,10 @@ var _saw_modifiers: bool = false
 var _saw_tinted_enemy: bool = false
 var _path_asked: bool = false
 var _max_health_before: int = 0
+## Host only: the client's peer id and its [owned, Cores] Path as last seen while it was still
+## connected (it may leave as soon as the match is won, taking its player node with it).
+var _client_id: int = 0
+var _client_path: Array = [-1, -1]
 
 
 func _initialize() -> void:
@@ -54,6 +58,7 @@ func _run_host() -> void:
 	_check(net.host(_port) == OK, "host() failed")
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	var client_id: int = net.peers.filter(func(id: int) -> bool: return id != 1)[0]
+	_client_id = client_id
 	var bought := func() -> bool: return _loadout_of(client_id) == [SHOTGUN, 1]
 	await _wait_until(bought, 15.0)
 	var pet_bought := func() -> bool: return _pet_of(client_id) == [WIZARD, 2]
@@ -68,7 +73,7 @@ func _run_host() -> void:
 	_mode().call("set_local_ready", true)
 	await _fight_until_over()
 	_check(_is_phase("VICTORY"), "the team did not clear the waves")
-	var path: Array = _path_of(client_id)
+	var path: Array = _client_path
 	_check(path == [1 << FORTITUDE, 0], "client's Path step not applied on the host: %s" % [path])
 	await create_timer(1.0).timeout
 	net.leave()
@@ -147,10 +152,12 @@ func _fight_until_over() -> void:
 		_own().get_node("PlayerInputSource").scripted = command
 		if shooting and _is_phase("BREAK") and not _path_asked:
 			_ask_for_path_steps()
+		_remember_client_path()
 		await create_timer(0.1).timeout
 		time_left -= 0.1
 	if _own() != null:
 		_own().get_node("PlayerInputSource").scripted = _input_command_script.new()
+	_remember_client_path()
 	await create_timer(1.0).timeout
 
 
@@ -253,6 +260,15 @@ func _check_path() -> void:
 		path == [1 << FORTITUDE, 0], "expected Fortitude owned and 0 Cores left, got %s" % [path]
 	)
 	_check(max_health == roundi(_max_health_before * 1.1), "Fortitude should add 10% max health")
+
+
+## Host only: keeps the client's latest Path while its player node still exists.
+func _remember_client_path() -> void:
+	if _role != "shophost":
+		return
+	var path: Array = _path_of(_client_id)
+	if path != [-1, -1]:
+		_client_path = path
 
 
 ## [owned mask, Cores] of a player's Path.
