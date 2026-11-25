@@ -7,6 +7,11 @@ on:
   pull_request:
     # labeled: adding full-checks reruns everything.
     types: [opened, synchronize, reopened, labeled]
+    # A pull request that only changes these runs nothing: no check reads them. Guides
+    # (CLAUDE.md, .claude/skills) still run, because tests/test_guides.gd checks their paths.
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
   push:
     branches: [main]
 

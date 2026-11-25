@@ -90,10 +90,11 @@ or game mode. Use one when it fits.
 
 ## Which checks to run
 Run only what a change can break; run everything for a big change.
-- **Always:** import, GUT, lint and format (`.\tools\check.ps1`, under a minute). They're cheap and catch most mistakes.
+- **Docs only** (`docs/`, `README.md`): no checks, locally or in CI. Nothing reads them. Guides (`CLAUDE.md`, `.claude/skills/`) still run GUT, because `tests/test_guides.gd` checks the paths they name.
+- **Always otherwise:** import, GUT, lint and format (`.\tools\check.ps1`, under a minute). They're cheap and catch most mistakes.
 - **Smoke scenarios:** `.\tools\check.ps1 -Changed` picks them from the files this branch changes, using `tools/check_scope.json` (each folder → the scenarios that exercise it), and prints why. Docs-only changes run none. Use it while working and before a PR.
 - **Everything** (`.\tools\check.ps1 -Smoke`) for a **big change**: netcode, autoloads, the player, `main.tscn`, `project.godot`, the mode base class, the check tools themselves, any file no rule covers, or more than 25 changed files. `-Changed` already picks "all" for these; run the full set yourself before calling one done. Add the `full-checks` label to such a PR.
-- **CI** does the same: a pull request runs the scoped scenarios (or all of them with the `full-checks` label), and every push to main runs all of them, so a miss is still caught.
+- **CI** does the same: a docs-only pull request runs nothing (`paths-ignore` in `.github/workflows/checks.yml`), other pull requests run the scoped scenarios (or all of them with the `full-checks` label), and every push to main runs all of them, so a miss is still caught.
 - **Timing scenarios (F, G, H) are unreliable with the Godot editor or a game open.** If one fails locally by a little, say so and let CI decide; don't loosen a budget for it.
 - **New folder or scenario?** Add it to `tools/check_scope.json` in the same PR (`tests/tools/test_check_scope.gd` fails for a folder with no rule).
 - **Ask instead of guessing.** Don't add addons or dependencies without asking.
