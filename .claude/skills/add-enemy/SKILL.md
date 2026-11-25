@@ -61,9 +61,13 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
   `ChargeAttack` (the Charger, `enemies/data/charger.tres`) is the example of an attack that
   moves the enemy: its windup draws a dash line, then the chaser runs an `EnemyDash`
   (`enemies/enemy_dash.gd`); a stun shows on clients as the `EnemyStatus.FLAG_STUNNED` bit.
+  `BlastAttack` (the Bomber, `enemies/data/bomber.tres`) is the example of an area attack:
+  its windup ring is drawn at the blast's size, it hurts enemies too, and it asks the
+  ProjectileSystem to show the blast with EventBus `blast_requested`.
 - **Look:** give a type its own shapes on top of the sprite with an `EnemyLook` subclass in
-  `enemies/looks/` (e.g. `HornsLook`), set on `EnemyData.look`. Looks only, drawn on every
-  peer in the sprite's space (+x = forward).
+  `enemies/looks/` (e.g. `HornsLook`, `BombLook`), set on `EnemyData.look`. Looks only, drawn
+  on every peer in the sprite's space (+x = forward); `draw()` also gets the attack's windup
+  (0..1) to animate a warning.
 - Put a GUT test for its pure decisions in `tests/enemies/test_enemy_behaviours.gd`.
 - Override `add_stats(stats, weight)` so the wave difficulty score sees what the attack does
   (damage, healing or summons per second; recipe `tune-wave-difficulty`).

@@ -24,6 +24,9 @@ var hexed: bool = false:
 		if value != hexed:
 			hexed = value
 			queue_redraw()
+## Size (px) of the warning ring for an attack with an area (a Bomber's blast); 0 = the
+## usual ring around the body.
+var blast_radius: float = 0.0
 ## Length (px) of the dash line drawn during a windup (0 = no line: not a Charger).
 var line_length: float = 0.0
 ## Which way the dash line points (radians).
@@ -64,9 +67,11 @@ func _draw() -> void:
 		return
 	if line_length > 0.0:
 		_draw_dash_line()
-	draw_arc(Vector2.ZERO, radius * 1.4, 0.0, TAU, 48, Color(color, 0.25), 3.0)
-	draw_arc(Vector2.ZERO, radius * 1.4, -PI / 2.0, -PI / 2.0 + TAU * progress, 48, color, 4.0)
-	draw_circle(Vector2.ZERO, radius * (0.4 + 0.9 * progress), Color(color, 0.12 * progress))
+	var ring: float = blast_radius if blast_radius > 0.0 else radius * 1.4
+	var fill: float = ring * progress if blast_radius > 0.0 else radius * (0.4 + 0.9 * progress)
+	draw_arc(Vector2.ZERO, ring, 0.0, TAU, 48, Color(color, 0.25), 3.0)
+	draw_arc(Vector2.ZERO, ring, -PI / 2.0, -PI / 2.0 + TAU * progress, 48, color, 4.0)
+	draw_circle(Vector2.ZERO, fill, Color(color, 0.12 * progress))
 
 
 ## Where a Charger will dash: a faint lane the length of the dash, filling as the windup does.

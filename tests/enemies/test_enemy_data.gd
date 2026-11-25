@@ -1,7 +1,16 @@
 extends GutTest
 
 const TYPES: Array[String] = [
-	"grunt", "runner", "brute", "shooter", "tank", "swarmer", "splitter", "support", "charger"
+	"grunt",
+	"runner",
+	"brute",
+	"shooter",
+	"tank",
+	"swarmer",
+	"splitter",
+	"support",
+	"charger",
+	"bomber"
 ]
 ## Types the waves never buy directly (they come from others).
 const SPAWNED_ONLY: Array[String] = ["splitling"]
@@ -84,6 +93,19 @@ func test_charger_dashes_and_wears_horns() -> void:
 	assert_true(charger.movement is ChaseMovement)
 	assert_gt(charger.first_wave, _load("runner").first_wave)
 	assert_lt(charger.first_wave, _load("brute").first_wave)
+
+
+func test_bomber_blows_up_and_carries_a_bomb() -> void:
+	var bomber: EnemyData = _load("bomber")
+	var bomb := bomber.attack as BlastAttack
+	assert_not_null(bomb, "bomber explodes")
+	if bomb != null:
+		assert_gt(bomb.windup, 0.3, "long enough to back off")
+		assert_gt(bomb.radius, bomb.trigger_range, "standing where it lit up isn't safe")
+		assert_gte(bomb.enemy_damage, _load("grunt").max_health, "a blast kills a grunt")
+	assert_true(bomber.look is BombLook, "it has its own look")
+	assert_gt(bomber.move_speed, _load("grunt").move_speed, "fast")
+	assert_lt(bomber.max_health, _load("grunt").max_health, "fragile")
 
 
 func test_received_heal_scales_and_rounds() -> void:

@@ -26,7 +26,7 @@ const PUFFS: int = 3
 @export var dust_color: Color = Color(0.78, 0.68, 0.52, 0.55)
 
 
-func draw(canvas: CanvasItem, speed: float) -> void:
+func draw(canvas: CanvasItem, speed: float, _windup: float) -> void:
 	if speed > dust_speed:
 		_draw_dust(canvas)
 	for side: float in [-1.0, 1.0]:
