@@ -22,7 +22,8 @@ gameplay.
 | `shop_panel.gd` | The see-through shop window (B opens it). Emits EventBus `shop_purchase_requested`; the mode turns it into a request the host checks |
 | `shop_weapon_card.*`, `shop_gun_picture.gd`, `shop_upgrade_row.*`, `shop_pips.gd`, `shop_seen.gd` | The shop's gun cards (each gun's own `held_model`), upgrade rows with level dots, and which confirmed purchase pops |
 | `pet_panel.gd`, `pet_card.gd`, `pet_tier_row.gd`, `pet_portrait.gd` | The Pets window (P): pick a pet, see its five-tier ladder, adopt or buy the next tier (`ShopRules.KIND_PET`) |
-| `path_panel.gd`, `path_node_card.gd` | The Path window (O): branches and nodes by tier (owned / available / locked, teammates' nodes), Cores, Take. Emits EventBus `path_step_requested` |
+| `path_panel.gd` | The Path window (O): header (step, Cores), the board, the detail panel, legend and wave pips. Emits EventBus `path_step_requested` |
+| `path_board.gd`, `path_node_token.gd`, `path_token_art.gd`, `path_detail.gd` | The Path board (nodes at `PathNode.board_position`, `requires` lines, red chains for `excludes`, branch banners; drag pans, wheel zooms), one node's token (owned / available / locked / locked out, teammates' dots), how a token is drawn (placeholder art lives only here), and the selected node with Take |
 | `kill_feed.gd` | Last 5 kills ("Killer [SMG] Victim"), top right, from EventBus `kill_reported` |
 | `boss_bar.gd` | Boss name, phase and health from the replicated boss (`Groups.BOSSES`), bottom centre |
 | `results_screen.gd`, `game_menu.gd`, `hurt_indicator.gd`, `net_overlay.gd` (F3) | |

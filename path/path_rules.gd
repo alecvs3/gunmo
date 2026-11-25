@@ -31,17 +31,26 @@ static func check(tree: PathTree, progress: PathProgress, index: int, in_break: 
 
 ## Why the node can't be reached at all yet (a requirement missing, or locked out), or "".
 static func locked_reason(tree: PathTree, progress: PathProgress, index: int) -> String:
-	var path_node: PathNode = tree.nodes[index]
-	for other in path_node.excludes:
-		if progress.owns(tree.index_of(other)):
-			return "Locked out by %s." % other.display_name
-	for i in tree.nodes.size():
-		if progress.owns(i) and path_node in tree.nodes[i].excludes:
-			return "Locked out by %s." % tree.nodes[i].display_name
-	for needed in path_node.requires:
+	var rival: int = owned_rival(tree, progress, index)
+	if rival >= 0:
+		return "Locked out by %s." % tree.nodes[rival].display_name
+	for needed in tree.nodes[index].requires:
 		if not progress.owns(tree.index_of(needed)):
 			return "Needs %s first." % needed.display_name
 	return ""
+
+
+## The owned node that locks node `index` out for good, or -1.
+static func owned_rival(tree: PathTree, progress: PathProgress, index: int) -> int:
+	for rival in tree.rivals(index):
+		if progress.owns(rival):
+			return rival
+	return -1
+
+
+## Shut for the rest of the run: not owned, and a node it excludes is owned.
+static func is_locked_out(tree: PathTree, progress: PathProgress, index: int) -> bool:
+	return not progress.owns(index) and owned_rival(tree, progress, index) >= 0
 
 
 ## Takes node `index` if the rules allow it: spends its Cores and uses this break's step.

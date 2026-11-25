@@ -63,6 +63,18 @@ func test_exclusions_lock_both_ways() -> void:
 	assert_string_contains(PathRules.check(tree, other, 3, true), "Locked out by Right")
 
 
+func test_rivals_and_locked_out_work_both_ways() -> void:
+	assert_eq(tree.rivals(2), [3] as Array[int])
+	assert_eq(tree.rivals(3), [2] as Array[int])
+	assert_eq(tree.rivals(0), [] as Array[int])
+	assert_eq(tree.rivals(99), [] as Array[int])
+	assert_false(PathRules.is_locked_out(tree, progress, 2))
+	progress.owned = 0b1011  # root, left and deep
+	assert_true(PathRules.is_locked_out(tree, progress, 2))
+	assert_false(PathRules.is_locked_out(tree, progress, 3), "an owned node is never locked out")
+	assert_false(PathRules.is_locked_out(tree, progress, 1), "a plain node is never locked out")
+
+
 func test_one_step_per_break() -> void:
 	assert_true(_take_in_new_break(0))
 	assert_string_contains(PathRules.check(tree, progress, 1, true), "One step per break")
