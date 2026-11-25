@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Balance Graphs</title>
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1f23; --muted: #6b7078; --grid: #e4e5e2;
+  --line: #c9cbc6; --accent: #2f6fde; --band: rgba(47, 111, 222, 0.10);
+  --novice: #d9822b; --average: #2f6fde; --expert: #1f9d6b; --mixed: #9b4fd1; --ref: #1d1f23;
+  --hot: #d6453d; --cold: #2f6fde;
+  --axis0: #2f6fde; --axis1: #d6453d; --axis2: #d9822b; --axis3: #1f9d6b; --axis4: #9b4fd1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a; --panel: #1e2125; --ink: #e8e9ea; --muted: #9aa0a8; --grid: #2c3036;
+    --line: #444a52; --accent: #6b9cff; --band: rgba(107, 156, 255, 0.14);
+    --novice: #f0a050; --average: #6b9cff; --expert: #45c48f; --mixed: #c085f0; --ref: #e8e9ea;
+    --hot: #f06a62; --cold: #6b9cff;
+    --axis0: #6b9cff; --axis1: #f06a62; --axis2: #f0a050; --axis3: #45c48f; --axis4: #c085f0;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+h2 { font-size: 16px; margin: 0 0 2px; }
+p.sub, p.note { color: var(--muted); margin: 0 0 12px; }
+section { background: var(--panel); border: 1px solid var(--grid); border-radius: 10px;
+  padding: 16px; margin: 16px 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0; }
+label { color: var(--muted); }
+select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 8px; }
+svg { width: 100%; height: auto; display: block; overflow: visible; }
+svg text { fill: var(--muted); font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 3px;
+  margin-right: 6px; vertical-align: middle; background: var(--c); }
+.legend span.dash::before { background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 7px); }
+.heat { overflow-x: auto; }
+.heat table { border-collapse: collapse; font-size: 11px; }
+.heat td, .heat th { padding: 3px 4px; text-align: center; min-width: 30px; }
+.heat th { color: var(--muted); font-weight: 500; }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+code { font-size: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Balance graphs</h1>
+  <p class="sub" id="meta">Waves difficulty, team progression and strain, all on 0–100.</p>
+  <div id="app"></div>
+</main>
+<script src="data.js"></script>
+<script>
+(function () {
+  const app = document.getElementById("app");
+  const B = window.BALANCE;
+  if (!B) {
+    app.innerHTML = '<section class="empty">No data yet. Run <code>.\\tools\\balance_graphs.ps1</code> to make <code>tools/balance/data.js</code>.</section>';
+    return;
+  }
+  // Waves grow with the team (DifficultyCurve.player_scale), so each team size has its own.
+  const wavesFor = size => B.waves_by_size[String(size)].waves;
+  const waves = wavesFor(1).map(w => w.wave);
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const GROUP_COLOR = { Novice: "--novice", Average: "--average", Expert: "--expert", Mixed: "--mixed" };
+  document.getElementById("meta").textContent =
+    `Seed ${B.seed} · ${waves.length} waves · strain target band ±${B.strain_band} · reference team: ${B.reference}. ` +
+    "Numbers come from tools/balance_graphs.ps1 (the game's own rules plus ProgressionModel estimates).";
+
+  // ---------- one line chart ----------
+  function chart(opts) {
+    const W = 1000, H = 300, L = 44, R = 12, T = 12, Bm = 28;
+    const all = opts.series.flatMap(s => s.values).concat(opts.extra || []);
+    let lo = Math.min(...all, opts.min ?? Infinity), hi = Math.max(...all, opts.max ?? -Infinity);
+    const pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+    const x = i => L + (W - L - R) * (waves.length > 1 ? i / (waves.length - 1) : 0.5);
+    const y = v => T + (H - T - Bm) * (1 - (v - lo) / (hi - lo));
+    const ticks = niceTicks(lo, hi, 6);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${opts.label}">`;
+    for (const t of ticks) {
+      s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${css(t === 0 ? "--line" : "--grid")}"/>`;
+      s += `<text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
+    }
+    waves.forEach((w, i) => {
+      if (waves.length <= 30 || i % 2 === 0) s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${w}</text>`;
+    });
+    if (opts.band) {
+      const up = opts.band.map((v, i) => `${x(i)},${y(v + B.strain_band)}`);
+      const down = opts.band.map((v, i) => `${x(i)},${y(v - B.strain_band)}`).reverse();
+      s += `<polygon points="${up.concat(down).join(" ")}" fill="${css("--band")}"/>`;
+    }
+    for (const se of opts.series) {
+      const pts = se.values.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+      s += `<polyline points="${pts}" fill="none" stroke="${css(se.color)}" stroke-width="${se.width || 2}"` +
+        (se.dash ? ` stroke-dasharray="6 4"` : "") + ` stroke-linejoin="round"/>`;
+      se.values.forEach((v, i) => {
+        s += `<circle cx="${x(i)}" cy="${y(v)}" r="7" fill="transparent"><title>${se.name} · wave ${waves[i]}: ${v.toFixed(1)}${se.tip ? se.tip(i) : ""}</title></circle>`;
+      });
+    }
+    s += "</svg>";
+    s += '<div class="legend">' + opts.series.map(se =>
+      `<span class="${se.dash ? "dash" : ""}" style="--c:${css(se.color)}">${se.name}</span>`).join("") + "</div>";
+    return s;
+  }
+  function niceTicks(lo, hi, n) {
+    const raw = (hi - lo) / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(v => v >= raw);
+    const out = [];
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(Math.round(v * 100) / 100);
+    return out;
+  }
+  const byName = name => B.teams.find(t => t.name === name);
+
+  // ---------- layout ----------
+  app.innerHTML = `
+    <section><h2>1 · Difficulty</h2>
+      <p class="note">How hard each wave is from its enemies alone (DifficultyModel, ×10), for the team size picked below: waves grow with the team. Dashed: the curve's target. Thin lines: each axis.</p>
+      <div id="c1"></div></section>
+    <div class="controls">
+      <label>Team size <select id="size">${[1, 2, 3, 4].map(n => `<option value="${n}" ${n === 2 ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+      <label>Detail team <select id="team">${B.teams.map(t => `<option ${t.name === B.reference ? "selected" : ""}>${t.name}</option>`).join("")}</select></label>
+    </div>
+    <section><h2>2 · Progression</h2>
+      <p class="note">How strong the team is going into each wave, in difficulty's units: a team at 60 handles a wave of 60. Novice, average and expert at the chosen size, plus the named teams. Faint: the wave's difficulty at that size (each team is measured against its own size's waves).</p>
+      <div id="c2"></div></section>
+    <section><h2>3 · Strain</h2>
+      <p class="note">How far each wave is above the team, on the axes that wave pushes on. Below 0: the team is ahead. Shaded: the target band (wave 1 easiest, the last wave hardest). The space between a line and the top of the band is room for randomness.</p>
+      <div id="c3"></div></section>
+    <section><h2>4 · Where the strain comes from (detail team)</h2>
+      <p class="note">Wave score minus team score on each axis. Red: the wave is ahead there. Blue: the team is ahead. Bold: the wave's main axis.</p>
+      <div class="heat" id="c4"></div></section>
+    <section><h2>5 · Credits per player (detail team)</h2>
+      <p class="note">Average credits one player earns each wave, by source, and what they hold after the break.</p>
+      <div id="c5"></div></section>
+    <section><h2>6 · Loadouts (detail team)</h2>
+      <p class="note">What each player carries into the wave: gun, upgrade levels (damage/fire rate/magazine/reload/move/health/knockback), pet tier, Path nodes.</p>
+      <div class="heat" id="c6"></div></section>`;
+
+  function draw() {
+    const size = +document.getElementById("size").value;
+    const detail = byName(document.getElementById("team").value);
+    const sized = wavesFor(size);
+    const D = sized.map(w => w.difficulty);
+    const axisColors = ["--axis0", "--axis1", "--axis2", "--axis3", "--axis4"];
+    document.getElementById("c1").innerHTML = chart({
+      label: `Difficulty per wave for ${size} players`, min: 0,
+      series: [
+        ...B.axes.map((a, k) => ({ name: a.name, color: axisColors[k % 5], width: 1, values: sized.map(w => w.axes[k]) })),
+        { name: "Target", color: "--muted", dash: true, values: sized.map(w => w.target) },
+        { name: "Difficulty", color: "--ref", width: 3, values: D,
+          tip: i => sized[i].modifiers ? ` (${sized[i].modifiers})` : "" },
+      ],
+    });
+    const shown = B.teams.filter(t => t.size === size && t.group !== "Mixed" && t.name !== B.reference)
+      .concat(B.teams.filter(t => t.name === B.reference || t.group === "Mixed"));
+    const teamSeries = (key) => shown.map(t => ({
+      name: t.name, color: t.name === B.reference ? "--ref" : GROUP_COLOR[t.group] || "--accent",
+      width: t.name === B.reference ? 3 : 2, dash: t.group === "Mixed",
+      values: t.rows.map(r => r[key]),
+    }));
+    document.getElementById("c2").innerHTML = chart({
+      label: "Progression per wave", min: 0,
+      series: [{ name: "Difficulty", color: "--line", width: 4, values: D }, ...teamSeries("progression")],
+    });
+    document.getElementById("c3").innerHTML = chart({
+      label: "Strain per wave", band: B.strain_target, extra: B.strain_target.map(v => v + B.strain_band),
+      series: [{ name: "Target", color: "--accent", dash: true, values: B.strain_target }, ...teamSeries("strain")],
+    });
+    document.getElementById("c4").innerHTML = heat(detail);
+    document.getElementById("c5").innerHTML = income(detail);
+    document.getElementById("c6").innerHTML = loadouts(detail);
+  }
+
+  function heat(team) {
+    let h = "<table><tr><th></th>" + waves.map(w => `<th>${w}</th>`).join("") + "</tr>";
+    B.axes.forEach((a, k) => {
+      h += `<tr><th>${a.name}</th>`;
+      wavesFor(team.size).forEach((w, i) => {
+        const gap = w.axes[k] - team.rows[i].axes[k];
+        const main = w.axes.indexOf(Math.max(...w.axes)) === k;
+        const strength = Math.min(Math.abs(gap) / 60, 1);
+        const color = gap > 0 ? css("--hot") : css("--cold");
+        h += `<td style="background:${hexA(color, strength * 0.75)};${main ? "font-weight:700" : ""}" title="wave ${w.wave} ${a.name}: wave ${w.axes[k]} vs team ${team.rows[i].axes[k]}">${Math.round(gap)}</td>`;
+      });
+      h += "</tr>";
+    });
+    return h + "</table>";
+  }
+  function hexA(color, a) {
+    const m = color.match(/^#([0-9a-f]{6})$/i);
+    if (!m) return "transparent";
+    const n = parseInt(m[1], 16);
+    return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a.toFixed(2)})`;
+  }
+  function income(team) {
+    const W = 1000, H = 260, L = 44, R = 12, T = 10, Bm = 28;
+    const sources = ["bounty", "clear", "interest", "early"];
+    const colors = ["--axis0", "--axis3", "--axis2", "--axis4"];
+    const totals = team.rows.map(r => sources.reduce((s, k) => s + (r.income[k] || 0), 0));
+    const hi = Math.max(...totals, ...team.rows.map(r => r.held), 1) * 1.08;
+    const bw = (W - L - R) / waves.length;
+    const y = v => T + (H - T - Bm) * (1 - v / hi);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Credits per wave">`;
+    for (const t of niceTicks(0, hi, 5)) {
+      s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="${css("--grid")}"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
+    }
+    team.rows.forEach((r, i) => {
+      let base = 0;
+      sources.forEach((k, j) => {
+        const v = r.income[k] || 0;
+        s += `<rect x="${L + i * bw + bw * 0.15}" width="${bw * 0.7}" y="${y(base + v)}" height="${y(base) - y(base + v)}" fill="${css(colors[j])}"><title>wave ${waves[i]} ${k}: ${Math.round(v)}</title></rect>`;
+        base += v;
+      });
+      s += `<text x="${L + i * bw + bw / 2}" y="${H - 8}" text-anchor="middle">${waves[i]}</text>`;
+    });
+    const pts = team.rows.map((r, i) => `${L + i * bw + bw / 2},${y(r.held)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" stroke="${css("--ref")}" stroke-width="2" stroke-dasharray="6 4"/></svg>`;
+    s += '<div class="legend">' + sources.map((k, j) => `<span style="--c:${css(colors[j])}">${k}</span>`).join("") +
+      `<span class="dash" style="--c:${css("--ref")}">held after the break</span></div>`;
+    return s;
+  }
+  function loadouts(team) {
+    const n = team.rows[0].loadouts.length;
+    let h = "<table><tr><th>Wave</th>" + Array.from({ length: n }, (_, k) => `<th>Player ${k + 1}</th>`).join("") + "</tr>";
+    team.rows.forEach((r, i) => {
+      h += `<tr><th>${waves[i]}</th>` + r.loadouts.map(l => `<td style="text-align:left">${l}</td>`).join("") + "</tr>";
+    });
+    return h + "</table>";
+  }
+
+  document.getElementById("size").addEventListener("change", draw);
+  document.getElementById("team").addEventListener("change", draw);
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+  draw();
+})();
+</script>
+</body>
+</html>

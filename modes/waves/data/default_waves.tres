@@ -24,6 +24,7 @@ boss_bonus = 0.4
 last_wave_bonus = 0.25
 after_boss = PackedFloat32Array(0.3, 0.15)
 tolerance = 0.3
+player_scale = PackedFloat32Array(0.62, 1, 1.33, 1.62, 1.9, 2.16, 2.4, 2.64)
 
 [resource]
 script = ExtResource("5_cj0e0")

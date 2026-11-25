@@ -14,3 +14,8 @@ func raw(sheet: WaveSheet, modifier: WaveModifier) -> float:
 	var regen: float = sheet.total(EnemyStats.HEALABLE) * modifier.regen_per_second
 	var summons: float = sheet.total(EnemyStats.SUMMONED_HEALTH)
 	return (pulses + regen + summons) * toughness(modifier)
+
+
+## Healing the team out-damages: a share of its damage, plus bursts.
+func handled(team: TeamPower, model: ProgressionModel) -> float:
+	return team.dps * model.sustain_share + team.burst_dps * model.burst_sustain

@@ -1259,3 +1259,33 @@ scarce currency. This proves the engine end to end with one branch; the other br
 - Bots earn Cores but never take a step (bot branch preferences are part 6 of the plan).
 - Someone joining late starts with no Cores (they only get what is paid after they join).
 - Not played: the Core numbers and node costs are the plan's first draft.
+
+## Balance graphs: progression and strain ⚠️ (estimates to calibrate)
+
+Difficulty measured the waves; this measures the players against them, on paper, in the same
+units. `.\tools\balance_graphs.ps1` prints one team's table and opens `tools/balance/graphs.html`.
+
+| What | Status | Where |
+|---|---|---|
+| **Progression:** each wave, a team's strength on the five difficulty axes, from the game's own stats (PlayerStats, the pets' rules, the Path) plus skill. Every axis says how much of it a team handles (`DifficultyAxis.handled`) | Done, tested | `modes/waves/progression/`, `modes/waves/difficulty/` |
+| **Economy:** bounty by kill share (more damage, more last hits; pets' kills are the owner's), clear bonus and interest by the chance of standing, early call, Cores | Done, tested | `modes/waves/progression/economy_model.gd` |
+| **Spending:** one Path step a break, then the shop the way the archetype spends (greedy, saver, cheapest), checked with ShopRules | Done, tested | `modes/waves/progression/buyer.gd` |
+| **Strain** (wave above team, on the axes the wave pushes) and its target, `StrainCurve`: −30 at wave 1, a steady line to −15 at wave 16, then a parabola up to +20 at wave 25 with no step at the knee (band ±10) | Done, tested | `modes/waves/progression/strain_curve.gd` |
+| **Waves grow with the team:** `DifficultyCurve.player_scale` multiplies every target by the player count's entry (bots count; 0.62, 1, 1.33, 1.62... for 1, 2, 3, 4 players, (n / 2)^0.7). The forecast is built for the current count and again when it changes, so it stays exact. A duo's waves are unchanged | Done, tested, smoke C | `modes/waves/difficulty/difficulty_curve.gd`, `modes/wave_mode.gd`, `modes/waves/data/default_waves.tres` |
+| **Graphs** (plain HTML and SVG, no libraries): difficulty, progression, strain, strain by axis, credits by source, loadouts; novice, average and expert at 1–4 players, the reference duo and a mixed squad | Done | `tools/balance_graphs.ps1`, `tools/balance/graphs.html` |
+
+### Known limitations
+- **The estimates aren't calibrated.** Hit shares, kite bodies, pet uptimes and blast targets are
+  first guesses (`modes/waves/data/progression/progression_model.tres`); real play data should set
+  them. Until then, read the graphs for shape and for comparing teams, not exact numbers.
+- First reading (seed 1, average duo): strain stays around −10 all run instead of climbing to the
+  new +20 target, so late waves aren't harder relative to the team yet (the difficulty curve or
+  the late economy has to change for that); and it swings wave to wave with the wave's main axis
+  (pressure-heavy waves 9, 13, 19 and 22 are where the team falls behind).
+- Player scaling is a first shape: at wave 25 an average team's strain is +27 solo, −10 duo,
+  −23 for three and −33 for four (it was +44 / −10 / −55 / −92). A solo wave 25 is over its
+  target (the boss alone is most of it). Fine-tune `player_scale` with the graphs.
+- `max_alive` (40) doesn't grow with the team, so a squad's bigger waves come as a longer stream
+  rather than a bigger crowd; the pressure score still counts every enemy.
+- Last Stand and Triage are left out (they only matter while someone is down).
+

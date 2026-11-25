@@ -2,7 +2,8 @@ class_name WaveForecast
 extends RefCounted
 ## What the next wave will be, shown during the break before it. A wave depends only on the
 ## match seed and its number (WaveComposer.plan_wave), so the host builds it ahead and the
-## forecast is exact: the wave that spawns is the one forecast. Pure.
+## forecast is exact: the wave that spawns is the one forecast. It is built for a number of
+## players (DifficultyCurve.player_scale), so WaveMode builds it again when that changes. Pure.
 
 ## Axis scores travel as a byte each (score × SCORE_STEPS, at most 25.5).
 const SCORE_STEPS: float = 10.0
@@ -10,6 +11,8 @@ const SCORE_STEPS: float = 10.0
 const STRONG_SHARE: float = 0.35
 
 var wave: int = 0
+## How many players it was built for.
+var players: int = 0
 var modifier_mask: int = 0
 ## One score per DifficultyModel axis, in the model's order.
 var scores := PackedFloat32Array()
@@ -21,13 +24,15 @@ static func of(
 	model: DifficultyModel,
 	catalog: ModifierCatalog,
 	match_seed: int,
-	wave: int
+	wave: int,
+	players: int = 0
 ) -> WaveForecast:
 	var forecast := WaveForecast.new()
 	forecast.wave = wave
+	forecast.players = players
 	forecast.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
 	var enemies: Array[EnemyData] = WaveComposer.plan_wave(
-		schedule, model, catalog, match_seed, wave
+		schedule, model, catalog, match_seed, wave, players
 	)
 	var merged: WaveModifier = catalog.combined(forecast.modifier_mask)
 	forecast.scores = model.scores(model.sheet_for(enemies), merged)
