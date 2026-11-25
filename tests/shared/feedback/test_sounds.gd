@@ -41,6 +41,12 @@ func test_cap_per_cue() -> void:
 	assert_false(SoundPlayback.has_room(null, 0))
 
 
+func test_the_blast_sounds_deeper_than_the_rocket_launch() -> void:
+	var blast: SoundCue = SoundData.load_default().blast
+	var launch: SoundCue = load("res://shared/feedback/data/guns/rocket_launch.tres")
+	assert_lt(blast.pitch_scale, launch.pitch_scale, "the blast must not sound like a second shot")
+
+
 func test_every_shop_gun_has_a_fire_sound() -> void:
 	for weapon in ShopCatalog.load_default().weapons:
 		var cue: SoundCue = weapon.fire_sound
