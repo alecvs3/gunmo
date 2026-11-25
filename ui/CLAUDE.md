@@ -18,6 +18,7 @@ gameplay.
 | `main_menu.gd` | Name, mode (`MODES`), bots, Host / Join |
 | `hud.gd`, `gun_game_hud_text.gd` | In-match HUD. Text is built in static functions so it can be tested |
 | `scoreboard.gd` | Tab board and the results board, ranked by `Scoreboard.Row.ranks_above` |
+| `hud_menu.gd` | `HudMenu`, the base of every pop-up menu (Shop, Pets, Path): the bottom-right hint, the dim, the window style, open/close keys and sounds, one menu open at a time |
 | `shop_panel.gd` | The see-through shop window (B opens it). Emits EventBus `shop_purchase_requested`; the mode turns it into a request the host checks |
 | `shop_weapon_card.*`, `shop_gun_picture.gd`, `shop_upgrade_row.*`, `shop_pips.gd`, `shop_seen.gd` | The shop's gun cards (each gun's own `held_model`), upgrade rows with level dots, and which confirmed purchase pops |
 | `pet_panel.gd`, `pet_card.gd`, `pet_tier_row.gd`, `pet_portrait.gd` | The Pets window (P): pick a pet, see its five-tier ladder, adopt or buy the next tier (`ShopRules.KIND_PET`) |
@@ -29,6 +30,9 @@ gameplay.
 | `view_mask.gd` | Bars over the world outside the fair view box (`player/fair_view.gd`), under the rest of the UI |
 
 ## Rules that aren't obvious
+- **Every pop-up menu extends `HudMenu`** (recipe `add-menu`). Never build its own hint, dim or
+  window style: that's how the Pets hint ended up bolder than the Shop's. `tests/ui/test_hud_menus.gd`
+  finds every menu scene in `ui/` and fails if one looks different or two can be open at once.
 - **Asking for something = an EventBus signal or a mode request.** Never change gameplay state
   from UI code, even on the host.
 - **Never check which mode is running** (rule 7). Use `MatchNetState.mode_kind` only to choose

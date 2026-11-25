@@ -66,15 +66,13 @@ func show_tier(pet: PetData, index: int, owned: int) -> void:
 	_status.add_theme_color_override("font_color", GOLD if state != State.LOCKED else Color.GRAY)
 	_badge.add_theme_stylebox_override(
 		"normal",
-		PetPanel.box(
-			pet.color if state == State.OWNED else Color(0.2, 0.22, 0.26), pet.color, 1, 18
-		)
+		HudMenu.box(pet.color if state == State.OWNED else Color(0.2, 0.22, 0.26), pet.color, 1, 18)
 	)
 	_badge.add_theme_color_override(
 		"font_color", Color(0.05, 0.05, 0.07) if state == State.OWNED else Color.WHITE
 	)
 	var border: Color = GOLD if state == State.NEXT else Color(1, 1, 1, 0.06)
-	add_theme_stylebox_override("panel", PetPanel.box(Color(0.12, 0.13, 0.16, 0.9), border, 1))
+	add_theme_stylebox_override("panel", HudMenu.box(Color(0.12, 0.13, 0.16, 0.9), border, 1))
 	modulate = Color(1, 1, 1, 0.55) if state == State.LOCKED else Color.WHITE
 
 

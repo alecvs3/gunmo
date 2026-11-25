@@ -49,7 +49,7 @@ func show_state(
 	var fill := Color(colour, 0.28 if selected else 0.12)
 	var border := Color(colour, 1.0 if selected else 0.45)
 	for style in ["normal", "hover", "pressed", "focus"]:
-		add_theme_stylebox_override(style, PetPanel.box(fill, border, 2 if selected else 1))
+		add_theme_stylebox_override(style, HudMenu.box(fill, border, 2 if selected else 1))
 	add_theme_color_override(
 		"font_color", MUTED if status == PathRules.Status.LOCKED else Color.WHITE
 	)
