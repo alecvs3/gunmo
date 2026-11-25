@@ -1273,6 +1273,15 @@ different padding, and all three could be open at once.
 | Shop, Pets and Path extend it; all three now use the shop's look (outline 4, window padding 16/12, fill 0.82) | Done, layout test | `ui/shop_panel.gd`, `ui/pet_panel.gd`, `ui/path_panel.gd` |
 | A test finds every menu scene in `ui/` and fails if one looks different or two can be open; recipe `add-menu` for the next one | Done | `tests/ui/test_hud_menus.gd`, `.claude/skills/add-menu/SKILL.md` |
 
+## Quieter rifle and rocket, new rocket blast sound ✅
+
+| What | Status | Where |
+|---|---|---|
+| Rifle shot quieter (−13 → −18 dB) | Done, heard in a window | `shared/feedback/data/guns/rifle_shot.tres` |
+| Rocket blast plays the launch sound, deeper (pitch 0.6) and quieter (−4 → −10 dB); `explosion_1.wav` removed | Done, heard in a window | `shared/feedback/data/default_sounds.tres` |
+| `SoundCue.pitch_scale`: any sound can be played deeper or higher (default 1) | Done, tested | `shared/feedback/sound_cue.gd`, `shared/feedback/sound_playback.gd` |
+| `rocket_launch_1.wav` trimmed to the launch (0.45 s): the file had a stray second burst at 1.45 s that played during reloads | Done, heard in a window | `assets/pixabay_sounds/` |
+
 ## Enemy overhaul 1: the Charger ⚠️ (issue #168; playtests to do)
 
 The first enemy with its own move (overhaul plan: Charger, then Bomber #169, then Shielder #170).
