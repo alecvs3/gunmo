@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProgressionModel" format=3]
+
+[ext_resource type="Script" path="res://modes/waves/progression/progression_model.gd" id="1_model"]
+[ext_resource type="Script" path="res://modes/waves/progression/strain_curve.gd" id="2_strain"]
+[ext_resource type="Resource" path="res://modes/waves/data/progression/average_duo.tres" id="3_team"]
+
+[sub_resource type="Resource" id="Resource_strain"]
+script = ExtResource("2_strain")
+first = -30.0
+knee_wave = 16
+knee_value = -15.0
+last = 20.0
+late_power = 2.0
+band = 10.0
+
+[resource]
+script = ExtResource("1_model")
+strain = SubResource("Resource_strain")
+reference_team = ExtResource("3_team")

@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="PlayerArchetype" format=3]
+
+[ext_resource type="Script" path="res://modes/waves/progression/player_archetype.gd" id="1_arch"]
+
+[resource]
+script = ExtResource("1_arch")
+display_name = "Novice"
+accuracy = 0.4
+uptime = 0.7
+dodge = 0.15
+counter_skill = 0.0
+down_chance = 0.35
+spending = 2

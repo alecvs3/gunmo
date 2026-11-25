@@ -2,7 +2,8 @@ class_name DifficultyAxis
 extends Resource
 ## One category of the wave difficulty vector (DifficultyModel). A subclass says how much of
 ## it a wave has (`raw`, from the wave's summed EnemyStats and its merged modifier); `weight`
-## says how much it counts and `reference` is the raw amount that scores 10.
+## says how much it counts and `reference` is the raw amount that scores 10. `handled` is the
+## other side: how much of it a team can take on (the progression score).
 
 @export var display_name: String = ""
 ## Column header in the wave report (one letter).
@@ -14,6 +15,12 @@ extends Resource
 
 ## Pure: how much of this axis the wave on `sheet` has under `modifier` (all its modifiers merged).
 func raw(_sheet: WaveSheet, _modifier: WaveModifier) -> float:
+	return 0.0
+
+
+## Pure: how much of this axis a team of strength `team` handles, in the same raw units, so
+## the two score alike (progression, ProgressionRun). Estimates live in `model`.
+func handled(_team: TeamPower, _model: ProgressionModel) -> float:
 	return 0.0
 
 

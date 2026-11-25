@@ -90,19 +90,22 @@ func _ready() -> void:
 ## Plans the wave (the same seed gives the same enemies) and starts releasing it. Every enemy
 ## gets the wave's modifiers (ModifierCatalog bitmask); `modifier` is them merged
 ## (ModifierCatalog.combined), so a tougher wave needs fewer enemies to reach its difficulty.
+## `players`: how many players the wave is for (DifficultyCurve.player_scale).
 func start_wave(
 	level: Level,
 	schedule: WaveSchedule,
 	wave: int,
 	seed_value: int,
 	modifier_mask: int,
-	modifier: WaveModifier
+	modifier: WaveModifier,
+	players: int = 0
 ) -> void:
 	_level = level
 	_modifier_mask = modifier_mask
 	_schedule = schedule
 	_rng.seed = seed_value
-	_queue = WaveComposer.plan(schedule, DifficultyModel.load_default(), wave, _rng, modifier)
+	var model: DifficultyModel = DifficultyModel.load_default()
+	_queue = WaveComposer.plan(schedule, model, wave, _rng, modifier, players)
 	planned_health = 0
 	_spawned.clear()
 	for data in _queue:
