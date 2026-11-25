@@ -16,5 +16,6 @@ description = "Strip the big ones for parts: +1 Core every time a boss dies."
 branch = "Logistics"
 tier = 3
 core_cost = 3
+board_position = Vector2(0, 0)
 requires = Array[ExtResource("1_node")]([ExtResource("4_quartermaster")])
 effects = Array[ExtResource("2_effect")]([SubResource("Resource_effect")])

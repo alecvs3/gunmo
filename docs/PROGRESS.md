@@ -1251,7 +1251,7 @@ scarce currency. This proves the engine end to end with one branch; the other br
 | **Rules:** a step only in a break, one per break (calling a wave early skips that break's step), enough Cores, every requirement owned, nothing excluded either way, never twice; no respec | Done, tested | `path/path_rules.gd` |
 | **Request** `WaveMode.REQUEST_PATH` (4): `[node index]`, checked by the host with PathRules | Done, smoke D | `modes/wave_mode.gd` |
 | **Replication:** owned nodes (u64, public: everyone sees everyone's route), Cores and the break's step (owner only) in the player snapshot (Cores and the step share one byte), 106 / 41 bytes; protocol 23 (the forecast took 22). Smoke F's download budget goes from 60 to 64 KB/s: 8 players' masks add about 3.9 KB/s (61.5 KB/s measured before packing) StatEffects apply from the owned mask in `PlayerLoadout._apply` on the host and in the owner's prediction alike | Done, smoke D | `shared/network/states/player_net_state.gd`, `player/player_loadout.gd` |
-| **Window:** O (new input action `path` in `project.godot`) opens it in the lobby and breaks: one column per branch, nodes by tier (owned / available / locked, teammates who own each), Cores, this break's step, a Take button. **For Yusuf's review** (`ui/` is his) | Done, layout test | `ui/path_panel.gd`, `ui/path_node_card.gd` |
+| **Window:** O (new input action `path` in `project.godot`) opens it in the lobby and breaks: Cores, this break's step, a Take button (now a board: see "Path board window") | Done, layout test | `ui/path_panel.gd` |
 | **Starter branch "Logistics":** Fortitude (+10% max health, 1 Core) → Quick hands (reload 20% faster, 2) and Quartermaster (shop upgrades −10%, 2) → Fleet foot (+10% move speed, 3, needs Quick hands) or Scavenger (+1 Core per boss, 3, needs Quartermaster); the two tier-3 nodes lock each other out | Done, tested | `path/data/` |
 | Smoke D: in the break after wave 1 the client takes Fortitude, a second step is refused, and its own loadout shows 110 max health | Done | `tests/net/shop_smoke.gd` |
 
@@ -1281,6 +1281,23 @@ different padding, and all three could be open at once.
 | Rocket blast plays the launch sound, deeper (pitch 0.6) and quieter (−4 → −10 dB); `explosion_1.wav` removed | Done, heard in a window | `shared/feedback/data/default_sounds.tres` |
 | `SoundCue.pitch_scale`: any sound can be played deeper or higher (default 1) | Done, tested | `shared/feedback/sound_cue.gd`, `shared/feedback/sound_playback.gd` |
 | `rocket_launch_1.wav` trimmed to the launch (0.45 s): the file had a stray second burst at 1.45 s that played during reloads | Done, heard in a window | `assets/pixabay_sounds/` |
+
+## Path board window ✅
+
+The Path window becomes a board like a strategy-game skill tree, so it can grow to a big tree
+(up to 64 nodes) later. Placeholder art: tokens show the node's first letter until icons exist.
+
+| What | Status | Where |
+|---|---|---|
+| **Board:** every node at its own `PathNode.board_position` (new field, in board cells), a line from each node to what it unlocks (gold once the route is open), a red broken chain between nodes that lock each other out, a banner per branch. Drag to pan, wheel to zoom (0.6–1.6×) | Done, tested, seen in a screenshot | `ui/path_board.gd`, `path/data/*.tres` |
+| **Tokens:** four looks: owned (green), available (gold), locked (grey), locked out (red with a cross: an owned rival shut it for the run, new `PathRules.is_locked_out`); a dot per teammate who owns it; name and cost underneath | Done, tested | `ui/path_node_token.gd`, `ui/path_token_art.gd`, `path/path_rules.gd` |
+| **Detail panel:** the selected node's token, name, "Tier II · Logistics", description, Requires, Locks out (`PathTree.rivals`, both ways), the Take button and "Permanent: cannot be undone." | Done, tested | `ui/path_detail.gd`, `path/path_tree.gd` |
+| **Footer:** legend for the four looks, "Wave 8 / 25" and a pip per wave | Done, layout test | `ui/path_panel.gd` |
+| `PathNode.icon` (optional texture) replaces the letter when set | Done (no icons yet) | `path/path_node.gd` |
+
+### Known limitations
+- No icons or final art yet: art style isn't decided.
+- Not tried in a real two-instance match by hand; checked by the layout test, the tests and smoke D.
 
 ## Balance graphs: progression and strain ⚠️ (estimates to calibrate)
 
