@@ -44,7 +44,8 @@ bots/*           BotController (host only) + BotBrain (pure decisions), bots/pro
 pets/*           Waves pets: PetData/PetCatalog (pets/data/*.tres), PetLook, PetFollower
 path/*           Waves Path: PathNode/PathTree (path/data/*.tres), PathEffect kinds, PathRules
                  (one step per break, bought with Cores; owned nodes on PlayerLoadout)
-modes/*          GameMode base, WaveMode + modes/waves/ (difficulty score in modes/waves/difficulty/),
+modes/*          GameMode base, WaveMode + modes/waves/ (difficulty score in modes/waves/difficulty/,
+                 team progression and strain on paper in modes/waves/progression/),
                  GunGameMode + modes/gun_game/, MatchSettings
 ui/*             menus, HUD, scoreboard, shop, results, F3 overlay; HudMenu (base of every pop-up menu)
 levels/          maps: MapData (levels/data/*.tres, picked by MatchSettings.map) → a Level scene
@@ -111,13 +112,18 @@ Run only what a change can break; run everything for a big change.
 
 ## Commands
 - **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Changed` to run only the smoke scenarios this branch needs (`-Base <ref>`, default `origin/main`), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step. `-Smoke -Scenarios S` is the 10-minute soak test (opt-in: memory and node counts must not keep growing).
-- **Wave report:** `.\tools\wave_report.ps1` (`-Seed N`, `-Schedule res://...`) prints every wave's target and difficulty (each axis), bounty, enemies by type, health, peak alive and modifiers as a markdown table. Paste it before/after in any PR that changes wave balance.
+- **Wave report:** `.\tools\wave_report.ps1` (`-Seed N`, `-Players N`, `-Schedule res://...`) prints every wave's target and difficulty (each axis), bounty, enemies by type, health, peak alive and modifiers as a markdown table. Paste it before/after in any PR that changes wave balance.
+- **Balance graphs:** `.\tools\balance_graphs.ps1` (`-Seed N`, `-Team res://...`, `-NoOpen`) runs every team through the waves on paper, prints one team's difficulty, progression, strain, income and loadout per wave, and opens `tools/balance/graphs.html`.
 - Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 
 ## Glossary
 - **Tier:** one gun on the gun game ladder.
-- **Wave difficulty:** a 0–10 score for a wave from its enemies' own stats (five axes: toughness, melee, pressure, ranged, sustain). Each wave is built to hit the target its curve sets.
+- **Wave difficulty:** a 0–10 score for a wave from its enemies' own stats (five axes: toughness, melee, pressure, ranged, sustain). Each wave is built to hit the target its curve sets, scaled by the number of players.
 - **Wave modifier:** a rule applied to a wave, such as "armored", "fast" or "regenerating".
 - **Damage type / trait:** every hit is Kinetic, Pierce, Blast or Arcane; an enemy's traits
   (Armored, Swarm) take more or less of each. Picking the type that beats the next wave is a counter.
+- **Progression:** how strong a team is likely to be going into a wave, in the difficulty's units
+  (0–10 inside, ×10 in the graphs), from its upgrades, gun, pet, Path and skill.
+- **Strain:** how far a wave is above the team, on the axes that wave pushes on. Below 0 the team
+  is ahead; the `StrainCurve` says what it should be.
 - **Bot profile:** a Resource that sets a bot's skill (reaction time, aim error, awareness, playstyle).

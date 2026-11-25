@@ -9,3 +9,8 @@ extends DifficultyAxis
 
 func raw(sheet: WaveSheet, modifier: WaveModifier) -> float:
 	return sheet.total(EnemyStats.MOVE) * modifier.speed_multiplier / reference_speed
+
+
+## Bodies the team keeps away: by moving, and by killing them.
+func handled(team: TeamPower, model: ProgressionModel) -> float:
+	return team.mobility * model.kite_bodies + team.dps * model.pressure_per_dps

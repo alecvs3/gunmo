@@ -10,6 +10,8 @@ changing). How it works: `modes/CLAUDE.md`, "Wave difficulty".
 
 Every change ends the same way: run `.\tools\wave_report.ps1` before and after and paste both
 into the PR (the Target, Difficulty and H M P R S columns), then `.\tools\check.ps1 -Changed`.
+To see how the change lands against the players, also run `.\tools\balance_graphs.ps1`
+(progression and strain; `modes/CLAUDE.md`, "Progression and strain").
 
 ## Make the game harder or easier, or reshape the curve (data only)
 Edit the `DifficultyCurve` sub-resource in `modes/waves/data/default_waves.tres`:
@@ -20,6 +22,11 @@ Edit the `DifficultyCurve` sub-resource in `modes/waves/data/default_waves.tres`
   above the next wave (`tests/modes/waves/difficulty/test_difficulty_curve.gd` checks < 0.6).
 - `tolerance`: how close a wave must land to its target.
 - `overrides`: pin a wave's target (`overrides[w - 1]`, 0 = use the curve).
+
+## Make waves grow more or less with the team (data only)
+`DifficultyCurve.player_scale` in `default_waves.tres`: the target multiplier for 1, 2, 3...
+players (2 = 1.0). Check it with `.\tools\balance_graphs.ps1`: the same archetype's strain
+should look alike at every team size. `.\tools\wave_report.ps1 -Players N` shows the waves.
 
 ## Limit or require enemies, or make a themed wave (data only)
 Append to `rules` in `default_waves.tres` (each has `from_wave`, `to_wave`, 0 = to the end):
@@ -41,6 +48,8 @@ In `modes/waves/data/difficulty_model.tres`, each axis has a `weight` (how much 
 lower on that axis. `exponent` (0.7) softens growth on every axis.
 
 ## Add a category (an axis)
+A new axis also needs `handled(team, model)`: how much of it a team takes on (see
+`ToughnessAxis`), or the progression score reads 0 on it.
 1. **Script:** `modes/waves/difficulty/<name>_axis.gd`, `extends DifficultyAxis`, overriding
    `raw(sheet, modifier)`: read summed stats with `sheet.total(EnemyStats.<KEY>)` and apply the
    modifiers that touch it (`toughness(modifier)` for health, `modifier.speed_multiplier`, ...).

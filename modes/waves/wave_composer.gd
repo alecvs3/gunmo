@@ -30,14 +30,16 @@ static func available(schedule: WaveSchedule, wave: int) -> Array[EnemyData]:
 
 ## The wave's enemies, the boss first. `modifier` is all the wave's modifiers merged
 ## (ModifierCatalog.combined): a tougher wave needs fewer enemies to reach its target.
+## `players`: how many players it is for (DifficultyCurve.player_scale; 0 = unscaled).
 static func plan(
 	schedule: WaveSchedule,
 	model: DifficultyModel,
 	wave: int,
 	rng: RandomNumberGenerator,
-	modifier: WaveModifier
+	modifier: WaveModifier,
+	players: int = 0
 ) -> Array[EnemyData]:
-	var target: float = target_for(schedule, wave)
+	var target: float = target_for(schedule, wave, players)
 	var best: WaveDraft = null
 	for attempt in MAX_TRIES:
 		var draft := WaveDraft.new(schedule, model, wave, modifier)
@@ -60,16 +62,19 @@ static func plan_wave(
 	model: DifficultyModel,
 	catalog: ModifierCatalog,
 	match_seed: int,
-	wave: int
+	wave: int,
+	players: int = 0
 ) -> Array[EnemyData]:
 	var merged: WaveModifier = catalog.combined(catalog.pick_for_wave(schedule, match_seed, wave))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = wave_seed(match_seed, wave)
-	return plan(schedule, model, wave, rng, merged)
+	return plan(schedule, model, wave, rng, merged, players)
 
 
-static func target_for(schedule: WaveSchedule, wave: int) -> float:
-	return schedule.difficulty.target(wave, schedule) if schedule.difficulty != null else 0.0
+static func target_for(schedule: WaveSchedule, wave: int, players: int = 0) -> float:
+	if schedule.difficulty == null:
+		return 0.0
+	return schedule.difficulty.target(wave, schedule, players)
 
 
 static func tolerance_for(schedule: WaveSchedule) -> float:

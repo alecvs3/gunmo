@@ -65,6 +65,7 @@ func _physics_process(delta: float) -> void:
 	if call_open() and EarlyCall.passes(_count_votes(players, _call_peers), players.size()):
 		_handle(_flow.call_early())
 	_bots_shop(players)
+	_keep_forecast_current(players.size())
 	_refresh_state(players.size(), living, ready)
 
 
@@ -122,9 +123,18 @@ func _forecast_wave(wave: int) -> void:
 	_forecast = null
 	var schedule: WaveSchedule = settings.wave_schedule
 	if wave <= schedule.total_waves:
+		var players: int = level.players().size()
 		_forecast = WaveForecast.of(
-			schedule, DifficultyModel.load_default(), _modifiers, _match_seed, wave
+			schedule, DifficultyModel.load_default(), _modifiers, _match_seed, wave, players
 		)
+
+
+## Someone joined or left while waiting: the next wave grows or shrinks with the team
+## (DifficultyCurve.player_scale), so the forecast is built again and stays exact.
+func _keep_forecast_current(player_count: int) -> void:
+	var waiting: bool = _flow.phase in [GameMode.Phase.LOBBY, GameMode.Phase.BREAK]
+	if waiting and _forecast != null and _forecast.players != player_count:
+		_forecast_wave(_forecast.wave)
 
 
 ## The current wave's modifiers and enemies (the same seed gives the same wave).
@@ -134,9 +144,9 @@ func _start_wave() -> void:
 	var schedule: WaveSchedule = settings.wave_schedule
 	_modifier_mask = _modifiers.pick_for_wave(schedule, _match_seed, _flow.wave)
 	var seed_value: int = WaveComposer.wave_seed(_match_seed, _flow.wave)
-	_spawner.start_wave(
-		level, schedule, _flow.wave, seed_value, _modifier_mask, _modifiers.combined(_modifier_mask)
-	)
+	var merged: WaveModifier = _modifiers.combined(_modifier_mask)
+	var players: int = level.players().size()
+	_spawner.start_wave(level, schedule, _flow.wave, seed_value, _modifier_mask, merged, players)
 	_powers.on_wave_started(_spawner.planned_health, _flow.wave)
 
 
