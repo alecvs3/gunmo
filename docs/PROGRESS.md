@@ -4,7 +4,7 @@ Update this file in the same PR that finishes a feature or adds/fixes a known li
 
 ## Milestone 1 — playable multiplayer core ✅ (merged)
 
-Branch `m1-core`. Neither game mode exists yet; this is a test arena.
+Neither game mode existed yet; this was a test arena.
 
 | Feature | Status | Where |
 |---|---|---|
@@ -23,11 +23,8 @@ Branch `m1-core`. Neither game mode exists yet; this is a test arena.
 
 **Verified:** tests and lint pass; a headless host + client on one machine agreed on players,
 health, ammo, enemies, bullets, death and respawn.
-**Not yet verified:** windowed play (visuals, camera, real mouse), play between two computers.
 
 ## Networking hardening ✅ (merged, issue #4)
-
-Branch `net-hardening`, stacked on `m1-core`.
 
 | Feature | Status | Where |
 |---|---|---|
@@ -46,8 +43,6 @@ Branch `net-hardening`, stacked on `m1-core`.
 
 **Verified:** 56 GUT tests; smoke test passes; killing the host is detected by the client in ~6 s;
 joining nobody fails after 8 s with a clear message; launch args host/join with no errors.
-**Not yet verified:** the overlay and Esc menu visually, play between two computers.
-
 
 ## Movement feel ✅ (merged, issue #6)
 
@@ -59,11 +54,9 @@ joining nobody fails after 8 s with a clear message; launch args host/join with 
 | Acceleration 0.12 s, deceleration 0.08 s, top speed 300 -> 220 px/s | Done, tested | `player/player_motor.gd`, `player/data/default_player.tres` |
 | Client's own player glides instead of jumping to each update | Done; replaced by prediction (netcode) | — |
 
-**Not yet verified:** that the blur is gone and the movement feels right (needs a real window).
-
 ## Netcode foundation ✅ (merged, issues #10 #11 #7 #12 #13 #14 #8)
 
-Branch `netcode-foundation`. How it works and how to extend it: [NETCODE.md](NETCODE.md).
+How it works and how to extend it: [NETCODE.md](NETCODE.md).
 
 | Step | Feature | Status | Where |
 |---|---|---|---|
@@ -80,13 +73,12 @@ Branch `netcode-foundation`. How it works and how to extend it: [NETCODE.md](NET
 simulated lag + wrong-build client; dedicated server + shooter + observer) passed 5 of 5 runs:
 own movement responds within 3 ticks under lag, position matches the host exactly after stopping,
 ~50% of shots at moving enemies confirmed as hits, remote players and bullets seen.
-**Not yet verified:** windowed play (feel of aim, movement, corrections, knockback), two PCs.
 
 ### Known limitations
 
 - Players don't collide with each other. No friendly fire in co-op (by team).
 - The host sees remote players move in small steps when their commands arrive unevenly.
-- GUT prints Godot leak warnings at exit on this branch (the game itself shuts down cleanly);
+- GUT prints Godot leak warnings at exit (the game itself shuts down cleanly);
   traced to engine/GUT shutdown order with the Replicator node, not to a runtime leak.
 
 ## Display smoothness ✅ (merged, issue #16)
@@ -105,8 +97,6 @@ before: 67%), frame-to-frame unevenness 7–13% (≈0.1 px), player perfectly st
 
 ## Milestone 2 — wave loop ✅ (merged, issues #18–#24)
 
-Branch `milestone-2`, one commit per issue.
-
 | Issue | Feature | Status | Where |
 |---|---|---|---|
 | #18 | GameMode base (replicated next to the level), Level spawn API, MatchSettings + `--match`, MatchState entity, client→host requests, F = ready | Done, tested | `modes/game_mode.gd`, `levels/level.gd`, `shared/network/states/match_net_state.gd` |
@@ -120,21 +110,16 @@ Branch `milestone-2`, one commit per issue.
 **Verified:** 179 GUT tests; lint/format clean; all three smoke scenarios pass (a host and a
 client play a quick match through ready-up, two waves, victory, restart and defeat, and see the
 same phases); a real host runs waves; the HUD checked in screenshots; a fresh clone imports.
-**Not yet verified:** a full 25-wave match by people (balance), two PCs, the CI run itself
-(first run happens on the PR).
+**Not yet verified:** a full 25-wave match by people (balance).
 
 ### Known limitations
 
-- Balance is a first guess: tune `modes/waves/data/default_waves.tres` and `enemies/data/*.tres`.
-- ~~Players have no names yet~~ (names added in M4; the spectate line still says "a teammate").
+- The spectate line still says "a teammate", not the name.
 - The command-line `--import` crashes now and then on an already-imported working copy right
   after files changed (a Godot 4.7.2 cache bug; running it again works, a fresh clone
   imports fine). If the editor crashes once after pulling, open it again.
-- Only one map.
 
 ## Milestone 3 — upgrades and combat depth ✅ (merged, issues #26–#31)
-
-Branch `milestone-3`, one commit per issue.
 
 | Issue | Feature | Status | Where |
 |---|---|---|---|
@@ -149,17 +134,14 @@ Branch `milestone-3`, one commit per issue.
 the shotgun and a damage level (applied on the host and client), the host refuses a duplicate weapon
 and a mid-wave purchase, the shotgun fires exactly 6 pellets per shot, hits are confirmed, credits are
 earned, and wave modifiers reach the client. Shop, HUD credits and modifier banner checked in a window.
-**Not yet verified:** economy and balance over a full 25-wave match with people; two PCs.
+**Not yet verified:** economy and balance over a full 25-wave match with people.
 
 ### Known limitations
 
 - Prices, upgrade strengths, bounties and modifier strengths are a first guess (all in `.tres` files).
-- The shop panel has room for about 7 upgrades at 648 px height; more will need a scroll area.
 - No hit marker yet (`ProjectileSystem.hit_confirmed` is there for it).
 
 ## Milestone 4 — Gun Game and bots ✅ (merged, issues #33–#37)
-
-Branch `milestone-4`, one commit per issue.
 
 | Issue | Feature | Status | Where |
 |---|---|---|---|
@@ -179,19 +161,13 @@ feel), bot difficulty, two PCs.
 
 ### Known limitations
 
-- Bots are Gun Game only. They don't dodge bullets, and they roam between respawn points rather
-  than reading the map.
-- The ladder only uses guns from the shop catalog (4 so far), so the default ladder is short.
+- The ladder only uses guns from the shop catalog (5 so far), so the default ladder is short.
 - Gun Game has no lobby or countdown: it starts when the host hosts, and the host's "Play
   again" restarts it.
 - Bot difficulty, ladder length and kills per gun are first guesses (`bots/profiles/*.tres`,
   `modes/data/gun_game_match.tres`).
 
 ## Foundations, part 1: tooling, safety nets, stress test, latency ✅ (merged)
-
-Branch `foundations`. The rest of the Foundations plan (#43 performance fixes, #44 refactors,
-#46 rejoin, #47 soak/fuzz/rate limit, #48 release builds, #49 settings menu, #50 folder guides)
-is still open.
 
 | Issue | Feature | Status | Where |
 |---|---|---|---|
@@ -224,8 +200,6 @@ budgets (first CI run on the PR).
 
 ### Known limitations
 
-- The old fixed 100 ms delay left clients with higher ping (Yusuf on Tailscale) barely any
-  buffer, which likely added to the stutter. Fixed: the delay now includes the latency.
 - Headless test runs pace frames every 7–16 ms, so the host may hold back 1 tick of a clean
   connection's inputs there; windowed play at high refresh rates should need less.
 - The stress test uses one real client; snapshot encoding cost grows with the number of
@@ -234,7 +208,7 @@ budgets (first CI run on the PR).
 
 ## Placeholder art: Kenney top-down shooter ✅ (merged, issue #62)
 
-Branch `placeholder-art`. Mostly looks; the gameplay changes are where shots start, the aim
+Mostly looks; the gameplay changes are where shots start, the aim
 angle, and the player's collision sizes. Network messages are unchanged.
 
 | What | How | Where |
@@ -260,12 +234,10 @@ budget; the rerun passed, and this change doesn't touch networking).
   compensator to remember rotation too.
 - Bots aim at targets from their body's center, so their shots pass about 10 px beside the target.
 - Hugging a wall can put the barrel tip past the wall's edge (as with the old 30 px muzzle).
-- Characters are picked from the peer id, so two players can get the same one.
-- Bullets are still shapes; menus and HUD are unchanged.
 
 ## Latency tier 1: fair play at high ping ✅ (merged, issues #57–#61)
 
-Branch `latency-tier1`. Aimed at Yusuf's report (160 ms round trip): bots "shooting all over
+Aimed at Yusuf's report (160 ms round trip): bots "shooting all over
 the place", and getting hit by bullets that missed on his screen.
 
 | Issue | Feature | Status | Where |
@@ -299,7 +271,7 @@ client's screen. Protocol 7.
 
 ## Fullscreen ✅ (merged, issue #65)
 
-Branch `ui/fullscreen`. Display only: nothing is sent over the network.
+Display only: nothing is sent over the network.
 
 | What | How | Where |
 |---|---|---|
@@ -312,7 +284,6 @@ lint/format clean.
 
 ### Known limitations
 
-- No exclusive fullscreen option (it can lower input delay a little on some PCs, but Alt+Tab is slower).
 - Fullscreen uses the screen the window is on; there is no monitor picker.
 
 ## Builds: more guns, hit effects and perks ❌ (merged in #68, removed again)
@@ -325,7 +296,7 @@ Pistol, 3 kills each.
 
 ## Foundations: refactors for clarity ✅ (merged, issue #44)
 
-Branch `refactor-clarity`. No behaviour or network format change (protocol stays 7).
+No behaviour or network format change (protocol stays 7).
 
 | What | Where |
 |---|---|
@@ -342,7 +313,7 @@ changed functions now use the typed fields instead of Dictionary keys.
 
 ## Foundations: guides for Claude ✅ (merged, issue #50)
 
-Branch `ai-guides`. Makes the project quick for Claude (and new readers) to work in without
+Makes the project quick for Claude (and new readers) to work in without
 reading everything first.
 
 | What | Where |
@@ -364,7 +335,7 @@ The latency scenario allows one isolated ran-dry hitch per 6 s phase (a single o
 
 ## Adaptive screen sizes ✅ (merged, issue #73)
 
-Branch `adaptive-screen`. Movement, shooting, aim, hits, bots and the netcode already ran on
+Movement, shooting, aim, hits, bots and the netcode already ran on
 ticks in world units; this makes the *view* and the *menus* fit any window, and locks that in.
 
 | What | Where |
@@ -506,7 +477,7 @@ No network format change (protocol stays 10).
 - **Peak alive is the `max_alive` cap** (fewer enemies or the cap), not a prediction: the real
   peak depends on how fast players kill.
 - Effective health counts armor (damage taken) but not regeneration.
-- One seed per report: the enemy mix and modifiers change with the seed, the budget doesn't.
+- One seed per report: the enemy mix and modifiers change with the seed.
   Compare before/after with the same seed.
 - Godot prints "ObjectDB instances leaked" at exit for any `-s` script in this project (an
   empty one too); the `.ps1` hides it. Same engine shutdown-order noise as the GUT runs.
@@ -560,8 +531,6 @@ screen had it** (bot hits 41 of 41). Smoke F with ranged enemies: host tick p95 
 for every enemy every tick (p95 9.7 ms); now only a ranged enemy whose attack is ready casts one.
 
 ### Known limitations
-- No enemy in the waves uses `RangedAttack` yet: the Shooter comes in step 4. The test spitter
-  only lives in the smoke data (clients draw it as a grunt).
 - Enemies lead from where the host has the target (not the target's own screen, as bots do).
 - Line of sight is one ray from the enemy's center; a bolt can still clip a pillar's corner.
 
@@ -585,8 +554,6 @@ bought by the default schedule.
 No network format change (clients load the new types from `enemies/data/` like the others).
 
 ### Known limitations
-- The waves' mix is still random by weight: some waves get few swarmers, some many (wave 11:
-  26). Composition rules per wave come in step 7.
 - All enemies use the zombie picture, told apart by tint and size.
 - **Not verified:** how the three play in a window.
 
@@ -648,9 +615,6 @@ No network format change: the mask is still one byte (5 of 8 modifiers used).
 tick p95 4.2 ms, client download 52.8 KB/s. Soak S (10 min): see the PR.
 
 ### Known limitations
-- Threat counts points (the costs are the designers' judgement of danger), not a simulation of
-  how hard a wave plays. Effective health still swings between waves with the modifiers.
-- Swarmers are cheap, so their 10% share is still 15–24 of a late wave's 40.
 - A bigger `max_alive` needs smaller enemy snapshots (bandwidth is the limit at 50).
 - **Not verified:** how the curve plays (step 15's playtests).
 
@@ -698,7 +662,6 @@ budget 60), host tick p95 4.7 ms.
 Also: `project.godot` gets the `revive` input action (E).
 
 ### Known limitations
-- Bots don't revive yet (step 10).
 - Reviving doesn't stop you moving or shooting; walking out of range interrupts it.
 - **Not verified:** how it feels in a window; the ring and the prompts' look.
 
@@ -721,7 +684,6 @@ bot count shown for Waves.
 No network format change.
 
 ### Known limitations
-- Bots don't dodge, use cover or aim from the barrel yet (step 11).
 - Their shopping ignores what suits their style; the Rocket Launcher counts as "dearer, so better".
 - **Not verified:** whether they feel like useful teammates in a window.
 
@@ -738,7 +700,7 @@ Nothing about buying changed: the buttons still only send `shop_purchase_request
 checks it. No network format change.
 
 ### Known limitations
-- No sounds yet, and the credits number still jumps instead of counting (later "game feel" work).
+- The credits number still jumps instead of counting.
 - Tried in a window by Yusuf. **Not verified:** a 2-player match.
 
 ## M7 step 11: smarter bots ✅ (merged, issue #107)
@@ -799,7 +761,6 @@ longer: smoke E now allows 95 s for a winner (was 70).
 
 ### Known limitations
 - No map picker yet (M6); a map is chosen in the match settings `.tres` or with `--match`.
-- **Not verified:** nothing visible changed.
 
 ## M7 step 14: two new maps ✅ (merged, issue #116)
 
@@ -875,7 +836,7 @@ check now fails a map without a `ProjectileSystem` or `FeedbackSystem`.
 EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 
 ### Known limitations
-- No sounds yet (next issue), and no setting to turn screen shake off.
+- No setting to turn screen shake off.
 - A client draws enemies slightly in the past, so a burst can appear a few pixels ahead of
   where it last saw the enemy.
 - Tried in a window by Yusuf (test arena). **Not verified:** a 2-player match, and the new maps by eye.
@@ -899,8 +860,6 @@ EventBus gets `damage_seen` and `blast_shown` (both looks only, every peer).
 - No sound on hits yet (to decide once the guns are heard together; idea: a quiet tick for your own hits).
 - The files are levelled to the same loudness; each gun's `volume_db` (in its `.tres`) sets how
   loud it is against the others (Yusuf turned the rifle and shotgun down 6 dB by ear).
-- Gold "big hit" numbers were too common at 30% of max health (one pistol shot is 33% of a grunt);
-  now 50% of the enemy's starting health (#109).
 - No volume setting; everything plays on the Master bus.
 - Tried in a window by Yusuf (every gun, explosions). **Not verified:** a 2-player match, boss deaths.
 
@@ -1133,7 +1092,6 @@ knew it was there.
 - Checked in a window (host, solo). **Not verified:** how the two lines look with long modifier
   lists.
 
-
 ## Checks run only what a change needs ✅
 
 The full smoke suite takes 2.5–5 minutes on every change, even a typo fix. Now the smoke
@@ -1154,7 +1112,6 @@ changes run no smoke at all.
 - A pull request can pass with its scenarios and still break one it didn't run; the full run on
   main catches it, but only after the merge.
 - The `full-checks` label has to exist on GitHub before it can be added to a PR.
-
 
 ## Early calls only through wave 5 ✅
 
@@ -1210,7 +1167,6 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 - **Not played.** How 15% harder feels, and whether Shooters and Supports showing up more often in
   waves 6–12 than before reads well, needs the playtests.
 - A target is only reached in steps of one enemy, so waves land up to 0.3 above or below it.
-- `EnemyData.cost` is still read by the bots (target danger); the next part replaces it.
 
 ## Wave difficulty 3: no more enemy cost ✅ (issue #153)
 
@@ -1268,7 +1224,7 @@ Plan: https://claude.ai/artifact/7EPV52pTXaRkvnrzkgHpJm (section 1).
 
 ### Known limitations
 - No "new enemy type" or "bring this damage type" yet: clients don't know the schedule's enemy
-  list, and damage types come with the counters PR.
+  list, and the damage types (#158) aren't shown in the forecast yet.
 - **Not checked in a window:** whether ▲ renders in the HUD font on every platform (Godot falls
   back to a system font for it).
 
