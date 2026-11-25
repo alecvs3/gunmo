@@ -249,11 +249,25 @@ func _pay_wave_bonus() -> void:
 	_pay_wave_bonus_for(_flow.wave)
 
 
+## The wave's clear bonus, then interest on what each player now holds, to everyone standing.
 func _pay_wave_bonus_for(wave: int) -> void:
 	var bonus: int = settings.wave_clear_bonus + settings.wave_clear_bonus_per_wave * wave
 	for player in level.players():
 		if player.is_alive:
 			player.get_wallet().add(bonus)
+	_pay_interest(wave)
+
+
+func _pay_interest(wave: int) -> void:
+	var paid: int = 0
+	for player in level.players():
+		if player.is_alive:
+			var wallet: WalletComponent = player.get_wallet()
+			var interest: int = Interest.amount(wallet.credits, settings)
+			wallet.add(interest)
+			paid += interest
+	if paid > 0:
+		NetLog.write("wave %d interest: +%d credits in all" % [wave, paid])
 
 
 func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:

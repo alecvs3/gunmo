@@ -39,6 +39,12 @@ extends Resource
 @export_range(0, 1000) var early_call_bonus_per_second: int = 0
 ## The last wave that may be started early (255 = no limit). Past it, every wave gets its break.
 @export_range(1, 255) var early_call_last_wave: int = 255
+## Interest on held credits, paid to every standing player after each clear bonus (and for a
+## wave called away early): interest_per_step for every interest_step credits held, at most
+## interest_cap. Any of them 0 turns interest off.
+@export_range(0, 100000) var interest_step: int = 0
+@export_range(0, 10000) var interest_per_step: int = 0
+@export_range(0, 100000) var interest_cap: int = 0
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
 
