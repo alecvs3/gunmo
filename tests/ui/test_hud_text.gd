@@ -34,6 +34,17 @@ func test_active_wave_shows_enemies_left() -> void:
 	assert_eq(Hud.match_lines(state, 0.0, false)[0], "Enemies left: 17")
 
 
+func test_early_call_prompt_and_modifiers_both_show() -> void:
+	state.phase = GameMode.Phase.ACTIVE
+	state.call_open = true
+	state.call_votes = 1
+	var prompt: String = Hud.match_lines(state, 0.0, false)[1]
+	assert_eq(prompt, "G: call the next wave early for bonus credits (1/2)")
+	assert_eq(Hud.stack_lines("Armored · Fast", prompt), "Armored · Fast\n" + prompt)
+	assert_eq(Hud.stack_lines("", prompt), prompt, "no modifiers: just the prompt")
+	assert_eq(Hud.stack_lines("Armored", ""), "Armored", "calling closed: just the modifiers")
+
+
 func test_banners() -> void:
 	state.phase = GameMode.Phase.ACTIVE
 	state.wave = 4
