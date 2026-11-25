@@ -1291,7 +1291,7 @@ four copies running side by side). Two timing problems in the test script, not i
 |---|---|---|
 | **The client left too early:** both sides waited 1 s after victory, then the client quit while the host was about to check its Path, so the host found no player (`[-1, -1]`). The client now stays until the host closes the session | Done, 20/20 under load | `tests/net/shop_smoke.gd` |
 | **Enemies out of the shotgun's reach:** enemies chase the nearest player; ones that settled on the far side of the (invulnerable, silent) host stood about 320 px from the client, past the shotgun's ~300, so the last enemies of a wave never died in 60 s. The client now walks towards a target farther than 150 px | Done, 20/20 under load | `tests/net/shop_smoke.gd` |
-| `_check_path` fails with a clear message when our own player is gone (it crashed before), and a fight that times out logs the wave and enemies left | Done | `tests/net/shop_smoke.gd` |
+| `_check_path` fails with a clear message when our own player is gone (it crashed before), and a fight that times out logs the wave and where the client and every enemy left stood | Done | `tests/net/shop_smoke.gd` |
 
 ## Path board window ✅
 
