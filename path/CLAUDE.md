@@ -7,12 +7,12 @@ can be undone. Recipe: `add-path-node`.
 ## Key files
 | File | Job |
 |---|---|
-| `path_node.gd` | One node: name, description, branch, tier, `core_cost`, `requires`, `excludes`, `effects` |
-| `path_tree.gd` | Every node in a fixed order (at most 64), and the owned nodes' effects added up |
+| `path_node.gd` | One node: name, description, branch, tier, `core_cost`, `requires`, `excludes`, `effects`, `board_position` (its cell on the window's board), optional `icon` |
+| `path_tree.gd` | Every node in a fixed order (at most 64), the owned nodes' effects added up, and `rivals` (exclusions both ways) |
 | `path_effect.gd` | Base effect: hooks that change nothing (`stat_bonus`, `shop_price_multiplier`, `extra_boss_cores`) |
 | `stat_effect.gd`, `economy_effect.gd` | A player stat through PlayerStats' multipliers; shop discount and extra Cores per boss |
 | `path_progress.gd` | One player's Path: owned mask, Cores, whether this break's step is used |
-| `path_rules.gd` | Pure rules: can this player take this node now, taking it, a new break, Cores paid |
+| `path_rules.gd` | Pure rules: can this player take this node now, is it locked out for good, taking it, a new break, Cores paid |
 | `data/*.tres` | The nodes and `path_tree.tres`. Append new nodes; never reorder (they travel by index) |
 
 ## Rules that aren't obvious

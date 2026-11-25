@@ -16,4 +16,5 @@ description = "Thicker plating: +10% max health."
 branch = "Logistics"
 tier = 1
 core_cost = 1
+board_position = Vector2(1, 2)
 effects = Array[ExtResource("2_effect")]([SubResource("Resource_effect")])

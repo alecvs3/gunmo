@@ -18,6 +18,7 @@ description = "Travel light: +10% move speed. Locks out Scavenger."
 branch = "Logistics"
 tier = 3
 core_cost = 3
+board_position = Vector2(2, 0)
 requires = Array[ExtResource("1_node")]([ExtResource("4_quick_hands")])
 excludes = Array[ExtResource("1_node")]([ExtResource("5_scavenger")])
 effects = Array[ExtResource("2_effect")]([SubResource("Resource_effect")])

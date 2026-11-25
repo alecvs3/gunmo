@@ -16,3 +16,8 @@ extends Resource
 ## Owning any of these locks this one out, and the other way round.
 @export var excludes: Array[PathNode] = []
 @export var effects: Array[PathEffect] = []
+## Where it sits on the Path board, in board cells (x to the right, y down). Every node needs
+## its own spot; tier 1 usually goes at the bottom so the route climbs.
+@export var board_position: Vector2 = Vector2.ZERO
+## Its picture on the board. Empty = a placeholder token showing its first letter.
+@export var icon: Texture2D
