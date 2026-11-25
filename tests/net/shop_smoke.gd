@@ -6,7 +6,8 @@ extends "res://tests/net/smoke_script.gd"
 ## purchases
 ## the host must refuse, then both clear the waves: the client's shotgun fires 6 pellets per
 ## trigger pull, its hits are confirmed, it earns credits, and the wave's modifiers reach it.
-## The host holds fire in the fight, so the client's shotgun must make the kills.
+## The host holds fire in the fight, so the client's shotgun must make the kills (it walks up to
+## enemies out of reach). The client stays until the host has checked it and closed the session.
 ## In the break after wave 1 the client asks for the Path's first node (Fortitude, 1 Core: the
 ## wave paid 1) and then a second one the host must refuse (one step per break); its snapshot
 ## must show the node, the Core spent, and +10% max health worked out by its own loadout.
@@ -23,6 +24,10 @@ const KIND_PET: int = 2
 const WIZARD: int = 1
 const FORTITUDE: int = 0
 const QUICK_HANDS: int = 1
+## How long each side fights before giving up.
+const FIGHT_SECONDS: float = 60.0
+## The client walks closer to targets farther than this (the shotgun reaches about 300).
+const SHOOT_DISTANCE: float = 150.0
 
 var _state: RefCounted = null
 var _predicted: int = 0
@@ -108,6 +113,9 @@ func _run_client() -> void:
 	_check(_saw_modifiers, "the wave's modifiers never reached the client")
 	_check(_saw_tinted_enemy, "no enemy carried the wave's modifiers")
 	_check_path()
+	# Stay until the host closes the session: leaving first would remove our player before the
+	# host checks our Path.
+	await _wait_until(func() -> bool: return not net.peers.has(1), 10.0)
 
 
 func _buy_and_check() -> void:
@@ -131,27 +139,49 @@ func _refused_purchase_check(what: String, kind: int, index: int) -> void:
 
 ## Shoots the nearest enemy until the match is over. The host holds fire (its pistol would kill
 ## everything before the client's short-range shotgun gets a hit) and keeps everyone alive.
+## Enemies chase whichever player is nearest, and the host stands about one shotgun range away,
+## so the client walks up to a target that is out of reach instead of firing from the edge.
 func _fight_until_over() -> void:
-	var time_left: float = 60.0
+	var time_left: float = FIGHT_SECONDS
 	var shooting: bool = _role == "shopclient"
 	while time_left > 0.0 and not (_is_phase("VICTORY") or _is_phase("DEFEAT")) and _own() != null:
 		if not shooting:
 			for player: Node in root.get_node(_level_path() + "/Players").get_children():
 				player.get_node("HealthComponent").invulnerable = true
-		var target: Node2D = _nearest_enemy()
 		var command: RefCounted = _input_command_script.new()
-		if target != null and shooting:
-			command.aim = (target.global_position - _own().global_position).angle()
-			command.buttons = _fire_button
-			_saw_tinted_enemy = _saw_tinted_enemy or target.get("modifier_mask") != 0
+		if shooting:
+			_aim_at_nearest_enemy(command)
 		_own().get_node("PlayerInputSource").scripted = command
 		if shooting and _is_phase("BREAK") and not _path_asked:
 			_ask_for_path_steps()
 		await create_timer(0.1).timeout
 		time_left -= 0.1
+	if time_left <= 0.0 and _own() != null:
+		_report_timeout()
 	if _own() != null:
 		_own().get_node("PlayerInputSource").scripted = _input_command_script.new()
 	await create_timer(1.0).timeout
+
+
+## Where we and every enemy still in the level stood when the fight ran out of time.
+func _report_timeout() -> void:
+	var wave: int = _state.wave if _state != null else -1
+	_info("fight timed out in wave %d, standing at %s" % [wave, _own().global_position])
+	for enemy: Node2D in root.get_node(_level_path() + "/Enemies").get_children():
+		_info("  enemy left at %s (visible %s)" % [enemy.global_position, enemy.visible])
+
+
+## Fires at the nearest enemy, walking towards it while it is farther than SHOOT_DISTANCE.
+func _aim_at_nearest_enemy(command: RefCounted) -> void:
+	var target: Node2D = _nearest_enemy()
+	if target == null:
+		return
+	var to_target: Vector2 = target.global_position - _own().global_position
+	command.aim = to_target.angle()
+	command.buttons = _fire_button
+	if to_target.length() > SHOOT_DISTANCE:
+		command.move = to_target.normalized()
+	_saw_tinted_enemy = _saw_tinted_enemy or target.get("modifier_mask") != 0
 
 
 func _on_state(state: RefCounted) -> void:
@@ -245,6 +275,9 @@ func _ask_for_path_steps() -> void:
 
 ## Our own snapshot shows the step, and our loadout applies Fortitude itself.
 func _check_path() -> void:
+	if _own() == null:
+		_check(false, "own player gone before the Path check (left the match or the host closed)")
+		return
 	var path: Array = _path_of(root.multiplayer.get_unique_id())
 	var max_health: int = _own().get_node("HealthComponent").max_health
 	_info("Path %s, max health %d -> %d" % [path, _max_health_before, max_health])
