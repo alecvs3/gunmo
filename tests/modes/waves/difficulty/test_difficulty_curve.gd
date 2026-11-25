@@ -53,3 +53,13 @@ func test_the_default_curve_rises_with_boss_bumps() -> void:
 		if real.boss_for(i) == null and real.boss_for(i - 1) == null:
 			assert_gt(targets[i], targets[i - 1] - 0.001, "wave %d keeps climbing" % (i + 1))
 	assert_gt(targets.back(), targets[targets.size() - 2], "the last wave is the hardest")
+
+
+func test_targets_grow_with_the_number_of_players() -> void:
+	var plain: float = curve.target(5, schedule)
+	assert_almost_eq(curve.target(5, schedule, 3), plain, 0.001, "no scale yet")
+	curve.player_scale = PackedFloat32Array([0.6, 1.0, 1.3])
+	assert_almost_eq(curve.target(5, schedule, 1), plain * 0.6, 0.001)
+	assert_almost_eq(curve.target(5, schedule, 2), plain, 0.001)
+	assert_almost_eq(curve.target(5, schedule, 8), plain * 1.3, 0.001, "past the list: the last")
+	assert_almost_eq(curve.target(5, schedule, 0), plain, 0.001, "0 = unscaled")

@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="TeamSetup" format=3]
+
+[ext_resource type="Script" path="res://modes/waves/progression/team_setup.gd" id="1_team"]
+[ext_resource type="Resource" path="res://modes/waves/data/progression/expert.tres" id="2_expert"]
+[ext_resource type="Resource" path="res://modes/waves/data/progression/average.tres" id="3_average"]
+[ext_resource type="Resource" path="res://modes/waves/data/progression/novice.tres" id="4_novice"]
+[ext_resource type="Script" path="res://modes/waves/progression/player_archetype.gd" id="5_arch"]
+
+[resource]
+script = ExtResource("1_team")
+display_name = "Mixed squad (expert Soldier, average Healer, 2 novices)"
+members = Array[ExtResource("5_arch")]([ExtResource("2_expert"), ExtResource("3_average"), ExtResource("4_novice"), ExtResource("4_novice")])
+pets = PackedInt32Array(2, 0, 1, -1)
+calls_early = true

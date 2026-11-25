@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="TeamSetup" format=3]
+
+[ext_resource type="Script" path="res://modes/waves/progression/team_setup.gd" id="1_team"]
+[ext_resource type="Resource" path="res://modes/waves/data/progression/average.tres" id="2_average"]
+[ext_resource type="Script" path="res://modes/waves/progression/player_archetype.gd" id="3_arch"]
+
+[resource]
+script = ExtResource("1_team")
+display_name = "Average duo"
+members = Array[ExtResource("3_arch")]([ExtResource("2_average"), ExtResource("2_average")])
+pets = PackedInt32Array(2, 0)

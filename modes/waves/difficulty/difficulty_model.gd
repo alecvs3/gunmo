@@ -51,8 +51,21 @@ func sheet_for(enemies: Array[EnemyData]) -> WaveSheet:
 func scores(sheet: WaveSheet, modifier: WaveModifier) -> PackedFloat32Array:
 	var found := PackedFloat32Array()
 	for axis in axes:
-		var amount: float = maxf(axis.raw(sheet, modifier), 0.0)
-		found.append(scale * pow(amount / axis.reference, exponent))
+		found.append(score(axis, axis.raw(sheet, modifier)))
+	return found
+
+
+## What `amount` of `axis`'s raw units scores (10 at its reference).
+func score(axis: DifficultyAxis, amount: float) -> float:
+	return scale * pow(maxf(amount, 0.0) / axis.reference, exponent)
+
+
+## What a team of strength `team` scores on each axis: the raw amount it handles, scored like
+## a wave's (progression; same units as `scores`).
+func handled_scores(team: TeamPower, model: ProgressionModel) -> PackedFloat32Array:
+	var found := PackedFloat32Array()
+	for axis in axes:
+		found.append(score(axis, axis.handled(team, model)))
 	return found
 
 
