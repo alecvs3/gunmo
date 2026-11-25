@@ -56,7 +56,14 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
   `goal(own, target)`: the point to walk to (the enemy paths there). Pure, stateless.
 - **Attack:** extend `EnemyAttack` and override `wants_to_attack(cooldown_left, distance,
   can_see)` (pure) and `perform(enemy, target, touching)` (host; return true to restart the
-  cooldown). Tuning goes in the behaviour's `@export`s, not in `EnemyData`.
+  cooldown). Tuning goes in the behaviour's `@export`s, not in `EnemyData`. Override
+  `stands_still_while_winding_up()` to make it stop and face where it aimed during a windup.
+  `ChargeAttack` (the Charger, `enemies/data/charger.tres`) is the example of an attack that
+  moves the enemy: its windup draws a dash line, then the chaser runs an `EnemyDash`
+  (`enemies/enemy_dash.gd`); a stun shows on clients as the `EnemyStatus.FLAG_STUNNED` bit.
+- **Look:** give a type its own shapes on top of the sprite with an `EnemyLook` subclass in
+  `enemies/looks/` (e.g. `HornsLook`), set on `EnemyData.look`. Looks only, drawn on every
+  peer in the sprite's space (+x = forward).
 - Put a GUT test for its pure decisions in `tests/enemies/test_enemy_behaviours.gd`.
 - Override `add_stats(stats, weight)` so the wave difficulty score sees what the attack does
   (damage, healing or summons per second; recipe `tune-wave-difficulty`).

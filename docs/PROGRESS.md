@@ -1272,3 +1272,20 @@ different padding, and all three could be open at once.
 | **One menu at a time:** opening a menu closes the others (P while the shop is open switches to Pets) | Done, tested | `ui/hud_menu.gd` |
 | Shop, Pets and Path extend it; all three now use the shop's look (outline 4, window padding 16/12, fill 0.82) | Done, layout test | `ui/shop_panel.gd`, `ui/pet_panel.gd`, `ui/path_panel.gd` |
 | A test finds every menu scene in `ui/` and fails if one looks different or two can be open; recipe `add-menu` for the next one | Done | `tests/ui/test_hud_menus.gd`, `.claude/skills/add-menu/SKILL.md` |
+
+## Enemy overhaul 1: the Charger ⚠️ (issue #168; playtests to do)
+
+The first enemy with its own move (overhaul plan: Charger, then Bomber #169, then Shielder #170).
+Most enemies only walk at you; the Charger makes you sidestep and rewards baiting it into walls.
+
+| What | Status | Where |
+|---|---|---|
+| **Charger** (from wave 4, 180 health): walks at you; at 340 px with line of sight it stops and warns for 0.8 s with a line along its dash (direction locked when the warning starts), then dashes 420 px at 620 px/s. A player it hits takes 25 and a big push and the dash ends | Done, tested | `enemies/data/charger.tres`, `enemies/behaviours/charge_attack.gd` |
+| **Wall stun:** running head-on into a wall (not scraping along it, not another enemy) stuns it for 1.5 s: it can't act and takes 50% more damage. Stars circle over it | Done, tested | `enemies/enemy_dash.gd`, `enemies/chaser.gd` |
+| **Looks:** `EnemyData.look` draws extra shapes on an enemy's sprite (looks only, every peer); the Charger's `HornsLook` has horns and kicks up dust while it dashes | Done | `enemies/looks/` |
+| **Replication:** the dash line comes from the facing and telegraph clients already get; the stun is a third status bit, so the telegraph byte now has 5 bits (31 steps, was 63). Snapshot size unchanged; protocol 24 | Done, tested | `shared/network/states/enemy_net_state.gd` |
+
+### Known limitations
+- Bots don't sidestep a dash on purpose.
+- A dash that hits a player ends there; the enemy can't hit two players in a row on one dash.
+- Not played: the numbers are a first draft.

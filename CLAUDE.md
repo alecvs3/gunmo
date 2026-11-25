@@ -38,7 +38,8 @@ upgrades/        ShopCatalog, UpgradeData (stats), PlayerStats (each gun's per-l
                  ShopRules
 enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, behaviours/
                  (movement + attack parts an EnemyData combines), EnemyTrait
-                 (enemies/data/traits/: how much of each damage type an enemy takes)
+                 (enemies/data/traits/: how much of each damage type an enemy takes), looks/
+                 (EnemyLook: shapes drawn on an enemy's sprite so its type reads at a glance)
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 pets/*           Waves pets: PetData/PetCatalog (pets/data/*.tres), PetLook, PetFollower
 path/*           Waves Path: PathNode/PathTree (path/data/*.tres), PathEffect kinds, PathRules

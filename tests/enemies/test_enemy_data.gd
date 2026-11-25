@@ -1,7 +1,7 @@
 extends GutTest
 
 const TYPES: Array[String] = [
-	"grunt", "runner", "brute", "shooter", "tank", "swarmer", "splitter", "support"
+	"grunt", "runner", "brute", "shooter", "tank", "swarmer", "splitter", "support", "charger"
 ]
 ## Types the waves never buy directly (they come from others).
 const SPAWNED_ONLY: Array[String] = ["splitling"]
@@ -70,6 +70,20 @@ func test_splitter_and_support() -> void:
 	var support: EnemyData = _load("support")
 	assert_true(support.attack is HealPulseAttack, "support heals")
 	assert_true(support.movement is KeepDistanceMovement, "support hangs back")
+
+
+func test_charger_dashes_and_wears_horns() -> void:
+	var charger: EnemyData = _load("charger")
+	var charge := charger.attack as ChargeAttack
+	assert_not_null(charge, "charger dashes")
+	if charge != null:
+		assert_gt(charge.windup, 0.3, "long enough to sidestep")
+		assert_gt(charge.dash_speed, charger.move_speed * 3.0, "a dash is much faster than walking")
+		assert_gt(charge.stun_seconds, 0.0, "walls punish it")
+	assert_true(charger.look is HornsLook, "it has its own look")
+	assert_true(charger.movement is ChaseMovement)
+	assert_gt(charger.first_wave, _load("runner").first_wave)
+	assert_lt(charger.first_wave, _load("brute").first_wave)
 
 
 func test_received_heal_scales_and_rounds() -> void:

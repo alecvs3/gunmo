@@ -26,7 +26,7 @@ const NOT_PUBLIC: Array[String] = [
 const KINDS: Array[int] = [NetKinds.PLAYER, NetKinds.ENEMY, NetKinds.MATCH]
 ## Integer fields packed into fewer bits: "Class.field" -> how many values fit.
 const NARROW: Dictionary = {
-	"EnemyNetState.status": 4, "EnemyNetState.telegraph": 64, "PlayerNetState.cores": 128
+	"EnemyNetState.status": 8, "EnemyNetState.telegraph": 32, "PlayerNetState.cores": 128
 }
 
 var _rng := RandomNumberGenerator.new()

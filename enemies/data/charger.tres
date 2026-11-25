@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Script" path="res://enemies/behaviours/charge_attack.gd" id="2_charge"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/chase.tres" id="3_chase"]
+[ext_resource type="Script" path="res://enemies/looks/horns_look.gd" id="4_horns"]
+
+[sub_resource type="Resource" id="Resource_charge"]
+script = ExtResource("2_charge")
+interval = 1.2
+windup = 0.8
+trigger_range = 340.0
+dash_speed = 620.0
+dash_distance = 420.0
+damage = 25
+knockback = 900.0
+stun_seconds = 1.5
+stun_damage_bonus = 0.5
+recover_seconds = 0.4
+
+[sub_resource type="Resource" id="Resource_horns"]
+script = ExtResource("4_horns")
+
+[resource]
+script = ExtResource("1_edata")
+display_name = "Charger"
+color = Color(1, 0.62, 0.52, 1)
+visual_scale = 1.2
+look = SubResource("Resource_horns")
+max_health = 180
+move_speed = 95.0
+repath_interval = 0.25
+movement = ExtResource("3_chase")
+attack = SubResource("Resource_charge")
+knockback_friction = 1800.0
+knockback_bounce = 0.3
+knockback_taken = 0.4
+first_wave = 4
+spawn_weight = 0.8
+bounty = 25

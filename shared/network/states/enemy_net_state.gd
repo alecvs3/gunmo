@@ -3,20 +3,20 @@ extends NetState
 ## What clients need about an enemy: where it is, its health, which way it faces and how far
 ## into a telegraphed attack's windup it is.
 
-## Quarter-pixel position (4) + u16 health + u8 facing + u8 (2 bits status, 6 bits telegraph).
+## Quarter-pixel position (4) + u16 health + u8 facing + u8 (3 bits status, 5 bits telegraph).
 const SIZE: int = 8
 ## Facing is sent as one of this many directions (1 byte, about 1.4 degrees apart).
 const FACING_STEPS: int = 256
-## The telegraph's top value (6 bits).
-const TELEGRAPH_STEPS: int = 63
+## The telegraph's top value (5 bits).
+const TELEGRAPH_STEPS: int = 31
 
 var position: Vector2 = Vector2.ZERO
 var health: int = 0
 ## Which way it faces, 0..FACING_STEPS-1 around a full turn (see to_facing / facing_angle).
 var facing: int = 0
-## How far into an attack's windup (1..63 = just started..about to fire), 0 = not winding up.
+## How far into an attack's windup (1..31 = just started..about to fire), 0 = not winding up.
 var telegraph: int = 0
-## What pets have done to it (EnemyStatus.FLAG_*: slowed, hexed). Shares telegraph's byte.
+## EnemyStatus.FLAG_*: slowed, hexed (pets), stunned (a Charger). Shares telegraph's byte.
 var status: int = 0
 
 
@@ -24,7 +24,7 @@ var status: int = 0
 static func to_telegraph(left: float, total: float) -> int:
 	if total <= 0.0 or left <= 0.0:
 		return 0
-	return clampi(roundi((1.0 - left / total) * 62.0) + 1, 1, TELEGRAPH_STEPS)
+	return clampi(roundi((1.0 - left / total) * (TELEGRAPH_STEPS - 1)) + 1, 1, TELEGRAPH_STEPS)
 
 
 ## The facing step closest to `angle` (radians).
@@ -41,7 +41,7 @@ func encode(buffer: StreamPeerBuffer) -> void:
 	NetCodec.put_quarter_position(buffer, position)
 	buffer.put_u16(clampi(health, 0, 65535))
 	buffer.put_u8(posmod(facing, FACING_STEPS))
-	buffer.put_u8((status & 3) << 6 | clampi(telegraph, 0, TELEGRAPH_STEPS))
+	buffer.put_u8((status & 7) << 5 | clampi(telegraph, 0, TELEGRAPH_STEPS))
 
 
 func decode(buffer: StreamPeerBuffer) -> void:
@@ -50,7 +50,7 @@ func decode(buffer: StreamPeerBuffer) -> void:
 	facing = buffer.get_u8()
 	var packed: int = buffer.get_u8()
 	telegraph = packed & TELEGRAPH_STEPS
-	status = packed >> 6
+	status = packed >> 5
 
 
 func byte_size() -> int:

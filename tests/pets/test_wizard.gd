@@ -32,14 +32,14 @@ func test_status_hex_and_flags() -> void:
 
 func test_status_travels_with_the_telegraph() -> void:
 	var state := EnemyNetState.new()
-	state.telegraph = 40
+	state.telegraph = 20
 	state.status = EnemyStatus.FLAG_HEXED | EnemyStatus.FLAG_SLOWED
 	var buffer := StreamPeerBuffer.new()
 	state.encode(buffer)
 	buffer.seek(0)
 	var back := EnemyNetState.new()
 	back.decode(buffer)
-	assert_eq([back.telegraph, back.status], [40, 3])
+	assert_eq([back.telegraph, back.status], [20, 3])
 
 
 func test_arc_chance_and_jumps_by_tier() -> void:

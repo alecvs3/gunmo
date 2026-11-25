@@ -6,6 +6,8 @@ extends RefCounted
 
 const FLAG_SLOWED: int = 1
 const FLAG_HEXED: int = 2
+## Not a pet's: a Charger that ran into a wall (EnemyDash). The chaser adds it to the flags.
+const FLAG_STUNNED: int = 4
 
 var _slow_until: int = 0
 var _slow: float = 0.0

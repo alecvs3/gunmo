@@ -13,6 +13,8 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 @export var color: Color = Color.WHITE
 ## Drawn size (1 = the picture's size); looks only, the hitbox stays the same.
 @export_range(0.1, 4.0) var visual_scale: float = 1.0
+## Extra shapes drawn on its sprite (horns...) so its type reads at a glance (enemies/looks/).
+@export var look: EnemyLook
 ## Size of its hitbox, touch area and body (1 = a normal enemy's 32 px); bosses are bigger.
 @export_range(0.5, 4.0) var body_scale: float = 1.0
 @export_range(1, 100000) var max_health: int = 1
