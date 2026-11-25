@@ -1259,3 +1259,12 @@ scarce currency. This proves the engine end to end with one branch; the other br
 - Bots earn Cores but never take a step (bot branch preferences are part 6 of the plan).
 - Someone joining late starts with no Cores (they only get what is paid after they join).
 - Not played: the Core numbers and node costs are the plan's first draft.
+
+## Quieter rifle and rocket, new rocket blast sound ✅
+
+| What | Status | Where |
+|---|---|---|
+| Rifle shot quieter (−13 → −18 dB) | Done, heard in a window | `shared/feedback/data/guns/rifle_shot.tres` |
+| Rocket blast plays the launch sound, deeper (pitch 0.6) and quieter (−4 → −10 dB); `explosion_1.wav` removed | Done, heard in a window | `shared/feedback/data/default_sounds.tres` |
+| `SoundCue.pitch_scale`: any sound can be played deeper or higher (default 1) | Done, tested | `shared/feedback/sound_cue.gd`, `shared/feedback/sound_playback.gd` |
+| `rocket_launch_1.wav` trimmed to the launch (0.45 s): the file had a stray second burst at 1.45 s that played during reloads | Done, heard in a window | `assets/pixabay_sounds/` |
