@@ -40,6 +40,7 @@ var _bullets: Dictionary = {}
 func _ready() -> void:
 	if multiplayer.is_server():
 		EventBus.shot_fired.connect(_on_shot_fired)
+		EventBus.blast_requested.connect(_broadcast_blast)
 	else:
 		EventBus.shot_predicted.connect(_spawn.bind(Bullet.Mode.PREDICTED))
 		NetworkManager.channel.event_received.connect(_on_event_received)
@@ -100,13 +101,18 @@ func _on_bullet_hit_explode(bullet: Bullet, at: Vector2, hitbox: HitboxComponent
 ## Host: deal the blast (if the shot explodes) and show it here and on every client.
 func _explode(shot: Shot, at: Vector2, direct_hit: HitboxComponent) -> void:
 	var candidates: Array[HitboxComponent] = NetworkManager.lag_compensator.hitboxes()
-	if not Explosion.detonate(shot, at, direct_hit, candidates):
-		return
-	_show_blast(at, shot.blast_radius)
+	if Explosion.detonate(shot, at, direct_hit, candidates):
+		_broadcast_blast(at, shot.blast_radius)
+
+
+## Host: show a blast (a rocket's, or an enemy's: EventBus.blast_requested) here and on
+## every client.
+func _broadcast_blast(at: Vector2, radius: float) -> void:
+	_show_blast(at, radius)
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u8(EVENT_BLAST)
 	NetCodec.put_vector2(buffer, at)
-	buffer.put_float(shot.blast_radius)
+	buffer.put_float(radius)
 	for peer_id in multiplayer.get_peers():
 		NetworkManager.channel.send_event(peer_id, TOPIC, buffer.data_array)
 

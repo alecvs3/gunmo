@@ -7,10 +7,12 @@ extends CharacterBody2D
 
 ## Where clients may load enemy data from (the path arrives from the host at spawn).
 const DATA_FOLDER: String = "res://enemies/data/"
-## Hitbox and shot team (enemies never hurt each other).
+## Hitbox and shot team (enemies never hurt each other, except a Bomber's blast).
 const TEAM: StringName = &"enemies"
 ## Walls, for line of sight.
 const WORLD_MASK: int = 1
+## Damage a Bomber deals itself when its fuse burns out: more than any health it can have.
+const SELF_DESTRUCT_DAMAGE: int = 100000000
 ## Tint on top of its colour while slowed.
 const FROSTED := Color(0.65, 0.85, 1.3)
 
@@ -40,6 +42,10 @@ var _windup_total: float = 0.0
 var _windup_aim: Vector2 = Vector2.RIGHT
 ## Host: a Charger's dash (ChargeAttack); idle for every other enemy.
 var _dash := EnemyDash.new()
+## Host: a Bomber already exploded (so its death doesn't pop a second blast).
+var _detonated: bool = false
+## Every peer: draws its type's look (null = it has none).
+var _look_layer: EnemyLookLayer
 ## Every peer: the ring that shows a windup (the host's own, or from snapshots).
 var _telegraph := EnemyTelegraph.new()
 var _status_flags: int = 0
@@ -109,6 +115,8 @@ func _process(delta: float) -> void:
 	var weight: float = 1.0 - exp(-turn_rate * delta)
 	_body.rotation = lerp_angle(_body.rotation, _facing_target, weight)
 	_telegraph.line_angle = _facing_target
+	if _look_layer != null:
+		_look_layer.windup = _telegraph.progress
 
 
 func capture_net_state() -> NetState:
@@ -250,6 +258,13 @@ func start_dash(attack: ChargeAttack) -> void:
 	_dash.start(attack, _windup_aim)
 
 
+## Host: a BlastAttack's fuse burned out: blast everyone around it, then die (no bounty).
+func detonate(attack: BlastAttack) -> void:
+	_detonated = true
+	attack.blast(global_position, hitbox(), true, 0)
+	_health.take_damage(SELF_DESTRUCT_DAMAGE)
+
+
 ## Host: a dash goes straight on, hurts the players it reaches and stuns it on walls.
 func _dash_step(delta: float) -> void:
 	velocity = _dash.velocity() + _knockback.velocity
@@ -322,12 +337,15 @@ func _add_look() -> void:
 	var charge := enemy_data.attack as ChargeAttack
 	if charge != null:
 		_telegraph.line_length = charge.dash_distance
+	var bomb := enemy_data.attack as BlastAttack
+	if bomb != null:
+		_telegraph.blast_radius = bomb.radius
 	if enemy_data.look == null:
 		return
-	var layer := EnemyLookLayer.new()
-	layer.look = enemy_data.look
-	layer.follow = _body
-	add_child(layer)
+	_look_layer = EnemyLookLayer.new()
+	_look_layer.look = enemy_data.look
+	_look_layer.follow = _body
+	add_child(_look_layer)
 
 
 ## Player hitboxes in the contact area.
@@ -342,10 +360,21 @@ func _touching_hitboxes() -> Array[HitboxComponent]:
 
 func _on_died(killer_peer_id: int) -> void:
 	EventBus.enemy_killed.emit(self, killer_peer_id)
+	_pop(killer_peer_id)
 	if enemy_data.split_into != null and enemy_data.split_count > 0:
 		EventBus.enemy_split.emit(self, enemy_data.split_into, enemy_data.split_count)
 	remove_from_group(Groups.ENEMIES)
 	queue_free()
+
+
+## Host: a Bomber shot before its fuse burned out still pops, but only enemies get hurt
+## (its killer gets their bounties).
+func _pop(killer_peer_id: int) -> void:
+	var bomb := enemy_data.attack_in(_phase) as BlastAttack
+	if bomb == null or _detonated:
+		return
+	_detonated = true
+	bomb.blast(global_position, hitbox(), false, killer_peer_id)
 
 
 ## Where it is drawn (the host draws remote things a little back, see DisplayDelay).

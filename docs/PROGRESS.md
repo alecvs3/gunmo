@@ -1358,3 +1358,20 @@ units. `.\tools\balance_graphs.ps1` prints one team's table and opens `tools/bal
 - `max_alive` (40) doesn't grow with the team, so a squad's bigger waves come as a longer stream
   rather than a bigger crowd; the pressure score still counts every enemy.
 - Last Stand and Triage are left out (they only matter while someone is down).
+
+## Enemy overhaul 2: the Bomber ⚠️ (issue #169; playtests to do)
+
+A fast, fragile enemy that rewards choosing *when* to kill it: early, or once it has run
+into a crowd of other enemies.
+
+| What | Status | Where |
+|---|---|---|
+| **Bomber** (from wave 5, 40 health, fast): runs at you; within 70 px it stops and lights its fuse for 0.7 s, with the warning ring drawn at the blast's real size (110 px). Then it explodes: 30 to each player and 80 (Blast) to each other enemy in reach, and it dies with no bounty | Done, tested | `enemies/data/bomber.tres`, `enemies/behaviours/blast_attack.gd` |
+| **Popped:** killed before its fuse burns out, it still blasts, but only enemies get hurt and their bounties go to its killer. Bombers set each other off | Done, tested | `enemies/chaser.gd` |
+| **Look:** `BombLook`, a bomb on its back whose fuse spark blinks faster as the fuse burns; `EnemyLook.draw()` now gets the windup (0..1) | Done, tested | `enemies/looks/` |
+| **Showing the blast:** new host signal EventBus `blast_requested`; the ProjectileSystem shows it here and on every client the same way as a rocket's (flash, sound, camera shake). No network format change | Done | `autoloads/event_bus.gd`, `weapons/projectile_system.gd` |
+
+### Known limitations
+- The difficulty score counts its one blast like steady melee damage, so it may rate the Bomber a bit high.
+- Bots don't back away from a lit fuse on purpose.
+- Not played: the numbers are a first draft.
