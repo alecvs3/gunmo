@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://ui/main_menu.tscn" id="2_menu"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://ui/results_screen.tscn" id="6_results"]
 [ext_resource type="PackedScene" path="res://ui/shop_panel.tscn" id="7_shop"]
 [ext_resource type="PackedScene" path="res://ui/pet_panel.tscn" id="12_pets"]
+[ext_resource type="PackedScene" path="res://ui/path_panel.tscn" id="13_path"]
 [ext_resource type="PackedScene" path="res://ui/scoreboard.tscn" id="8_scoreboard"]
 [ext_resource type="Script" path="res://ui/hurt_indicator.gd" id="9_hurt"]
 [ext_resource type="Script" path="res://ui/view_mask.gd" id="10_mask"]
@@ -58,6 +59,8 @@ script = ExtResource("9_hurt")
 [node name="ShopPanel" parent="UI" instance=ExtResource("7_shop")]
 
 [node name="PetPanel" parent="UI" instance=ExtResource("12_pets")]
+
+[node name="PathPanel" parent="UI" instance=ExtResource("13_path")]
 
 [node name="NetOverlay" parent="UI" instance=ExtResource("3_overlay")]
 

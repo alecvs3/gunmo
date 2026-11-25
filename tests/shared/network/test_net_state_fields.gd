@@ -20,10 +20,14 @@ const NOT_PUBLIC: Array[String] = [
 	"PlayerNetState.upgrade_levels",
 	"PlayerNetState.buff_fire",
 	"PlayerNetState.buff_move",
+	"PlayerNetState.cores",
+	"PlayerNetState.path_stepped",
 ]
 const KINDS: Array[int] = [NetKinds.PLAYER, NetKinds.ENEMY, NetKinds.MATCH]
 ## Integer fields packed into fewer bits: "Class.field" -> how many values fit.
-const NARROW: Dictionary = {"EnemyNetState.status": 4, "EnemyNetState.telegraph": 64}
+const NARROW: Dictionary = {
+	"EnemyNetState.status": 4, "EnemyNetState.telegraph": 64, "PlayerNetState.cores": 128
+}
 
 var _rng := RandomNumberGenerator.new()
 

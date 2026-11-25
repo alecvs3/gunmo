@@ -11,11 +11,12 @@ signal buy_pressed
 @onready var _buy_button: Button = %BuyButton
 
 
-## The buy button's text: the next level's price, or MAX at the cap.
-static func buy_text(upgrade: UpgradeData, level: int) -> String:
+## The buy button's text: the next level's price (after the Path's `discount`), or MAX at
+## the cap.
+static func buy_text(upgrade: UpgradeData, level: int, discount: float = 1.0) -> String:
 	if level >= upgrade.max_level:
 		return "MAX"
-	return "%d" % upgrade.cost(level)
+	return "%d" % upgrade.cost(level, discount)
 
 
 ## What the next level gives, or that there is nothing left to buy.
@@ -29,13 +30,15 @@ func _ready() -> void:
 	_buy_button.pressed.connect(buy_pressed.emit)
 
 
-func show_upgrade(upgrade: UpgradeData, level: int, weapon: WeaponData, can_buy: bool) -> void:
+func show_upgrade(
+	upgrade: UpgradeData, level: int, weapon: WeaponData, can_buy: bool, discount: float = 1.0
+) -> void:
 	_name_label.text = upgrade.display_name
 	tooltip_text = upgrade.description
 	_pips.max_level = upgrade.max_level
 	_pips.level = level
 	_gain_label.text = gain_line(upgrade, level, weapon)
-	_buy_button.text = buy_text(upgrade, level)
+	_buy_button.text = buy_text(upgrade, level, discount)
 	_buy_button.disabled = not can_buy
 
 

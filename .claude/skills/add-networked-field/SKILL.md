@@ -32,4 +32,4 @@ spawn-time constants are a `SpawnSync` property.
      fails if you missed encode/decode/copy.
    - Add a value check to `tests/shared/network/test_net_states.gd` if it's clamped or blended.
 6. **Size:** snapshots go out 60 times a second to every client. Check bytes per second with
-   `.\tools\check.ps1 -Changed` (scenario F prints `client_download_avg_bytes`; budget 60 KB/s), and update `docs/PROGRESS.md`.
+   `.\tools\check.ps1 -Changed` (scenario F prints `client_download_avg_bytes`; budget 64 KB/s), and update `docs/PROGRESS.md`.

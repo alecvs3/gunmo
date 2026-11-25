@@ -37,6 +37,13 @@ extends Resource
 ## and this much per second of break skipped (on top of the wave's clear bonus).
 @export_range(0, 1000) var early_call_bonus_per_enemy: int = 0
 @export_range(0, 1000) var early_call_bonus_per_second: int = 0
+## The Path's Cores (wave mode), for every player in the match: this many per wave cleared (a
+## wave called early counts once it is called away) and per boss killed. Solo (one human, no
+## bots) gets cores_solo_bonus more every cores_solo_every waves. 0 = none.
+@export_range(0, 20) var cores_per_wave: int = 0
+@export_range(0, 20) var cores_per_boss: int = 0
+@export_range(0, 20) var cores_solo_bonus: int = 0
+@export_range(0, 25) var cores_solo_every: int = 0
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
 

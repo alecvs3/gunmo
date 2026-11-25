@@ -1212,3 +1212,24 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
 Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
+
+## Strategy 4: the Path engine ⚠️ (issue #159; playtests to do)
+
+Part 1 of the Path (strategy-layer plan, section 4): a run-long route bought with Cores, a second,
+scarce currency. This proves the engine end to end with one branch; the other branches come next.
+
+| What | Status | Where |
+|---|---|---|
+| **Cores:** every player gets `cores_per_wave` (1) per wave cleared (a wave called early counts once it is called away) and `cores_per_boss` (2) per boss killed; solo (one human, no bots) gets `cores_solo_bonus` (1) more every `cores_solo_every` (5) waves. Paid by the host, standing or not. A full solo run earns 30 from waves, a team 25 | Done, tested | `modes/match_settings.gd`, `modes/waves/wave_path.gd`, `modes/data/default_match.tres` |
+| **Data:** `PathNode` (name, description, branch, tier, Core cost, `requires`, `excludes`, `effects`) and `PathTree` (every node in a fixed order, at most 64; append, never reorder). Effects: `StatEffect` (a player stat through PlayerStats' multipliers) and `EconomyEffect` (shop upgrade price multiplier, extra Cores per boss) | Done, tested | `path/` |
+| **Rules:** a step only in a break, one per break (calling a wave early skips that break's step), enough Cores, every requirement owned, nothing excluded either way, never twice; no respec | Done, tested | `path/path_rules.gd` |
+| **Request** `WaveMode.REQUEST_PATH` (4): `[node index]`, checked by the host with PathRules | Done, smoke D | `modes/wave_mode.gd` |
+| **Replication:** owned nodes (u64, public: everyone sees everyone's route), Cores and the break's step (owner only) in the player snapshot (Cores and the step share one byte), 106 / 41 bytes; protocol 22. Smoke F's download budget goes from 60 to 64 KB/s: 8 players' masks add about 3.9 KB/s (61.5 KB/s measured before packing) StatEffects apply from the owned mask in `PlayerLoadout._apply` on the host and in the owner's prediction alike | Done, smoke D | `shared/network/states/player_net_state.gd`, `player/player_loadout.gd` |
+| **Window:** O (new input action `path` in `project.godot`) opens it in the lobby and breaks: one column per branch, nodes by tier (owned / available / locked, teammates who own each), Cores, this break's step, a Take button. **For Yusuf's review** (`ui/` is his) | Done, layout test | `ui/path_panel.gd`, `ui/path_node_card.gd` |
+| **Starter branch "Logistics":** Fortitude (+10% max health, 1 Core) → Quick hands (reload 20% faster, 2) and Quartermaster (shop upgrades −10%, 2) → Fleet foot (+10% move speed, 3, needs Quick hands) or Scavenger (+1 Core per boss, 3, needs Quartermaster); the two tier-3 nodes lock each other out | Done, tested | `path/data/` |
+| Smoke D: in the break after wave 1 the client takes Fortitude, a second step is refused, and its own loadout shows 110 max health | Done | `tests/net/shop_smoke.gd` |
+
+### Known limitations
+- Bots earn Cores but never take a step (bot branch preferences are part 6 of the plan).
+- Someone joining late starts with no Cores (they only get what is paid after they join).
+- Not played: the Core numbers and node costs are the plan's first draft.

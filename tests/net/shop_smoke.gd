@@ -7,6 +7,9 @@ extends "res://tests/net/smoke_script.gd"
 ## the host must refuse, then both clear the waves: the client's shotgun fires 6 pellets per
 ## trigger pull, its hits are confirmed, it earns credits, and the wave's modifiers reach it.
 ## The host holds fire in the fight, so the client's shotgun must make the kills.
+## In the break after wave 1 the client asks for the Path's first node (Fortitude, 1 Core: the
+## wave paid 1) and then a second one the host must refuse (one step per break); its snapshot
+## must show the node, the Core spent, and +10% max health worked out by its own loadout.
 ## Usage: -s res://tests/net/shop_smoke.gd -- <shophost|shopclient> <port>
 ## It runs before the autoloads exist, so it names no project classes directly.
 
@@ -18,12 +21,16 @@ const KIND_UPGRADE: int = 0
 const KIND_WEAPON: int = 1
 const KIND_PET: int = 2
 const WIZARD: int = 1
+const FORTITUDE: int = 0
+const QUICK_HANDS: int = 1
 
 var _state: RefCounted = null
 var _predicted: int = 0
 var _confirmed: int = 0
 var _saw_modifiers: bool = false
 var _saw_tinted_enemy: bool = false
+var _path_asked: bool = false
+var _max_health_before: int = 0
 
 
 func _initialize() -> void:
@@ -61,6 +68,8 @@ func _run_host() -> void:
 	_mode().call("set_local_ready", true)
 	await _fight_until_over()
 	_check(_is_phase("VICTORY"), "the team did not clear the waves")
+	var path: Array = _path_of(client_id)
+	_check(path == [1 << FORTITUDE, 0], "client's Path step not applied on the host: %s" % [path])
 	await create_timer(1.0).timeout
 	net.leave()
 	await create_timer(1.0).timeout
@@ -98,6 +107,7 @@ func _run_client() -> void:
 	_check(_credits() > credits_before, "kills earned no credits")
 	_check(_saw_modifiers, "the wave's modifiers never reached the client")
 	_check(_saw_tinted_enemy, "no enemy carried the wave's modifiers")
+	_check_path()
 
 
 func _buy_and_check() -> void:
@@ -135,6 +145,8 @@ func _fight_until_over() -> void:
 			command.buttons = _fire_button
 			_saw_tinted_enemy = _saw_tinted_enemy or target.get("modifier_mask") != 0
 		_own().get_node("PlayerInputSource").scripted = command
+		if shooting and _is_phase("BREAK") and not _path_asked:
+			_ask_for_path_steps()
 		await create_timer(0.1).timeout
 		time_left -= 0.1
 	if _own() != null:
@@ -219,6 +231,37 @@ func _buy_pet_and_check() -> void:
 	)
 	_check(applied.call(), "the pet purchases did not reach us")
 	_check(_credits() == 0, "600 - 200 - 400 = 0 credits, got %d" % _credits())
+
+
+## In a break: Fortitude (allowed), then Quick hands (refused: this break's step is used).
+func _ask_for_path_steps() -> void:
+	_path_asked = true
+	_max_health_before = _own().get_node("HealthComponent").max_health
+	_info("break: asking for Fortitude with %s" % [_path_of(root.multiplayer.get_unique_id())])
+	var bus: Node = root.get_node("EventBus")
+	bus.path_step_requested.emit(FORTITUDE)
+	bus.path_step_requested.emit(QUICK_HANDS)
+
+
+## Our own snapshot shows the step, and our loadout applies Fortitude itself.
+func _check_path() -> void:
+	var path: Array = _path_of(root.multiplayer.get_unique_id())
+	var max_health: int = _own().get_node("HealthComponent").max_health
+	_info("Path %s, max health %d -> %d" % [path, _max_health_before, max_health])
+	_check(_path_asked, "never saw a break to take a Path step in")
+	_check(
+		path == [1 << FORTITUDE, 0], "expected Fortitude owned and 0 Cores left, got %s" % [path]
+	)
+	_check(max_health == roundi(_max_health_before * 1.1), "Fortitude should add 10% max health")
+
+
+## [owned mask, Cores] of a player's Path.
+func _path_of(peer_id: int) -> Array:
+	var player: Node = root.get_node_or_null(_level_path() + "/Players/%d" % peer_id)
+	if player == null:
+		return [-1, -1]
+	var path: RefCounted = player.get_node("PlayerLoadout").get("path")
+	return [path.get("owned"), path.get("cores")]
 
 
 ## [pet index, tier] of a player's loadout.

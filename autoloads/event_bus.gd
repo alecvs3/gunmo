@@ -41,6 +41,9 @@ signal spectating_changed(peer_id: int)
 ## This peer's shop: the player clicked buy (kind = ShopRules.KIND_*). The mode turns it into
 ## a request the host checks.
 signal shop_purchase_requested(kind: int, index: int)
+## This peer's Path window (Waves): the player asked to take PathTree node `index`. The mode
+## turns it into a request the host checks.
+signal path_step_requested(index: int)
 ## Host UI: the host asked to play the match again (results screen).
 signal match_restart_requested
 ## Every peer, looks only: something drawn at `at` lost `amount` health (a HitFeedback saw it

@@ -23,9 +23,10 @@ const WARM_UP_SECONDS: float = 6.0
 const MEASURE_SECONDS: float = 12.0
 ## Budgets. A 60 Hz tick has 16.7 ms; the host must leave room for rendering, the physics
 ## server and the OS. Measured on Alex's PC (M5 foundations): p95 about 4.6 ms; CI runners are
-## slower, hence the headroom.
+## slower, hence the headroom. Download: 64 KB/s since the Path (#159) put each player's owned
+## nodes in the public snapshot (8 bytes x 8 players x 60 Hz, about 3.9 KB/s more).
 const HOST_TICK_P95_MS: float = 10.0
-const CLIENT_DOWNLOAD_AVG_BYTES: float = 60000.0
+const CLIENT_DOWNLOAD_AVG_BYTES: float = 64000.0
 ## The scene must really be this busy for the numbers to count.
 const MIN_AVG_ENEMIES: float = 25.0
 const MIN_SHOTS_PER_SECOND: float = 15.0
