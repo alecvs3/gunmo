@@ -6,16 +6,19 @@ extends "res://tests/net/fairness.gd"
 ## only the client. Every hit on an enemy deals 1 damage and the host tops them up; the client
 ## can be hurt but the host refills its health every frame. The client strafes for 40 s and
 ## shoots the nearest enemy, and measures what a 160 ms player feels:
-##   hit_feedback_ms        own hit on a Runner -> its health drops on our screen (the hit sound)
+##   hit_feedback_ms        own hit landing -> its flash and hit sound
+##                          (tests/net/hit_feedback_meter.gd)
 ##   predicted_confirm_share  hits our screen predicted that the host confirmed
 ##   bullet_visible_share   enemy bullets that hit us: drawn on our player at the judged tick
-##   hurt_feedback_ms       such a bullet first drawn on us -> our hurt sound (EVENT_HURT)
+##   hurt_feedback_ms       such a bullet first drawn on us -> our hurt sound
+##                          (both: tests/net/incoming_hit_judge.gd)
 ##   melee_fair_share       melee hits on us where the enemy we drew touched us at the judged tick
 ##   melee_gap_px           how far that drawn enemy's contact square was from our hitbox
 ## For melee the host sends, on a test-only topic, the client's own tick (its timeline stamp)
 ## and the enemies touching it when each melee hit landed.
 ## Each step of the plan turns on the budget of the number it fixes: so far hit_feedback_ms and
-## predicted_confirm_share (step 3). The others only fail with too few samples to judge.
+## predicted_confirm_share (step 3), bullet_visible_share and hurt_feedback_ms (step 4). The
+## melee numbers only fail with too few samples to judge.
 ## Usage: -s res://tests/net/waves_fairness.gd -- <waveshost|wavesclient> <port>
 ## [latency,jitter,loss%]. It runs before the autoloads exist, so it names no project classes.
 
@@ -31,8 +34,6 @@ const MELEE_TOPIC: int = 200
 const MELEE_SLACK: float = 4.0
 const MIN_BULLET_HITS: int = 3
 const MIN_MELEE_HITS: int = 3
-## Bullet.Mode.REMOTE.
-const REMOTE: int = 2
 ## Ticks of drawn positions the client keeps.
 const KEEP_TICKS: int = 600
 
@@ -40,12 +41,6 @@ const KEEP_TICKS: int = 600
 var _drawn_enemies: Dictionary = {}
 ## Client: enemy net id -> half the size of its contact square.
 var _contact_half: Dictionary = {}
-## Client: shot key -> {tick of its own timeline: where we drew that enemy bullet}.
-var _drawn_bullets: Dictionary = {}
-## Client: when each EVENT_HURT not yet matched to its bullet arrived (usec).
-var _hurt_usec: Array[int] = []
-var _bullet_visible: int = 0
-var _bullet_hidden: int = 0
 var _melee_fair: int = 0
 var _melee_unfair: int = 0
 
@@ -141,7 +136,6 @@ func _on_physics_frame() -> void:
 	super._on_physics_frame()
 	var tick: int = roundi(root.get_node("NetworkManager").clock.server_tick_now())
 	_record_drawn_enemies(tick)
-	_record_drawn_bullets(tick)
 	for old: Dictionary in [_own_positions, _tick_usec, _drawn_enemies]:
 		old.erase(tick - KEEP_TICKS)
 
@@ -157,72 +151,13 @@ func _record_drawn_enemies(tick: int) -> void:
 	_drawn_enemies[tick] = drawn
 
 
-func _record_drawn_bullets(tick: int) -> void:
-	var projectiles: Node = root.get_node_or_null(_level_path() + "/Projectiles")
-	if projectiles == null:
-		return
-	for bullet: Node in projectiles.get_children():
-		if bullet.get("mode") != REMOTE or not (bullet as Node2D).visible:
-			continue
-		var key: String = bullet.get("shot").call("key")
-		var track: Dictionary = _drawn_bullets.get(key, {})
-		track[tick] = (bullet as Node2D).global_position
-		_drawn_bullets[key] = track
-
-
 func _on_event(topic: int, data: PackedByteArray) -> void:
-	if data.is_empty():
+	if topic != MELEE_TOPIC or data.is_empty():
+		super._on_event(topic, data)
 		return
 	var buffer := StreamPeerBuffer.new()
 	buffer.data_array = data
-	if topic == MELEE_TOPIC:
-		_judge_melee(buffer)
-		return
-	if topic != TOPIC:
-		return
-	match buffer.get_u8():
-		EVENT_HURT:
-			_hurt_usec.append(Time.get_ticks_usec())
-
-		EVENT_ENDED:
-			_judge_bullet(buffer)
-
-
-## An enemy bullet that hit us (announced right after its EVENT_HURT): was it drawn on our player
-## at the tick it was judged on, and how long after it first was did the hurt sound come?
-func _judge_bullet(buffer: StreamPeerBuffer) -> void:
-	var shooter_id: int = buffer.get_32()
-	var key: String = "%d:%d" % [shooter_id, buffer.get_u32()]
-	buffer.get_float()
-	buffer.get_float()
-	var tick: int = roundi(buffer.get_double())
-	var hit_something: bool = buffer.get_u8() == 1
-	if _hurt_usec.is_empty() or not hit_something or shooter_id >= 0:
-		return
-	var hurt_usec: int = _hurt_usec.pop_front()
-	if not _own_positions.has(tick):
-		return
-	var track: Dictionary = _drawn_bullets.get(key, {})
-	var visible: bool = track.has(tick) and _on_player(track[tick], tick)
-	_bullet_visible += 1 if visible else 0
-	_bullet_hidden += 0 if visible else 1
-	var first: int = _first_touch(track)
-	if first >= 0 and _tick_usec.has(first):
-		_add("hurt_feedback_ms", (hurt_usec - int(_tick_usec[first])) / 1000.0)
-
-
-func _on_player(point: Vector2, tick: int) -> bool:
-	return (_own_positions[tick] as Vector2).distance_to(point) <= ON_PLAYER_DISTANCE
-
-
-## The first tick a bullet was drawn on our player (-1 = never).
-func _first_touch(track: Dictionary) -> int:
-	var ticks: Array = track.keys()
-	ticks.sort()
-	for tick: int in ticks:
-		if _own_positions.has(tick) and _on_player(track[tick], tick):
-			return tick
-	return -1
+	_judge_melee(buffer)
 
 
 ## A melee hit the host judged on our tick `tick`: did one of the enemies touching us there
@@ -259,10 +194,8 @@ func _contact_gap(center: Vector2, half: Vector2, tick: int) -> float:
 
 func _report() -> void:
 	_report_hit_feedback()
-	var bullet_hits: int = _bullet_visible + _bullet_hidden
-	_metric("bullet_hits_on_client", bullet_hits)
-	_metric("bullet_visible_share", _bullet_visible / float(maxi(bullet_hits, 1)))
-	_metric("hurt_feedback_ms_p50", _percentile("hurt_feedback_ms", 0.5))
+	_report_incoming()
+	var bullet_hits: int = _incoming.bullet_hits()
 	var melee_hits: int = _melee_fair + _melee_unfair
 	_metric("melee_hits_on_client", melee_hits)
 	_metric("melee_fair_share", _melee_fair / float(maxi(melee_hits, 1)))

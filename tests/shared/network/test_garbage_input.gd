@@ -1,7 +1,8 @@
 extends GutTest
 ## Random bytes into everything the host reads from a client (input commands, the join hello,
-## shop requests) and into the client's snapshot reader. Nothing may crash, read past the
-## data, or let a non-finite or out-of-range value through. Seeded, so a failure repeats.
+## shop requests) and into the client's snapshot and hurt-event readers. Nothing may crash, read
+## past the data, or let a non-finite or out-of-range value through. Seeded, so a failure
+## repeats.
 
 const ROUNDS: int = 3000
 const SHOP_CATALOG: ShopCatalog = preload("res://upgrades/data/shop_catalog.tres")
@@ -101,3 +102,12 @@ func test_garbage_shop_requests_are_refused_by_the_rules() -> void:
 		if index >= weapons:
 			assert_eq(weapon, "No such weapon.")
 	assert_eq(ShopRules.check_upgrade(true, SHOP_CATALOG, -1, 0, 1000000), "No such upgrade.")
+
+
+func test_garbage_hurt_events_decode_to_nothing_or_to_a_finite_direction() -> void:
+	for i in ROUNDS:
+		var buffer: StreamPeerBuffer = NetCodec.buffer_from(_random_bytes(_rng.randi_range(0, 24)))
+		var hurt: Array = ProjectileSystem.decode_hurt(buffer)
+		if not hurt.is_empty():
+			assert_true((hurt[0] as Vector2).is_finite(), "direction is finite")
+			assert_typeof(hurt[1], TYPE_STRING)

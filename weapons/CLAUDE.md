@@ -56,7 +56,12 @@ guns are Kinetic. Recipe: `add-damage-type`.
   `Projectiles` node before `Enemies` and `Players` (MapCheck fails otherwise). Explosion
   flashes share that parent and set `z_index = 1` to stay on top.
 - A REMOTE bullet that passes near your own player catches up to the present over 0.2 s, so a
-  bullet that hits you visibly reaches you.
+  bullet that hits you visibly reaches you. A bot's or enemy's bullet (judged on your own
+  timeline) catches up faster when it would reach you sooner, or is drawn at the present at once
+  (`Bullet.catch_up_ticks`, `LatencyPolicy.snap_close_threats`), and when it sweeps into you on
+  your screen the hurt sound and marker play at once (`reached_us`,
+  `LatencyPolicy.predict_own_hurt`); the host's `EVENT_HURT` names the shot, so they don't play
+  twice.
 - Weapons are referred to by **index in the shop catalog** (`upgrades/data/shop_catalog.tres`)
   everywhere on the network. Gun Game ladder entries must be in that catalog.
 - Changing an event's payload is a network format change: bump `Handshake.PROTOCOL`.

@@ -30,6 +30,7 @@
 		"tests/net/": "all",
 		"tests/net/fairness.gd": ["H", "I"],
 		"tests/net/hit_feedback_meter.gd": ["H", "I"],
+		"tests/net/incoming_hit_judge.gd": ["H", "I"],
 		"tests/net/gun_smoke.gd": ["E"],
 		"tests/net/latency.gd": ["G"],
 		"tests/net/net_smoke.gd": ["A", "B"],

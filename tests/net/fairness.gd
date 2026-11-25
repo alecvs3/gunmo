@@ -18,6 +18,7 @@ extends "res://tests/net/smoke_script.gd"
 ## tests/net/waves_fairness.gd (scenario I) extends this file.
 
 const HitFeedbackMeter = preload("res://tests/net/hit_feedback_meter.gd")
+const IncomingHitJudge = preload("res://tests/net/incoming_hit_judge.gd")
 
 const WATCHDOG_SECONDS: float = 90.0
 const MATCH_PATH: String = "res://tests/net/data/quick_gun_game.tres"
@@ -30,6 +31,10 @@ const MIN_PREDICTED_HITS: int = 5
 const MAX_HIT_FEEDBACK_P50_MS: float = 20.0
 const MAX_HIT_FEEDBACK_P95_MS: float = 35.0
 const MIN_CONFIRM_SHARE: float = 0.9
+## Hits on us (latency plan step 4): the bullet was drawn on us when it hit, and the hurt sound
+## played within about a frame of that.
+const MIN_VISIBLE_SHARE: float = 0.85
+const MAX_HURT_FEEDBACK_P50_MS: float = 20.0
 const SPITTER_PATH: String = "res://tests/net/data/test_spitter.tres"
 const CHASER_SCENE_PATH: String = "res://enemies/chaser.tscn"
 const SPITTERS: int = 2
@@ -47,8 +52,6 @@ const TEST_DAMAGE_TAKEN: float = 0.0001
 ## that frame's drop from the hit feedback timing) is rare; never below 3, so two hits in one
 ## frame can't kill.
 const TOP_UP_SHARE: float = 0.1
-## Player hitbox radius + bullet radius + a little slack for blending between ticks (px).
-const ON_PLAYER_DISTANCE: float = 33.0
 ## ProjectileSystem's event topic and kinds.
 const TOPIC: int = 1
 const EVENT_ENDED: int = 2
@@ -58,17 +61,13 @@ const EVENT_HURT: int = 4
 var _own_positions: Dictionary = {}
 ## Client: tick of its own timeline -> Time.get_ticks_usec() when it was recorded.
 var _tick_usec: Dictionary = {}
-var _hurt_pending: int = 0
-var _fair: int = 0
-var _unfair: int = 0
 ## Host: enemy bolts fired (shooter ids at or below ENEMY_SHOOTER_BASE).
 var _enemy_bolts: int = 0
-var _enemy_fair: int = 0
-var _enemy_unfair: int = 0
 ## Client: how it moves and whether it fires (at the nearest of _aim_targets()).
 var _move: Vector2 = Vector2.ZERO
 var _firing: bool = false
 var _meter: HitFeedbackMeter = null
+var _incoming: IncomingHitJudge = null
 ## How long the client plays (scenario I plays longer for steadier numbers).
 var _play_seconds: float = PLAY_SECONDS
 
@@ -174,6 +173,8 @@ func _start_watching(net: Node) -> void:
 		level.get_node("Projectiles"), level.get_node("ProjectileSystem"), root.get_node("EventBus")
 	)
 	process_frame.connect(_meter.poll)
+	_incoming = IncomingHitJudge.new(_own_positions, _tick_usec, _add)
+	_incoming.watch(level.get_node("Projectiles"))
 
 
 ## Strafes (half a second walking, half a second standing) and fires for _play_seconds, then
@@ -195,6 +196,11 @@ func _play() -> void:
 func _on_physics_frame() -> void:
 	_record_own_position()
 	_steer()
+	var projectiles: Node = root.get_node_or_null(_level_path() + "/Projectiles")
+	if projectiles != null:
+		_incoming.record(
+			roundi(root.get_node("NetworkManager").clock.server_tick_now()), projectiles
+		)
 
 
 ## The tick the client stamps on its inputs (its view of the host's present) -> where its own
@@ -258,43 +264,21 @@ func _on_event(topic: int, data: PackedByteArray) -> void:
 	buffer.data_array = data
 	match buffer.get_u8():
 		EVENT_HURT:
-			_hurt_pending += 1
+			_incoming.on_hurt(buffer)
 
 		EVENT_ENDED:
-			_on_bullet_ended(buffer)
-
-
-## A bullet that hit us is announced right after the hurt event (same reliable channel).
-func _on_bullet_ended(buffer: StreamPeerBuffer) -> void:
-	var shooter_id: int = buffer.get_32()
-	buffer.get_u32()
-	var end_point := Vector2(buffer.get_float(), buffer.get_float())
-	var end_tick: float = buffer.get_double()
-	var hit_something: bool = buffer.get_u8() == 1
-	if _hurt_pending <= 0 or not hit_something or shooter_id >= 0:
-		return
-	_hurt_pending -= 1
-	var tick: int = roundi(end_tick)
-	if not _own_positions.has(tick):
-		return
-	var fair: bool = (_own_positions[tick] as Vector2).distance_to(end_point) <= ON_PLAYER_DISTANCE
-	if shooter_id <= ENEMY_SHOOTER_BASE:
-		_enemy_fair += 1 if fair else 0
-		_enemy_unfair += 0 if fair else 1
-	else:
-		_fair += 1 if fair else 0
-		_unfair += 0 if fair else 1
+			_incoming.on_ended(buffer)
 
 
 func _report() -> void:
-	var hits: int = _fair + _unfair
-	var share: float = _fair / float(hits) if hits > 0 else 0.0
+	var hits: int = _incoming.bot_hits()
+	var share: float = IncomingHitJudge.share(_incoming.bot_fair, _incoming.bot_unfair)
 	print("FAIRNESS METRIC bot_hits_on_client %d" % hits)
 	print("FAIRNESS METRIC fair_share %.2f" % share)
 	_check(hits >= MIN_HITS, "only %d bot hits on the client to judge" % hits)
 	_check(share >= MIN_FAIR_SHARE, "only %.0f%% of bot hits were where we were" % (share * 100))
-	var enemy_hits: int = _enemy_fair + _enemy_unfair
-	var enemy_share: float = _enemy_fair / float(enemy_hits) if enemy_hits > 0 else 0.0
+	var enemy_hits: int = _incoming.enemy_hits()
+	var enemy_share: float = IncomingHitJudge.share(_incoming.enemy_fair, _incoming.enemy_unfair)
 	print("FAIRNESS METRIC enemy_hits_on_client %d" % enemy_hits)
 	print("FAIRNESS METRIC enemy_fair_share %.2f" % enemy_share)
 	_check(enemy_hits >= MIN_ENEMY_HITS, "only %d enemy hits on the client to judge" % enemy_hits)
@@ -302,7 +286,23 @@ func _report() -> void:
 		enemy_share >= MIN_FAIR_SHARE,
 		"only %.0f%% of enemy hits were where we were" % (enemy_share * 100)
 	)
+	_report_incoming()
 	_report_hit_feedback()
+
+
+## Bullets that hit us: drawn on us when they hit (those we could draw in time), and the hurt
+## sound right then. Point-blank hits before the bullet reached us are reported, not budgeted
+## (step 6 announces wind-up shots early).
+func _report_incoming() -> void:
+	var share: float = IncomingHitJudge.share(_incoming.visible, _incoming.hidden)
+	var hurt_p50: float = _percentile("hurt_feedback_ms", 0.5)
+	_metric("bullet_hits_on_client", _incoming.bullet_hits())
+	_metric("bullet_visible_share", share)
+	_metric("bullet_hits_before_drawn", _incoming.never_drawn)
+	_metric("hurt_feedback_ms_p50", hurt_p50)
+	_metric("hurt_feedback_ms_p95", _percentile("hurt_feedback_ms", 0.95))
+	_check(share >= MIN_VISIBLE_SHARE, "only %.0f%% of hits on us were drawn on us" % (share * 100))
+	_check(hurt_p50 <= MAX_HURT_FEEDBACK_P50_MS, "hurt sound %.0f ms after (p50)" % hurt_p50)
 
 
 ## The client's own hit feedback: it must play within a frame of the bullet landing, and the host
