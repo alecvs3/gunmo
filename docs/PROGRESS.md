@@ -1271,20 +1271,23 @@ units. `.\tools\balance_graphs.ps1` prints one team's table and opens `tools/bal
 | **Economy:** bounty by kill share (more damage, more last hits; pets' kills are the owner's), clear bonus and interest by the chance of standing, early call, Cores | Done, tested | `modes/waves/progression/economy_model.gd` |
 | **Spending:** one Path step a break, then the shop the way the archetype spends (greedy, saver, cheapest), checked with ShopRules | Done, tested | `modes/waves/progression/buyer.gd` |
 | **Strain** (wave above team, on the axes the wave pushes) and its target, `StrainCurve`: −30 at wave 1, a steady line to −15 at wave 16, then a parabola up to +20 at wave 25 with no step at the knee (band ±10) | Done, tested | `modes/waves/progression/strain_curve.gd` |
-| **Waves grow with the team:** `DifficultyCurve.player_scale` multiplies every target by the player count's entry (bots count; 0.62, 1, 1.33, 1.62... for 1, 2, 3, 4 players, (n / 2)^0.7). The forecast is built for the current count and again when it changes, so it stays exact. A duo's waves are unchanged | Done, tested, smoke C | `modes/waves/difficulty/difficulty_curve.gd`, `modes/wave_mode.gd`, `modes/waves/data/default_waves.tres` |
+| **Waves fitted to the strain target:** the difficulty curve is now first 0.91, last 12.57, power 1.85, last_wave_bonus 0.65, boss_bonus 0.6 so boss waves still stand out on the steeper climb (was 2.05, 10, 1, 0.25, 0.4): average teams of 1–4 follow the StrainCurve, wave 25 at +27 / +20 / +19 / +21 (seed 1). A duo's wave 1 drops from 9 enemies to 3, wave 25 grows from 33 to 56 (13.2 difficulty, was 10.3) | Done, fitted on paper | `modes/waves/data/default_waves.tres` |
+| **Waves grow with the team:** `DifficultyCurve.player_scale` multiplies every target by the player count's entry (bots count; 0.6, 1, 1.32, 1.65 for 1, 2, 3, 4 players, fitted; 1.9, 2.16, 2.4, 2.64 for 5–8 follow (n / 2)^0.7 untested). The forecast is built for the current count and again when it changes, so it stays exact | Done, tested, smoke C | `modes/waves/difficulty/difficulty_curve.gd`, `modes/wave_mode.gd`, `modes/waves/data/default_waves.tres` |
 | **Graphs** (plain HTML and SVG, no libraries): difficulty, progression, strain, strain by axis, credits by source, loadouts; novice, average and expert at 1–4 players, the reference duo and a mixed squad | Done | `tools/balance_graphs.ps1`, `tools/balance/graphs.html` |
 
 ### Known limitations
 - **The estimates aren't calibrated.** Hit shares, kite bodies, pet uptimes and blast targets are
   first guesses (`modes/waves/data/progression/progression_model.tres`); real play data should set
   them. Until then, read the graphs for shape and for comparing teams, not exact numbers.
-- First reading (seed 1, average duo): strain stays around −10 all run instead of climbing to the
-  new +20 target, so late waves aren't harder relative to the team yet (the difficulty curve or
-  the late economy has to change for that); and it swings wave to wave with the wave's main axis
-  (pressure-heavy waves 9, 13, 19 and 22 are where the team falls behind).
-- Player scaling is a first shape: at wave 25 an average team's strain is +27 solo, −10 duo,
-  −23 for three and −33 for four (it was +44 / −10 / −55 / −92). A solo wave 25 is over its
-  target (the boss alone is most of it). Fine-tune `player_scale` with the graphs.
+- **Not played.** The fit only matches the paper model, whose estimates aren't calibrated yet.
+  Early waves are now small (3 to 7 enemies up to wave 10 for a duo): if they feel empty, raise
+  the StrainCurve's `first` (say to −20) and refit.
+- **Bosses don't shrink with the team.** A boss has the same health for any team size, so solo
+  boss waves are far over their target (solo wave 20: +25 strain, wave 10's boss alone is over a
+  solo player's whole target). Scaling boss health with the player count would fix it.
+- One scale per team size can't change the shape: squads of 3–4 find the early waves easier than
+  the target (−40s against −30) and the late ones a little harder.
+- The mixed squad (calls early, two novices) ends at +61: calling early skips shopping.
 - `max_alive` (40) doesn't grow with the team, so a squad's bigger waves come as a longer stream
   rather than a bigger crowd; the pressure score still counts every enemy.
 - Last Stand and Triage are left out (they only matter while someone is down).

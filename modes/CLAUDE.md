@@ -41,7 +41,7 @@ reviewed by both developers.
 Put new rules in a pure class like these and test it. The mode node should only wire it up.
 
 ## Wave difficulty
-Every wave gets a score from 0 to 10 (wave 25 ≈ 10) that depends only on its enemies and
+Every wave gets a score on a 0–10 scale (a duo's wave 25 ≈ 13: it can go past 10) that depends only on its enemies and
 modifiers, never on the players. Recipe: `tune-wave-difficulty`.
 - **Stats:** `enemies/enemy_stats.gd` turns an `EnemyData` into numbers per second (effective
   health, melee and ranged damage, healing, summons, speed × size). Each attack reports its own
@@ -99,6 +99,10 @@ Each team is measured against the waves built for its own size.
   (wave 16 by default), then a climb that bends upward to the last wave (+20: hard; +10 is
   "hard but fair", +30 an average team almost always loses). The room under the top of its
   band is what later randomness can spend.
+- **The default waves are fitted to it:** the `DifficultyCurve` (first, last, power,
+  last_wave_bonus; boss_bonus 0.6 keeps boss waves above the next on the steep climb) and `player_scale` in `default_waves.tres` were chosen so average teams of
+  1–4 follow the StrainCurve (late waves weighted more, wave 25 most; seeds 1–3). Refit after
+  changing the progression estimates, the economy or the strain target.
 - **The estimates are a first guess.** `clear_seconds` and `sustain_share` are design intent;
   the melee and ranged hit shares and `kite_bodies` were set so a fresh team scores the same on
   M, R and P as on toughness. Real play data should replace them (the knobs are all in
