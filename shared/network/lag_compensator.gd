@@ -49,7 +49,7 @@ func _physics_process(_delta: float) -> void:
 
 func register(hitbox: HitboxComponent) -> void:
 	var history := PositionHistory.new()
-	history.capacity = max_rewind_ticks() + 4
+	history.capacity = max_rewind_ticks() + victim_rewind_ticks() + 4
 	_histories[hitbox] = history
 
 
@@ -66,6 +66,19 @@ func hitboxes() -> Array[HitboxComponent]:
 
 func max_rewind_ticks() -> int:
 	return ceili(config.max_rewind * NetClock.tick_rate())
+
+
+## How far before a victim's own input a hit may be judged on their view (the running mode's
+## LatencyPolicy.victim_rewind; fair contact). Histories keep max_rewind + this.
+func victim_rewind_ticks() -> int:
+	return ceili(NetworkManager.latency_policy.victim_rewind * NetClock.tick_rate())
+
+
+## Where `hitbox` was (its centre) and whether it could be hit at host tick `at_tick`
+## (PRESENT = now). A new Place, so callers may keep it.
+func position_at(hitbox: HitboxComponent, at_tick: float) -> PositionHistory.Place:
+	var place: PositionHistory.Place = _place_at(hitbox, at_tick)
+	return PositionHistory.Place.new(place.position, place.hittable)
 
 
 ## The tick a shot fired while seeing `view_tick` is tested at: never in the future, never

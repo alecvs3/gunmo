@@ -14,11 +14,11 @@ extends "res://tests/net/fairness.gd"
 ##                          (both: tests/net/incoming_hit_judge.gd)
 ##   melee_fair_share       melee hits on us where the enemy we drew touched us at the judged tick
 ##   melee_gap_px           how far that drawn enemy's contact square was from our hitbox
-## For melee the host sends, on a test-only topic, the client's own tick (its timeline stamp)
-## and the enemies touching it when each melee hit landed.
-## Each step of the plan turns on the budget of the number it fixes: so far hit_feedback_ms and
-## predicted_confirm_share (step 3), bullet_visible_share and hurt_feedback_ms (step 4). The
-## melee numbers only fail with too few samples to judge.
+## For melee, the host's EVENT_HURT for each touch names the enemy and the tick of our own
+## timeline it was judged on (fair contact, step 5).
+## Each step of the plan turns on the budget of the number it fixes: hit_feedback_ms and
+## predicted_confirm_share (step 3), bullet_visible_share and hurt_feedback_ms (step 4),
+## melee_fair_share and melee_gap_px (step 5).
 ## Usage: -s res://tests/net/waves_fairness.gd -- <waveshost|wavesclient> <port>
 ## [latency,jitter,loss%]. It runs before the autoloads exist, so it names no project classes.
 
@@ -28,12 +28,13 @@ const VOLLEY_PATH: String = "res://tests/net/data/test_volley.tres"
 const RUNNERS: int = 3
 ## Longer than H: its shares need more samples to be steady from run to run.
 const WAVES_PLAY_SECONDS: float = 40.0
-## Test-only NetChannel event topic (no game code uses it): the host reports a melee hit.
-const MELEE_TOPIC: int = 200
 ## One tick of a Runner's movement (230 px/s at 60 Hz), for blending between ticks (px).
 const MELEE_SLACK: float = 4.0
 const MIN_BULLET_HITS: int = 3
 const MIN_MELEE_HITS: int = 3
+## Fair contact (latency plan step 5): melee hits where the enemy we drew touched us.
+const MIN_MELEE_FAIR_SHARE: float = 0.85
+const MAX_MELEE_GAP_P95_PX: float = 12.0
 ## Ticks of drawn positions the client keeps.
 const KEEP_TICKS: int = 600
 
@@ -68,8 +69,6 @@ func _run_waves_host() -> void:
 	await create_timer(3.0).timeout
 	var client: Node2D = _client_on_host()
 	_check(client != null, "no client player on the host")
-	if client != null:
-		client.get_node("HealthComponent").damaged.connect(_on_client_damaged.bind(client))
 	var hunters: Array[Node] = _spawn_enemies(RUNNER_PATH, RUNNERS)
 	hunters += _spawn_enemies(SPITTER_PATH, 1)
 	hunters += _spawn_enemies(VOLLEY_PATH, 1)
@@ -97,25 +96,6 @@ func _hold_waves_host_frame(client: Node2D) -> void:
 		var health: Node = enemy.get_node("HealthComponent")
 		if _needs_top_up(health):
 			health.call("set_health", health.max_health)
-
-
-## Host: a melee hit (source 0; bullets carry their shooter's id) tells the client its own tick
-## and which enemies were touching it.
-func _on_client_damaged(_amount: int, source_id: int, client: Node2D) -> void:
-	if source_id != 0:
-		return
-	var hitbox: Node = client.get_node("HitboxComponent")
-	var touching: Array[int] = []
-	for enemy: Node in _enemies():
-		if hitbox in enemy.get_node("ContactArea").get_overlapping_areas():
-			touching.append(enemy.get_node("NetEntity").net_id)
-	var buffer := StreamPeerBuffer.new()
-	buffer.put_32(client.get("timeline").call("newest_tick"))
-	buffer.put_u8(touching.size())
-	for net_id in touching:
-		buffer.put_u32(net_id)
-	var channel: Object = root.get_node("NetworkManager").channel
-	channel.call("send_event", client.name.to_int(), MELEE_TOPIC, buffer.data_array)
 
 
 func _aim_targets() -> Array[Node]:
@@ -151,31 +131,35 @@ func _record_drawn_enemies(tick: int) -> void:
 	_drawn_enemies[tick] = drawn
 
 
-func _on_event(topic: int, data: PackedByteArray) -> void:
-	if topic != MELEE_TOPIC or data.is_empty():
-		super._on_event(topic, data)
+## EVENT_HURT from an enemy's touch (after its source byte): the host judged it on our own tick;
+## did that enemy, as we drew it then, touch us?
+func _on_contact_hurt(buffer: StreamPeerBuffer) -> void:
+	buffer.get_float()
+	buffer.get_float()
+	var net_id: int = ENEMY_SHOOTER_BASE - buffer.get_32()
+	var tick: int = buffer.get_u32()
+	if tick >= 1 << 31:
 		return
-	var buffer := StreamPeerBuffer.new()
-	buffer.data_array = data
-	_judge_melee(buffer)
-
-
-## A melee hit the host judged on our tick `tick`: did one of the enemies touching us there
-## touch us as we drew it?
-func _judge_melee(buffer: StreamPeerBuffer) -> void:
-	var tick: int = buffer.get_32()
-	var count: int = buffer.get_u8()
-	var drawn: Dictionary = _drawn_enemies.get(tick, {})
-	var gap: float = INF
-	for i in count:
-		var net_id: int = buffer.get_u32()
-		if drawn.has(net_id) and _own_positions.has(tick):
-			gap = minf(gap, _contact_gap(drawn[net_id], _contact_half[net_id], tick))
-	if is_inf(gap):
+	var drawn: Vector2 = _drawn_enemy_at(net_id, tick)
+	if not drawn.is_finite() or not _own_positions.has(tick):
 		return
+	var gap: float = _contact_gap(drawn, _contact_half[net_id], tick)
 	_melee_fair += 1 if gap <= MELEE_SLACK else 0
 	_melee_unfair += 0 if gap <= MELEE_SLACK else 1
 	_add("melee_gap_px", maxf(gap, 0.0))
+
+
+## Where we drew enemy `net_id` at our own `tick` (halfway between the ticks around it when that
+## tick has no sample), or INF.
+func _drawn_enemy_at(net_id: int, tick: int) -> Vector2:
+	var at: Dictionary = _drawn_enemies.get(tick, {})
+	if at.has(net_id):
+		return at[net_id]
+	var before: Dictionary = _drawn_enemies.get(tick - 1, {})
+	var after: Dictionary = _drawn_enemies.get(tick + 1, {})
+	if before.has(net_id) and after.has(net_id):
+		return (before[net_id] as Vector2).lerp(after[net_id], 0.5)
+	return Vector2.INF
 
 
 ## Pixels between an enemy's contact square (centred on it) and our hitbox at `tick`; 0 or less
@@ -203,3 +187,7 @@ func _report() -> void:
 	_metric("melee_gap_px_p95", _percentile("melee_gap_px", 0.95))
 	_check(bullet_hits >= MIN_BULLET_HITS, "only %d enemy bullet hits to judge" % bullet_hits)
 	_check(melee_hits >= MIN_MELEE_HITS, "only %d melee hits to judge" % melee_hits)
+	var fair: float = _melee_fair / float(maxi(melee_hits, 1))
+	var gap_p95: float = _percentile("melee_gap_px", 0.95)
+	_check(fair >= MIN_MELEE_FAIR_SHARE, "only %.0f%% of melee hits touched us" % (fair * 100))
+	_check(gap_p95 <= MAX_MELEE_GAP_P95_PX, "melee hits %.0f px away (p95)" % gap_p95)

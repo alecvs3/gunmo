@@ -112,17 +112,30 @@ func test_a_bullet_about_to_arrive_is_drawn_at_the_present() -> void:
 
 
 func test_the_hurt_event_names_the_shot() -> void:
-	var payload: PackedByteArray = ProjectileSystem.encode_hurt(Vector2(0, -2), -1048590, 77)
+	var payload: PackedByteArray = _hurt(ProjectileSystem.HURT_BULLET, Vector2(0, -2), -1048590, 77)
 	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload)
 	assert_eq(buffer.get_u8(), ProjectileSystem.EVENT_HURT)
 	assert_eq(ProjectileSystem.decode_hurt(buffer), [Vector2.UP, "-1048590:77"])
 
 
-func test_a_short_hurt_event_is_dropped() -> void:
-	var payload: PackedByteArray = ProjectileSystem.encode_hurt(Vector2.UP, 3, 4)
-	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload.slice(0, 10))
+func test_a_touch_names_no_shot() -> void:
+	var payload: PackedByteArray = _hurt(ProjectileSystem.HURT_CONTACT, Vector2.LEFT, -1048580, 912)
+	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload)
 	buffer.get_u8()
-	assert_eq(ProjectileSystem.decode_hurt(buffer), [])
+	assert_eq(ProjectileSystem.decode_hurt(buffer), [Vector2.LEFT, ""], "never shown before")
+
+
+func test_a_bad_hurt_event_is_dropped() -> void:
+	var short: StreamPeerBuffer = NetCodec.buffer_from(_hurt(0, Vector2.UP, 3, 4).slice(0, 10))
+	short.get_u8()
+	assert_eq(ProjectileSystem.decode_hurt(short), [], "too short")
+	var unknown: StreamPeerBuffer = NetCodec.buffer_from(_hurt(7, Vector2.UP, 3, 4))
+	unknown.get_u8()
+	assert_eq(ProjectileSystem.decode_hurt(unknown), [], "no such source")
+
+
+func _hurt(source: int, direction: Vector2, shooter_id: int, detail: int) -> PackedByteArray:
+	return ProjectileSystem.encode_hurt(source, direction, shooter_id, detail)
 
 
 func test_only_bullets_passing_near_catch_up() -> void:

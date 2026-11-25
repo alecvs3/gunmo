@@ -70,7 +70,7 @@ func record(tick: int, projectiles: Node) -> void:
 		_drawn[key] = track
 
 
-## EVENT_HURT, after its kind byte: the host says shot `key` hurt us.
+## A bullet's EVENT_HURT, after its kind and source bytes: the host says shot `key` hurt us.
 func on_hurt(buffer: StreamPeerBuffer) -> void:
 	buffer.get_float()
 	buffer.get_float()

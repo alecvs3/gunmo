@@ -8,6 +8,9 @@ extends Node
 ## (0 = an enemy's touch; an enemy's bullet = Shot.enemy_shooter_id, never a player's id).
 signal player_killed(victim: Node2D, killer_id: int)
 signal enemy_killed(enemy: Node2D, killer_peer_id: int)
+## Host: an enemy's touch (melee, a Charger's dash) hit the player whose hitbox is `hitbox`.
+## ProjectileSystem tells that player (EVENT_HURT: hit-direction marker and hurt sound).
+signal contact_hit(enemy: Node2D, hitbox: Node)
 ## Host: an enemy lost `amount` health to `source_id` (a player's or bot's id; 0 = not a
 ## player). Pets that react to hits read this.
 signal enemy_damaged(enemy: Node2D, amount: int, source_id: int)

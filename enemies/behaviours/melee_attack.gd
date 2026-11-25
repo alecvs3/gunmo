@@ -20,4 +20,5 @@ func add_stats(stats: EnemyStats, weight: float) -> void:
 func perform(enemy: Node2D, _target: Node2D, touching: Array[HitboxComponent]) -> bool:
 	for hitbox in touching:
 		hitbox.hit(damage, 0, push(enemy.global_position, hitbox.center()))
+		EventBus.contact_hit.emit(enemy, hitbox)
 	return not touching.is_empty()
