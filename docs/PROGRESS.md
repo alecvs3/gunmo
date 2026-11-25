@@ -1154,6 +1154,22 @@ changes run no smoke at all.
 - A pull request can pass with its scenarios and still break one it didn't run; the full run on
   main catches it, but only after the merge.
 - The `full-checks` label has to exist on GitHub before it can be added to a PR.
+
+
+## Early calls only through wave 5 ✅
+
+Calling early all game, with stacked waves paying for the same leftovers again on every call,
+could add about 5,000 credits late and break the economy. Rushing waves 1–4 (about 400) stays.
+
+| Feature | Status | Where |
+|---|---|---|
+| `MatchSettings.early_call_last_wave` (255 = no limit; 5 in the default match): the last wave that may be started early, so the break before wave 6 always happens | Done, tested | `modes/match_settings.gd`, `modes/waves/early_call.gd`, `tests/modes/waves/test_early_call.gd` |
+| The per-enemy bonus counts only the called-away wave's own enemies still alive (not older leftovers or split children) | Done, tested | `modes/waves/wave_spawner.gd` (`alive_count`), `modes/wave_mode.gd` |
+
+### Known limitations
+- Not checked in a 2-instance window test; the HUD prompt goes away through `call_open`, which
+  was already in the match state.
+
 ## Wave difficulty 1: every wave measured on a 0–10 scale ✅ (issue #147)
 
 Plan: https://claude.ai/artifact/TWnaN1PmUgMJ38VWhFugNw. This part only measures; the waves
