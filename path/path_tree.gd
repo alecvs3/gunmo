@@ -66,6 +66,19 @@ func extra_boss_cores(owned: int) -> int:
 	return extra
 
 
+## The nodes that lock node `index` out (and that it locks out): `excludes` works both ways.
+func rivals(index: int) -> Array[int]:
+	var found: Array[int] = []
+	var path_node: PathNode = node(index)
+	if path_node == null:
+		return found
+	for i in mini(nodes.size(), MAX_NODES):
+		var other: PathNode = nodes[i]
+		if other != null and (other in path_node.excludes or path_node in other.excludes):
+			found.append(i)
+	return found
+
+
 ## The branches in the order their first node appears.
 func branches() -> Array[String]:
 	var names: Array[String] = []

@@ -17,7 +17,9 @@ Read `path/CLAUDE.md` first.
 2. **Write the node** as `path/data/<name>.tres` (a `PathNode`): `display_name`, a one-line
    `description` with its numbers, `branch`, `tier`, `core_cost` (1 for tier 1, 2 for tier 2,
    3 for tier 3 and capstones), `requires` (earlier tiers), `excludes` (one side is enough),
-   `effects` as sub-resources.
+   `effects` as sub-resources, and `board_position` (its own cell on the board: x to the right,
+   y down, so deeper tiers get a smaller y than what they need; `tests/ui/test_path_text.gd`
+   checks both). `icon` is optional (empty = its first letter).
 3. **Append it** to `path/data/path_tree.tres` `nodes`. Never reorder: nodes travel by index.
    At most 64 (`PathTree.MAX_NODES`).
 4. **Tests:** the effect's numbers in `tests/path/test_path_effects.gd` (a new effect kind gets

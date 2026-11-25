@@ -16,5 +16,6 @@ description = "Friends in supply: shop upgrades cost 10% less."
 branch = "Logistics"
 tier = 2
 core_cost = 2
+board_position = Vector2(0, 1)
 requires = Array[ExtResource("1_node")]([ExtResource("4_fortitude")])
 effects = Array[ExtResource("2_effect")]([SubResource("Resource_effect")])
