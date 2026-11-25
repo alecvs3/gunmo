@@ -1195,3 +1195,15 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
   waves 6–12 than before reads well, needs the playtests.
 - A target is only reached in steps of one enemy, so waves land up to 0.3 above or below it.
 - `EnemyData.cost` is still read by the bots (target danger); the next part replaces it.
+
+## Wave difficulty 3: no more enemy cost ✅ (issue #153)
+
+| What | Status | Where |
+|---|---|---|
+| `EnemyData.cost` is gone (from the script and every enemy file): the composer never needed it, and its last user was the co-op bots' target danger | Done | `enemies/enemy_data.gd`, `enemies/data/`, `tests/net/data/` |
+| Bots rank an enemy by its difficulty alone, with the 0.7 exponent undone (`BotBrain.danger_of`): in Grunts, a Runner or Swarmer 0.8, a Support 2.0, a Shooter 2.9, a Tank 3.5, the bosses 7 to 26 (with cost: Support 4, Shooter 3, Tank 7, bosses 12 to 40) | Done, tested | `bots/bot_brain.gd`, `bots/bot_controller.gd` |
+
+### Known limitations
+- Bots now rank a Shooter a little above a Support (2.9 against 2.0; with cost it was 3 against 4),
+  so they focus healers a bit less. Raise the Sustain axis's weight if playtests want healers
+  focused first.

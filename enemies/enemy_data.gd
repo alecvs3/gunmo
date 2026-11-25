@@ -58,13 +58,11 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 @export_range(0.01, 2.0) var flinch_recovery: float = 0.25
 
 @export_group("Waves")
-## Wave budget points this enemy costs.
-@export_range(0.1, 100.0) var cost: float = 1.0
 ## First wave it can appear in.
 @export_range(1, 255) var first_wave: int = 1
 ## How often it is picked compared with the other affordable types.
 @export_range(0.0, 100.0) var spawn_weight: float = 1.0
-## Bought and spawned this many at a time, together (swarms). Each one costs `cost`.
+## Added and spawned this many at a time, together (swarms).
 @export_range(1, 12) var group_size: int = 1
 ## Credits for the player who kills it.
 @export_range(0, 100000) var bounty: int = 0

@@ -30,7 +30,6 @@ attack = SubResource("Resource_heal")
 knockback_friction = 2000.0
 knockback_bounce = 0.3
 knockback_taken = 1.0
-cost = 4.0
 first_wave = 8
 spawn_weight = 0.5
 bounty = 35

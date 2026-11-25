@@ -155,3 +155,13 @@ func test_flank_comes_in_from_the_side() -> void:
 	assert_almost_eq(other, Vector2(1000, 300), Vector2(0.01, 0.01))
 	var straight: Vector2 = BotBrain.flank_point(Vector2.ZERO, target, 1.0, 0.0, 300.0)
 	assert_almost_eq(straight, Vector2(700, 0), Vector2(0.01, 0.01))
+
+
+func test_danger_grows_with_what_an_enemy_can_do() -> void:
+	var model: DifficultyModel = DifficultyModel.load_default()
+	var grunt: EnemyData = load("res://enemies/data/grunt.tres")
+	var support: EnemyData = load("res://enemies/data/support.tres")
+	var boss: EnemyData = load("res://enemies/data/bosses/warden.tres")
+	var grunt_danger: float = BotBrain.danger_of(grunt, model)
+	assert_gt(BotBrain.danger_of(support, model), grunt_danger, "kill the healer first")
+	assert_gt(BotBrain.danger_of(boss, model), 5.0 * grunt_danger, "a boss matters most")

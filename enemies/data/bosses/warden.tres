@@ -85,7 +85,6 @@ knockback_friction = 3000.0
 knockback_bounce = 0.1
 knockback_taken = 0.02
 flinch_degrees = 6.0
-cost = 25.0
 first_wave = 1
 spawn_weight = 1.0
 bounty = 700

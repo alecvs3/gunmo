@@ -9,10 +9,9 @@ var ogre: EnemyData
 var model: DifficultyModel = DifficultyModel.load_default()
 
 
-func _type(name: String, cost: float, health: int) -> EnemyData:
+func _type(name: String, health: int) -> EnemyData:
 	var type := EnemyData.new()
 	type.display_name = name
-	type.cost = cost
 	type.max_health = health
 	return type
 
@@ -36,8 +35,8 @@ func before_each() -> void:
 	schedule.max_alive = 5
 	schedule.first_modifier_wave = 2
 	schedule.double_modifier_wave = 3
-	imp = _type("Imp", 1.0, 10)
-	ogre = _type("Ogre", 3.0, 101)
+	imp = _type("Imp", 10)
+	ogre = _type("Ogre", 101)
 	schedule.enemy_types.assign([imp, ogre])
 	catalog = ModifierCatalog.new()
 	catalog.modifiers.assign([_modifier("Tough", 1.5, 1.0), _modifier("Armored", 1.0, 0.5)])
@@ -131,7 +130,7 @@ func test_effective_health_counts_an_enemy_s_own_armor() -> void:
 
 
 func test_health_includes_what_an_enemy_splits_into() -> void:
-	var small: EnemyData = _type("Small", 1.0, 7)
+	var small: EnemyData = _type("Small", 7)
 	ogre.split_into = small
 	ogre.split_count = 2
 	assert_eq(WaveReport.with_splits(ogre).size(), 3)

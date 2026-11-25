@@ -32,7 +32,6 @@ attack = SubResource("Resource_ranged")
 knockback_friction = 2000.0
 knockback_bounce = 0.3
 knockback_taken = 1.0
-cost = 3.0
 first_wave = 6
 spawn_weight = 1.0
 bounty = 23

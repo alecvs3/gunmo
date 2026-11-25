@@ -22,7 +22,6 @@ attack = SubResource("Resource_melee")
 knockback_friction = 2000.0
 knockback_bounce = 0.3
 knockback_taken = 1.0
-cost = 1.0
 first_wave = 1
 spawn_weight = 3.0
 bounty = 8

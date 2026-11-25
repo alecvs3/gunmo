@@ -5,8 +5,8 @@ extends RefCounted
 ## The boss comes first, then every minimum the schedule's rules ask for, then random types
 ## (weighted by spawn_weight and pulled toward the schedule's role shares) are added while the
 ## wave stays within tolerance of its target, until it reaches it. A group type is added as a
-## group. A few tries keep the closest wave. The picks are shuffled, groups kept together, so
-## the roles arrive mixed.
+## group. A few tries keep the closest wave (just one when a try hits max_enemies). The picks
+## are shuffled, groups kept together, so the roles arrive mixed.
 
 const MAX_TRIES: int = 4
 const ROLE_COUNT: int = 4
@@ -44,7 +44,7 @@ static func plan(
 		draft.fill(target, rng)
 		if best == null or draft.gap(target) < best.gap(target):
 			best = draft
-		if best.gap(target) <= tolerance_for(schedule):
+		if best.gap(target) <= tolerance_for(schedule) or draft.sheet.enemies >= schedule.max_enemies:
 			break
 	return best.enemies(rng)
 
