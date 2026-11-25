@@ -1176,3 +1176,8 @@ where the Overlord takes most of the budget and little stands around it.
 - The weights and references are a first calibration, fitted to today's waves; playtests will move
   them. The score can't see pathing, focus fire or how readable a telegraph is.
 - Gameplay is unchanged until the next part (the composer) uses the target.
+
+## Waves starts with 0 bots ✅ (issue #155)
+
+The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
+Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
