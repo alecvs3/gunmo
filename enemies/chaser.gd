@@ -36,6 +36,10 @@ var _phase: int = 0
 ## Host: seconds left of a telegraphed attack's windup (0 = not winding up), and its length.
 var _windup_left: float = 0.0
 var _windup_total: float = 0.0
+## Host: which way it aimed when the windup began (a Charger dashes this way).
+var _windup_aim: Vector2 = Vector2.RIGHT
+## Host: a Charger's dash (ChargeAttack); idle for every other enemy.
+var _dash := EnemyDash.new()
 ## Every peer: the ring that shows a windup (the host's own, or from snapshots).
 var _telegraph := EnemyTelegraph.new()
 var _status_flags: int = 0
@@ -65,6 +69,7 @@ func _ready() -> void:
 	)
 	_scale_body(enemy_data.body_scale)
 	add_child(_telegraph)
+	_add_look()
 	if enemy_data.is_boss():
 		add_to_group(Groups.BOSSES)
 	if not multiplayer.is_server():
@@ -85,9 +90,14 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	_regenerate(delta)
 	var now: int = NetworkManager.clock.tick
-	_health.damage_taken_multiplier = _base_damage_taken * status.damage_factor(now)
-	_show_status(status.flags(now))
+	_health.damage_taken_multiplier = (
+		_base_damage_taken * status.damage_factor(now) * _dash.damage_factor()
+	)
+	_show_status(_status_flags_now(now))
 	_phase = phase_index()
+	if _dash.is_busy():
+		_dash_step(delta)
+		return
 	var target: Node2D = _find_nearest_target()
 	_move(target, delta)
 	_attack(target, delta)
@@ -98,6 +108,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	var weight: float = 1.0 - exp(-turn_rate * delta)
 	_body.rotation = lerp_angle(_body.rotation, _facing_target, weight)
+	_telegraph.line_angle = _facing_target
 
 
 func capture_net_state() -> NetState:
@@ -106,7 +117,7 @@ func capture_net_state() -> NetState:
 	state.health = _health.current_health
 	state.facing = EnemyNetState.to_facing(_facing_target)
 	state.telegraph = EnemyNetState.to_telegraph(_windup_left, _windup_total)
-	state.status = status.flags(NetworkManager.clock.tick)
+	state.status = _status_flags_now(NetworkManager.clock.tick)
 	return state
 
 
@@ -120,13 +131,19 @@ func apply_net_state(state: NetState) -> void:
 	visible = true
 
 
-## Every peer: slowed enemies look frosty, hexed ones wear a purple mark.
+## Host: the snapshot's status flags (pets' slow and hex, a Charger's stun).
+func _status_flags_now(now: int) -> int:
+	return status.flags(now) | (EnemyStatus.FLAG_STUNNED if _dash.is_stunned() else 0)
+
+
+## Every peer: slowed enemies look frosty, hexed ones wear a purple mark, stunned ones stars.
 func _show_status(flags: int) -> void:
 	if flags == _status_flags:
 		return
 	_status_flags = flags
 	_body.self_modulate = FROSTED if flags & EnemyStatus.FLAG_SLOWED else Color.WHITE
 	_telegraph.hexed = flags & EnemyStatus.FLAG_HEXED != 0
+	_telegraph.stunned = flags & EnemyStatus.FLAG_STUNNED != 0
 
 
 func hitbox() -> HitboxComponent:
@@ -145,7 +162,8 @@ func phase_index() -> int:
 
 func _move(target: Node2D, delta: float) -> void:
 	var chase: Vector2 = Vector2.ZERO
-	if target != null:
+	var rooted: bool = _is_rooted()
+	if target != null and not rooted:
 		var movement: EnemyMovement = enemy_data.movement_in(_phase)
 		var goal: Vector2 = movement.goal(global_position, target.global_position)
 		if global_position.distance_squared_to(goal) > 1.0:
@@ -155,9 +173,16 @@ func _move(target: Node2D, delta: float) -> void:
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
 	_knockback.step(delta)
-	_facing.walk_towards(chase)
+	_facing.walk_towards(_windup_aim if rooted else chase)
 	_facing.step(delta)
-	_facing_target = _facing.angle()
+	# While winding up it faces exactly where it will go (no flinch): the dash line is drawn
+	# from this facing, so it never shows a direction the dash won't take.
+	_facing_target = _windup_aim.angle() if rooted else _facing.angle()
+
+
+## Host: standing still while it winds up an attack that wants that (a Charger's dash).
+func _is_rooted() -> bool:
+	return _windup_left > 0.0 and enemy_data.attack_in(_phase).stands_still_while_winding_up()
 
 
 ## Along the navigation path around obstacles. Straight at the target while there is no path
@@ -214,8 +239,51 @@ func _attack(target: Node2D, delta: float) -> void:
 	if attack.windup > 0.0:
 		_windup_left = attack.windup
 		_windup_total = attack.windup
+		if target != null:
+			_windup_aim = global_position.direction_to(target.global_position)
 	elif attack.perform(self, target, _touching_hitboxes()):
 		_attack_cooldown_left = attack.interval
+
+
+## Host: a ChargeAttack's windup is over: dash the way it aimed when the warning began.
+func start_dash(attack: ChargeAttack) -> void:
+	_dash.start(attack, _windup_aim)
+
+
+## Host: a dash goes straight on, hurts the players it reaches and stuns it on walls.
+func _dash_step(delta: float) -> void:
+	velocity = _dash.velocity() + _knockback.velocity
+	move_and_slide()
+	if _dash.is_dashing():
+		_dash_into_walls()
+		_dash_into_players()
+	_knockback.bounce_off_collisions(self)
+	_knockback.step(delta)
+	_dash.step(delta)
+	_facing.walk_towards(_dash.direction)
+	_facing.step(delta)
+	_facing_target = _facing.angle()
+
+
+## Host: running head-on into a wall (not another enemy) stuns it.
+func _dash_into_walls() -> void:
+	for index in get_slide_collision_count():
+		var collision: KinematicCollision2D = get_slide_collision(index)
+		var layer: int = PhysicsServer2D.body_get_collision_layer(collision.get_collider_rid())
+		if layer & WORLD_MASK and _dash.hit_wall(collision.get_normal()):
+			return
+
+
+## Host: the players it touches take the hit, and the dash ends.
+func _dash_into_players() -> void:
+	var touching: Array[HitboxComponent] = _touching_hitboxes()
+	if touching.is_empty():
+		return
+	var attack: ChargeAttack = _dash.attack
+	for hitbox in touching:
+		var away: Vector2 = global_position.direction_to(hitbox.center())
+		hitbox.hit(attack.damage, 0, away * attack.knockback)
+	_dash.hit_player()
 
 
 ## The id its shots carry (negative: enemy bullets get fair dodging, see Shot).
@@ -247,6 +315,19 @@ func _scale_body(factor: float) -> void:
 	$ContactArea/CollisionShape2D.scale = Vector2.ONE * factor
 	$CollisionShape2D.scale = Vector2.ONE * factor
 	_telegraph.radius *= factor
+
+
+## Every peer: its type's extra shapes on the sprite, and a Charger's dash line length.
+func _add_look() -> void:
+	var charge := enemy_data.attack as ChargeAttack
+	if charge != null:
+		_telegraph.line_length = charge.dash_distance
+	if enemy_data.look == null:
+		return
+	var layer := EnemyLookLayer.new()
+	layer.look = enemy_data.look
+	layer.follow = _body
+	add_child(layer)
 
 
 ## Player hitboxes in the contact area.
