@@ -4,5 +4,6 @@
 
 [resource]
 script = ExtResource("1_policy")
+predict_hit_effects = true
 victim_rewind = 0.3
 aim_lock_seconds = 0.25

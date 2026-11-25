@@ -10,8 +10,9 @@ extends "res://tests/net/smoke_script.gd"
 ## was: on its own player at that moment (fair: what it saw is what counted), or somewhere it no
 ## longer was (a hit from a bullet that missed on its screen). Fails below MIN_FAIR_SHARE. Two
 ## ranged test enemies (test_spitter) also hunt the client and are judged the same way, on their
-## own count. It also prints how long the client's own hits on bots take to show
-## (hit_feedback_ms, tests/net/hit_feedback_meter.gd); that has no budget yet.
+## own count. It also checks that the client's own hits on bots show within about a frame
+## (hit_feedback_ms, tests/net/hit_feedback_meter.gd) and that the host confirms nearly all of
+## them.
 ## Usage: -s res://tests/net/fairness.gd -- <fairhost|fairclient> <port> [latency,jitter,loss%]
 ## It runs before the autoloads exist, so it names no project classes directly.
 ## tests/net/waves_fairness.gd (scenario I) extends this file.
@@ -25,6 +26,10 @@ const MIN_HITS: int = 5
 const MIN_FAIR_SHARE: float = 0.85
 const MIN_ENEMY_HITS: int = 3
 const MIN_PREDICTED_HITS: int = 5
+## Own hit feedback budgets (latency plan step 3: about one frame).
+const MAX_HIT_FEEDBACK_P50_MS: float = 20.0
+const MAX_HIT_FEEDBACK_P95_MS: float = 35.0
+const MIN_CONFIRM_SHARE: float = 0.9
 const SPITTER_PATH: String = "res://tests/net/data/test_spitter.tres"
 const CHASER_SCENE_PATH: String = "res://enemies/chaser.tscn"
 const SPITTERS: int = 2
@@ -165,7 +170,9 @@ func _start_watching(net: Node) -> void:
 	physics_frame.connect(_on_physics_frame)
 	var level: Node = root.get_node(_level_path())
 	_meter = HitFeedbackMeter.new(_feedback_targets, _add)
-	_meter.watch(level.get_node("Projectiles"), level.get_node("ProjectileSystem"))
+	_meter.watch(
+		level.get_node("Projectiles"), level.get_node("ProjectileSystem"), root.get_node("EventBus")
+	)
 	process_frame.connect(_meter.poll)
 
 
@@ -298,17 +305,26 @@ func _report() -> void:
 	_report_hit_feedback()
 
 
-## Prints the client's own hit feedback (no budget yet: the latency plan's step 3 adds one).
+## The client's own hit feedback: it must play within a frame of the bullet landing, and the host
+## must agree with nearly every hit our screen showed.
 func _report_hit_feedback() -> void:
+	var p50: float = _percentile("hit_feedback_ms", 0.5)
+	var p95: float = _percentile("hit_feedback_ms", 0.95)
 	_metric("predicted_hits", _meter.predicted_hits())
-	_metric("hit_feedback_ms_p50", _percentile("hit_feedback_ms", 0.5))
-	_metric("hit_feedback_ms_p95", _percentile("hit_feedback_ms", 0.95))
+	_metric("hit_feedback_ms_p50", p50)
+	_metric("hit_feedback_ms_p95", p95)
 	_metric("hit_feedback_unanswered", _meter.unanswered)
 	_metric("hit_feedback_ambiguous", _meter.ambiguous)
 	_metric("predicted_confirm_share", _meter.confirm_share())
 	_check(
 		_meter.predicted_hits() >= MIN_PREDICTED_HITS,
 		"only %d predicted hits to time" % _meter.predicted_hits()
+	)
+	_check(p50 <= MAX_HIT_FEEDBACK_P50_MS, "own hits show after %.0f ms (p50)" % p50)
+	_check(p95 <= MAX_HIT_FEEDBACK_P95_MS, "own hits show after %.0f ms (p95)" % p95)
+	_check(
+		_meter.confirm_share() >= MIN_CONFIRM_SHARE,
+		"the host confirmed only %.0f%% of our shown hits" % (_meter.confirm_share() * 100)
 	)
 
 

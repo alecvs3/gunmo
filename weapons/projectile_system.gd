@@ -69,6 +69,8 @@ func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
 	bullet.hit_landed.connect(_on_bullet_hit)
 	if mode == Bullet.Mode.AUTHORITATIVE:
 		bullet.hit_landed.connect(_on_bullet_hit_explode)
+	elif mode == Bullet.Mode.PREDICTED:
+		bullet.hit_predicted.connect(_on_hit_predicted)
 	_bullets[shot.key()] = bullet
 	projectiles_root.add_child(bullet)
 	EventBus.shot_shown.emit(shot)
@@ -142,6 +144,18 @@ func _on_bullet_hit(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> voi
 	buffer.put_u32(bullet.shot.shot_id)
 	NetCodec.put_vector2(buffer, at)
 	NetworkManager.channel.send_event(shooter_id, TOPIC, buffer.data_array)
+
+
+## Owner client: our own bullet landed on our screen. With the mode's latency policy on, its hit
+## effects play now instead of when the host's health drop arrives (looks and sounds only).
+## A shield's front we see it hit shows nothing (the host blocks it too).
+func _on_hit_predicted(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> void:
+	if not NetworkManager.latency_policy.predict_hit_effects:
+		return
+	var enemy := hitbox.get_parent() as ChaserEnemy
+	if enemy != null and enemy.blocks_as_drawn(bullet.shot.direction):
+		return
+	EventBus.hit_predicted.emit(bullet.shot, at, hitbox.get_parent())
 
 
 ## `from_direction` points from the victim toward where the bullet came from.

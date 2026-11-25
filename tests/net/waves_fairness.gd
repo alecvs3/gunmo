@@ -14,8 +14,8 @@ extends "res://tests/net/fairness.gd"
 ##   melee_gap_px           how far that drawn enemy's contact square was from our hitbox
 ## For melee the host sends, on a test-only topic, the client's own tick (its timeline stamp)
 ## and the enemies touching it when each melee hit landed.
-## The numbers have no budget yet: each later step of the plan turns on the one it fixes. It
-## fails only when there are too few samples to judge.
+## Each step of the plan turns on the budget of the number it fixes: so far hit_feedback_ms and
+## predicted_confirm_share (step 3). The others only fail with too few samples to judge.
 ## Usage: -s res://tests/net/waves_fairness.gd -- <waveshost|wavesclient> <port>
 ## [latency,jitter,loss%]. It runs before the autoloads exist, so it names no project classes.
 
