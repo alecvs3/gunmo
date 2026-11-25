@@ -1207,3 +1207,8 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 - Bots now rank a Shooter a little above a Support (2.9 against 2.0; with cost it was 3 against 4),
   so they focus healers a bit less. Raise the Sustain axis's weight if playtests want healers
   focused first.
+
+## Waves starts with 0 bots ✅ (issue #155)
+
+The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
+Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
