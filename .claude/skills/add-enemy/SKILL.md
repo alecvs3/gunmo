@@ -20,7 +20,8 @@ a range and a lead).
    `heal_received` (how much healing it gets; 1.0 for normal enemies),
    `move_speed`, `repath_interval`, the Behaviours group
    (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
-   group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`; `cost` only matters to bots now).
+   group (`first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`). There is no cost:
+   its own stats decide how much it adds to a wave, and bots rank it by that too.
    `split_into` + `split_count` make it die into other enemies (Splitter → Splitling); a
    `HealPulseAttack` makes a support that heals enemies near it (they find each other through
    the `Groups.ENEMIES` group). It **must** live in `enemies/data/`: clients only load enemy data from

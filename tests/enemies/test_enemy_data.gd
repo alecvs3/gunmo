@@ -17,7 +17,6 @@ func test_every_type_is_complete() -> void:
 		assert_false(data.display_name.is_empty(), type_name)
 		assert_gt(data.max_health, 0, type_name)
 		assert_gt(data.move_speed, 0.0, type_name)
-		assert_gt(data.cost, 0.0, type_name)
 		assert_gt(data.spawn_weight, 0.0, type_name)
 		assert_gt(data.bounty, 0, type_name)
 
@@ -30,7 +29,8 @@ func test_types_play_differently() -> void:
 	assert_lt(runner.max_health, grunt.max_health, "runner is fragile")
 	assert_gt(brute.max_health, grunt.max_health, "brute is tougher")
 	assert_lt(brute.knockback_taken, grunt.knockback_taken, "brute is hard to push")
-	assert_gt(brute.cost, runner.cost)
+	var model: DifficultyModel = DifficultyModel.load_default()
+	assert_gt(model.solo(brute), model.solo(runner), "brute counts for more")
 	assert_eq(grunt.first_wave, 1)
 	assert_gt(brute.first_wave, runner.first_wave)
 	assert_gt(brute.bounty, runner.bounty, "tougher enemies pay more")
@@ -48,7 +48,8 @@ func test_roles() -> void:
 	assert_lt(tank.damage_taken, 1.0, "tank is armored")
 	assert_lt(tank.knockback_taken, 0.1, "tank barely moves when shot")
 	assert_gt(swarmer.group_size, 1, "swarmers come in groups")
-	assert_lt(swarmer.cost, grunt.cost, "swarmers are cheap")
+	var model: DifficultyModel = DifficultyModel.load_default()
+	assert_lt(model.solo(swarmer), model.solo(grunt), "one swarmer counts for little")
 	assert_gt(swarmer.move_speed, grunt.move_speed, "swarmers are fast")
 
 

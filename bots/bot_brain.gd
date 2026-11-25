@@ -19,7 +19,7 @@ class Candidate:
 	var position: Vector2
 	## In the bot's line of sight.
 	var visible: bool
-	## How much it matters to kill it (an enemy's cost; 1 for a player).
+	## How much it matters to kill it (an enemy's danger_of; 1 for a player).
 	var danger: float
 
 	func _init(candidate_id: int, at: Vector2, can_see: bool, how_dangerous: float = 1.0) -> void:
@@ -60,6 +60,13 @@ static func choose_target(
 
 ## Co-op: where to walk to stay with the team (their centre), or Vector2.INF when already
 ## within `spread` of it or there is no team.
+## How much it matters to kill an enemy of type `data`: its difficulty alone (DifficultyModel.solo)
+## with the model's exponent undone, so it grows with what the enemy can do (a Support is about
+## 2 Grunts, a Shooter 3, the bosses 7 to 26).
+static func danger_of(data: EnemyData, model: DifficultyModel) -> float:
+	return pow(model.solo(data), 1.0 / model.exponent)
+
+
 static func regroup_goal(from: Vector2, teammates: Array[Vector2], spread: float) -> Vector2:
 	if teammates.is_empty():
 		return Vector2.INF

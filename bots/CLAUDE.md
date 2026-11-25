@@ -18,8 +18,9 @@ a `BotController` to it (`Level.spawn_bot`). Clients see bots exactly like human
 - A new decision goes in `bot_brain.gd` as a pure function with a test. The controller only
   gathers facts for it.
 - Targets are any hittable hitbox on another team (`LagCompensator.hitboxes()`): other
-  players in Gun Game, enemies in Waves. No mode checks (rule 7). Danger = an enemy's wave
-  cost (1 for a player), so bots focus Supports and bosses.
+  players in Gun Game, enemies in Waves. No mode checks (rule 7). Danger = an enemy's solo
+  difficulty with the exponent undone (`BotBrain.danger_of`; 1 for a player), so bots focus
+  Supports and bosses.
 - **Teammates** = players on the bot's own team. Gun Game gives everyone a team of their own,
   so the co-op decisions (regroup, revive) simply find nobody there.
 - Bots fill empty slots in both modes (`GameMode._sync_bots`, `MatchSettings.bot_fill_to`).

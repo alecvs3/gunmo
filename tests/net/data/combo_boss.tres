@@ -54,7 +54,6 @@ phases = Array[ExtResource("2_phase")]([SubResource("Resource_p1"), SubResource(
 ends_wave_on_death = true
 knockback_friction = 3000.0
 knockback_taken = 0.02
-cost = 5.0
 first_wave = 1
 spawn_weight = 1.0
 bounty = 100

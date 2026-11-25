@@ -8,9 +8,9 @@ extends Node
 ## lets BotBrain decide, and adds the profile's human flaws: reaction time, aim error and
 ## limited turn speed. Out of sight it walks the navigation mesh toward
 ## where it last saw someone, or roams between the level's respawn points.
-## Co-op (teammates on its own team): it prefers dangerous enemies (their cost), walks over to
-## revive a downed teammate (holding revive next to them, still shooting), and when nobody is
-## in sight it stays with the team instead of roaming.
+## Co-op (teammates on its own team): it prefers dangerous enemies (BotBrain.danger_of), walks
+## over to revive a downed teammate (holding revive next to them, still shooting), and when
+## nobody is in sight it stays with the team instead of roaming.
 ## Smarts (by profile): it sidesteps bullets about to hit it, aims so the shot leaves the barrel
 ## on target (not the body's centre), breaks off to cover when hurt, and hunts opponents out of
 ## sight by coming in from the side instead of roaming between spawns.
@@ -27,6 +27,9 @@ const DODGE_RADIUS: float = 30.0
 const COVER_COOLDOWN: float = 8.0
 ## A Wizard's hexed enemy counts this much more dangerous (bots focus it).
 const HEXED_DANGER: float = 2.0
+
+## Each enemy type's target danger (BotBrain.danger_of), worked out once.
+static var _danger: Dictionary = {}
 
 @export var profile: BotProfile
 
@@ -124,14 +127,17 @@ func _pick_target() -> HitboxComponent:
 	return by_id[chosen]
 
 
-## How much killing it matters: an enemy's wave cost (bosses and Supports rank high), 1 for
-## a player.
+## How much killing it matters: an enemy's danger (BotBrain.danger_of; bosses and Supports
+## rank high), 1 for a player.
 static func _danger_of(hitbox: HitboxComponent) -> float:
 	var enemy := hitbox.get_parent() as ChaserEnemy
 	if enemy == null:
 		return 1.0
 	var hexed: bool = enemy.status.is_hexed(NetworkManager.clock.tick)
-	return enemy.enemy_data.cost * (HEXED_DANGER if hexed else 1.0)
+	var data: EnemyData = enemy.enemy_data
+	if not _danger.has(data):
+		_danger[data] = BotBrain.danger_of(data, DifficultyModel.load_default())
+	return _danger[data] * (HEXED_DANGER if hexed else 1.0)
 
 
 ## Living players on our own team (co-op), not us.
