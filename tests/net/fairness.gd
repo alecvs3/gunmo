@@ -68,6 +68,9 @@ var _move: Vector2 = Vector2.ZERO
 var _firing: bool = false
 var _meter: HitFeedbackMeter = null
 var _incoming: IncomingHitJudge = null
+## Client: the present tick of the last rendered frame. Remote bullets move when a frame is
+## drawn, before the next physics step records them, so their positions belong to this tick.
+var _drawn_tick: int = 0
 ## How long the client plays (scenario I plays longer for steadier numbers).
 var _play_seconds: float = PLAY_SECONDS
 
@@ -175,6 +178,7 @@ func _start_watching(net: Node) -> void:
 	process_frame.connect(_meter.poll)
 	_incoming = IncomingHitJudge.new(_own_positions, _tick_usec, _add)
 	_incoming.watch(level.get_node("Projectiles"))
+	process_frame.connect(_on_process_frame)
 
 
 ## Strafes (half a second walking, half a second standing) and fires for _play_seconds, then
@@ -198,9 +202,12 @@ func _on_physics_frame() -> void:
 	_steer()
 	var projectiles: Node = root.get_node_or_null(_level_path() + "/Projectiles")
 	if projectiles != null:
-		_incoming.record(
-			roundi(root.get_node("NetworkManager").clock.server_tick_now()), projectiles
-		)
+		_incoming.record(_drawn_tick, projectiles)
+
+
+## Runs just before the frame's _process, where remote bullets take the present they are drawn at.
+func _on_process_frame() -> void:
+	_drawn_tick = roundi(root.get_node("NetworkManager").clock.server_tick_now())
 
 
 ## The tick the client stamps on its inputs (its view of the host's present) -> where its own
@@ -291,14 +298,16 @@ func _report() -> void:
 
 
 ## Bullets that hit us: drawn on us when they hit (those we could draw in time), and the hurt
-## sound right then. Point-blank hits before the bullet reached us are reported, not budgeted
-## (step 6 announces wind-up shots early).
+## sound right then. Point-blank hits before the bullet reached us (step 6 announces wind-up
+## shots early) and hits while a knockback had moved us without our screen knowing yet are
+## reported, not budgeted.
 func _report_incoming() -> void:
 	var share: float = IncomingHitJudge.share(_incoming.visible, _incoming.hidden)
 	var hurt_p50: float = _percentile("hurt_feedback_ms", 0.5)
 	_metric("bullet_hits_on_client", _incoming.bullet_hits())
 	_metric("bullet_visible_share", share)
 	_metric("bullet_hits_before_drawn", _incoming.never_drawn)
+	_metric("bullet_hits_while_displaced", _incoming.displaced)
 	_metric("hurt_feedback_ms_p50", hurt_p50)
 	_metric("hurt_feedback_ms_p95", _percentile("hurt_feedback_ms", 0.95))
 	_check(share >= MIN_VISIBLE_SHARE, "only %.0f%% of hits on us were drawn on us" % (share * 100))
