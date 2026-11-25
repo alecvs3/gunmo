@@ -18,6 +18,8 @@ var _interval: float = 1.0
 var _time_left: float = 0.0
 var _rng := RandomNumberGenerator.new()
 var _modifier_mask: int = 0
+## The enemies this wave spawned from its queue (split children not included).
+var _spawned: Array[Node] = []
 
 
 ## The spawn point to use: a random one at least min_distance from every player, or (when
@@ -61,6 +63,15 @@ static func group_offset(index: int, size: int) -> Vector2:
 	return Vector2.RIGHT.rotated(TAU * index / (size - 1)) * GROUP_SPREAD
 
 
+## How many of `enemies` are still in the fight (not freed or being freed).
+static func count_alive(enemies: Array[Node]) -> int:
+	var count: int = 0
+	for enemy in enemies:
+		if is_instance_valid(enemy) and not enemy.is_queued_for_deletion():
+			count += 1
+	return count
+
+
 ## Where `count` split enemies appear around the point `at` where their parent died.
 static func split_positions(at: Vector2, count: int) -> Array[Vector2]:
 	var positions: Array[Vector2] = []
@@ -93,6 +104,7 @@ func start_wave(
 	_rng.seed = seed_value
 	_queue = WaveBudget.plan(schedule, wave, _rng, threat)
 	planned_health = 0
+	_spawned.clear()
 	for data in _queue:
 		planned_health += data.max_health
 	_interval = schedule.spawn_interval(wave)
@@ -101,6 +113,13 @@ func start_wave(
 
 func stop() -> void:
 	_queue.clear()
+	_spawned.clear()
+
+
+## Enemies this wave spawned from its queue that are still alive (leftovers from earlier
+## waves and split children don't count).
+func alive_count() -> int:
+	return count_alive(_spawned)
 
 
 ## Enemies of this wave not spawned yet.
@@ -122,7 +141,9 @@ func _physics_process(delta: float) -> void:
 	var count: int = group_count(_queue, _schedule.max_alive - _level.enemy_count())
 	var point: Vector2 = _pick_point()
 	for index in count:
-		_spawn(_queue.pop_front(), point + group_offset(index, count), _modifier_mask)
+		_spawned.append(
+			_spawn(_queue.pop_front(), point + group_offset(index, count), _modifier_mask)
+		)
 
 
 ## Host: a split enemy's children join the fight at once (not the queue: they never wait for
@@ -154,9 +175,10 @@ func _pick_point() -> Vector2:
 	)
 
 
-func _spawn(data: EnemyData, at: Vector2, modifier_mask: int) -> void:
+func _spawn(data: EnemyData, at: Vector2, modifier_mask: int) -> ChaserEnemy:
 	var enemy: ChaserEnemy = CHASER_SCENE.instantiate()
 	enemy.enemy_data = data
 	enemy.modifier_mask = modifier_mask
 	enemy.position = at
 	_level.add_enemy(enemy)
+	return enemy

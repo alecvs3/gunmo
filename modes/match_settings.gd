@@ -37,6 +37,8 @@ extends Resource
 ## and this much per second of break skipped (on top of the wave's clear bonus).
 @export_range(0, 1000) var early_call_bonus_per_enemy: int = 0
 @export_range(0, 1000) var early_call_bonus_per_second: int = 0
+## The last wave that may be started early (255 = no limit). Past it, every wave gets its break.
+@export_range(1, 255) var early_call_last_wave: int = 255
 ## How the waves grow (wave mode).
 @export var wave_schedule: WaveSchedule
 

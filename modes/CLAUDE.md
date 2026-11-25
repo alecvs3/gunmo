@@ -25,7 +25,7 @@ reviewed by both developers.
 | `waves/wave_budget.gd` | How many points a wave may spend, and which enemies it buys (role shares, modifier threat) |
 | `waves/wave_schedule.gd` | How waves grow (data in `waves/data/default_waves.tres`) |
 | `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
-| `waves/early_call.gd` | Calling the next wave early: when it's allowed, the vote, the bonus |
+| `waves/early_call.gd` | Calling the next wave early: when it's allowed (only up to `MatchSettings.early_call_last_wave`, 5 by default), the vote, the bonus (per enemy of the called-away wave still alive: `WaveSpawner.alive_count`) |
 | `waves/revive_rules.gd` | Downed and revive: bleed-out timer, revive bar, range, interruption (`waves/downed_players.gd` applies it on the host) |
 | `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |
 | `gun_game/gun_game_ladder.gd` | Kills per tier, the last tier, who has won |

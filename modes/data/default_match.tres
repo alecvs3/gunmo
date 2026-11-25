@@ -22,4 +22,5 @@ wave_clear_bonus = 50
 wave_clear_bonus_per_wave = 10
 early_call_bonus_per_enemy = 6
 early_call_bonus_per_second = 3
+early_call_last_wave = 5
 wave_schedule = ExtResource("2_ukfch")
