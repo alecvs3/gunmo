@@ -64,8 +64,13 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
   `BlastAttack` (the Bomber, `enemies/data/bomber.tres`) is the example of an area attack:
   its windup ring is drawn at the blast's size, it hurts enemies too, and it asks the
   ProjectileSystem to show the blast with EventBus `blast_requested`.
+- **Shield:** `EnemyData.shield` (`EnemyShield`, `enemies/behaviours/enemy_shield.gd`) blocks
+  every hit coming from its front arc and makes it turn slowly towards its target (the
+  Shielder, `enemies/data/shielder.tres`; give it `flinch_degrees = 0`). It works through
+  `HitboxComponent.guard`: any hit that passes `incoming` (the direction it travels) can be
+  blocked, so new damage sources should pass it too.
 - **Look:** give a type its own shapes on top of the sprite with an `EnemyLook` subclass in
-  `enemies/looks/` (e.g. `HornsLook`, `BombLook`), set on `EnemyData.look`. Looks only, drawn
+  `enemies/looks/` (e.g. `HornsLook`, `BombLook`, `ShieldLook`), set on `EnemyData.look`. Looks only, drawn
   on every peer in the sprite's space (+x = forward); `draw()` also gets the attack's windup
   (0..1) to animate a warning.
 - Put a GUT test for its pure decisions in `tests/enemies/test_enemy_behaviours.gd`.

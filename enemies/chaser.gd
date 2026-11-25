@@ -90,6 +90,8 @@ func _ready() -> void:
 	)
 	add_to_group(Groups.ENEMIES)
 	_facing.configure(enemy_data.flinch_degrees, enemy_data.flinch_recovery)
+	if enemy_data.shield != null:
+		hitbox().guard = _shield_blocks
 	_knockback.pushed.connect(_facing.flinch_from)
 
 
@@ -181,11 +183,27 @@ func _move(target: Node2D, delta: float) -> void:
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
 	_knockback.step(delta)
-	_facing.walk_towards(_windup_aim if rooted else chase)
+	_turn(target, _windup_aim if rooted else chase, delta)
 	_facing.step(delta)
 	# While winding up it faces exactly where it will go (no flinch): the dash line is drawn
 	# from this facing, so it never shows a direction the dash won't take.
 	_facing_target = _windup_aim.angle() if rooted else _facing.angle()
+
+
+## Host: it faces where it walks (`walking`); a shield-bearer instead turns slowly to face its
+## target.
+func _turn(target: Node2D, walking: Vector2, delta: float) -> void:
+	var shield: EnemyShield = enemy_data.shield
+	if shield != null and target != null:
+		var towards: Vector2 = global_position.direction_to(target.global_position)
+		_facing.turn_towards(towards, shield.turn_step(delta))
+	else:
+		_facing.walk_towards(walking)
+
+
+## Host: its shield blocks a hit travelling along `incoming` from the front.
+func _shield_blocks(incoming: Vector2) -> bool:
+	return enemy_data.shield.blocks(_facing.angle(), incoming)
 
 
 ## Host: standing still while it winds up an attack that wants that (a Charger's dash).

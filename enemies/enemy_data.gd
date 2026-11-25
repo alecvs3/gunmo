@@ -37,6 +37,8 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 @export var movement: EnemyMovement
 ## How it attacks (MeleeAttack...), usually its own sub-resource with this type's numbers.
 @export var attack: EnemyAttack
+## A shield in front that blocks every hit from there (EnemyShield); none = no shield.
+@export var shield: EnemyShield
 ## Dies into `split_count` enemies of this type (none = it just dies). They spawn where it fell
 ## with the wave's modifiers and count as enemies of the wave until killed.
 @export var split_into: EnemyData

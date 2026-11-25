@@ -160,9 +160,10 @@ func _find_target(from: Vector2, to: Vector2) -> LagCompensator.Hit:
 
 ## Damages (host only) and either stops or, with pierce left, flies on past this target.
 func _hit(target: LagCompensator.Hit) -> void:
+	var landed: bool = true
 	if mode == Mode.AUTHORITATIVE:
-		_damage(target.hitbox, target.point)
-	if _pierce_left <= 0:
+		landed = _damage(target.hitbox, target.point)
+	if _pierce_left <= 0 or not landed:
 		_stop(target.point, true)
 		return
 	_pierce_left -= 1
@@ -170,9 +171,15 @@ func _hit(target: LagCompensator.Hit) -> void:
 	position = target.point
 
 
-func _damage(hitbox: HitboxComponent, at: Vector2) -> void:
-	hitbox.hit(shot.damage, shot.shooter_id, shot.direction * shot.knockback, shot.damage_type)
+## False = a shield blocked it (the bullet stops there even with pierce left; a rocket still
+## explodes on it).
+func _damage(hitbox: HitboxComponent, at: Vector2) -> bool:
+	var push: Vector2 = shot.direction * shot.knockback
+	var landed: bool = hitbox.hit(
+		shot.damage, shot.shooter_id, push, shot.damage_type, shot.direction
+	)
 	hit_landed.emit(self, at, hitbox)
+	return landed
 
 
 ## Flight is over at `point`. A bot's bullet first lets the timeline checks catch up (the

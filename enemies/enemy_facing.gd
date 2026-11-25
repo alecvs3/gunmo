@@ -28,6 +28,12 @@ func walk_towards(direction: Vector2) -> void:
 		_walk = direction.angle()
 
 
+## Turns towards `direction` by at most `max_step` radians (a Shielder turns slowly).
+func turn_towards(direction: Vector2, max_step: float) -> void:
+	if direction != Vector2.ZERO:
+		_walk = rotate_toward(_walk, direction.angle(), max_step)
+
+
 ## A hit pushed it by `impulse`: twist towards that side.
 func flinch_from(impulse: Vector2) -> void:
 	if flinch_degrees <= 0.0 or impulse == Vector2.ZERO:
