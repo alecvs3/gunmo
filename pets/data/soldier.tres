@@ -49,6 +49,7 @@ rally_seconds = 6.0
 rally_reach = 400.0
 cover_interval = 0.8
 cover_damage_share = 0.25
+cover_min_damage = 10
 cover_reach = 350.0
 last_stand_damage = 0.25
 last_stand_move = 0.1

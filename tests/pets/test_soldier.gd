@@ -34,8 +34,8 @@ func test_rally_every_n_kills() -> void:
 
 func test_covering_fire_from_tier_3() -> void:
 	assert_eq(SoldierRules.cover_damage(data, 2, 40), 0)
-	assert_eq(SoldierRules.cover_damage(data, 3, 40), 10, "25% of the gun")
-	assert_eq(SoldierRules.cover_damage(data, 3, 1), 1, "at least 1")
+	assert_eq(SoldierRules.cover_damage(data, 3, 80), 20, "25% of the gun")
+	assert_eq(SoldierRules.cover_damage(data, 3, 14), data.cover_min_damage, "the floor (SMG)")
 
 
 func test_airstrike_needs_a_streak_in_the_window() -> void:

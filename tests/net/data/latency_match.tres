@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MatchSettings" format=3]
+
+[ext_resource type="Resource" path="res://levels/data/test_arena.tres" id="90_map"]
+[ext_resource type="Script" path="res://modes/match_settings.gd" id="1_match"]
+[ext_resource type="Resource" path="res://modes/waves/data/default_waves.tres" id="2_ukfch"]
+[ext_resource type="PackedScene" path="res://modes/wave_mode.tscn" id="3_mode"]
+
+[resource]
+script = ExtResource("1_match")
+map = ExtResource("90_map")
+mode_scene = ExtResource("3_mode")
+bot_fill_to = 4
+first_break_seconds = 600.0
+break_seconds = 15.0
+revive_at_break = true
+bleed_out_seconds = 20.0
+revive_seconds = 3.0
+revive_range = 70.0
+revive_health_share = 0.3
+late_joiners_spectate = true
+starting_credits = 0
+wave_clear_bonus = 50
+wave_clear_bonus_per_wave = 10
+early_call_bonus_per_enemy = 6
+early_call_bonus_per_second = 3
+wave_schedule = ExtResource("2_ukfch")

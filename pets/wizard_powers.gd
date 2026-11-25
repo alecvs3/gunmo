@@ -5,6 +5,9 @@ extends RefCounted
 ## decides; this applies the result to enemies (EnemyStatus, damage through their hitboxes, so
 ## kills and bounties go to the owner) and shows it to everyone (PetEffects).
 
+## No target for a timed ability: look again after this many ticks.
+const RETRY_TICKS: int = 15
+
 var _level: Level
 var _rng := RandomNumberGenerator.new()
 ## peer id -> next tick each ability may fire: {"arc", "rune", "hex", "tempest"}.
@@ -71,14 +74,15 @@ func clear() -> void:
 func _cast(player: Player, data: WizardData, tier: int, now: int) -> void:
 	var timers: Dictionary = _timers(player.peer_id)
 	var rune: float = WizardRules.rune_interval(data, tier)
-	if rune > 0.0 and now >= timers["rune"] and _drop_rune(player, data, now):
-		timers["rune"] = now + _ticks(rune)
+	if rune > 0.0 and now >= timers["rune"]:
+		timers["rune"] = now + (_ticks(rune) if _drop_rune(player, data, now) else RETRY_TICKS)
 	var hex: float = WizardRules.hex_interval(data, tier)
-	if hex > 0.0 and now >= timers["hex"] and _hex(player, data, now):
-		timers["hex"] = now + _ticks(hex)
+	if hex > 0.0 and now >= timers["hex"]:
+		timers["hex"] = now + (_ticks(hex) if _hex(player, data, now) else RETRY_TICKS)
 	var tempest: float = WizardRules.tempest_interval(data, tier)
-	if tempest > 0.0 and now >= timers["tempest"] and _call_tempest(player, data, now):
-		timers["tempest"] = now + _ticks(tempest)
+	if tempest > 0.0 and now >= timers["tempest"]:
+		var cast: bool = _call_tempest(player, data, now)
+		timers["tempest"] = now + (_ticks(tempest) if cast else RETRY_TICKS)
 
 
 func _drop_rune(player: Player, data: WizardData, now: int) -> bool:

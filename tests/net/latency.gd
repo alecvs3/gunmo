@@ -10,6 +10,9 @@ extends "res://tests/net/smoke_script.gd"
 ## It runs before the autoloads exist, so it names no project classes directly.
 
 const WATCHDOG_SECONDS: float = 110.0
+## Waves with 3 bots and a 10-minute lobby, so no wave (and no enemies) starts in the middle of
+## the measurements: this scenario measures the netcode, not a wave.
+const MATCH_PATH: String = "res://tests/net/data/latency_match.tres"
 const SETTLE_SECONDS: float = 5.0
 ## After switching the simulated lag on (a sudden latency jump looks like jitter for a moment).
 const LAGGED_SETTLE_SECONDS: float = 9.0
@@ -35,6 +38,7 @@ func _run() -> void:
 
 func _run_host() -> void:
 	var net: Node = root.get_node("NetworkManager")
+	root.get_node("Main").call("_load_match_settings", MATCH_PATH)
 	_check(net.host(_port) == OK, "host() failed")
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
