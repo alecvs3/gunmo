@@ -54,4 +54,4 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
 - Death fires EventBus `enemy_killed`. Never call into the mode directly.
 - Plan first: this is bigger than a data change, so list the files and wait for an OK.
 
-Run `.\tools\check.ps1 -Smoke` (scenario C plays the wave loop) and update `docs/PROGRESS.md`.
+Run `.\tools\check.ps1 -Changed` (scenario C plays the wave loop) and update `docs/PROGRESS.md`.

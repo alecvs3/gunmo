@@ -42,7 +42,7 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
    - Add what makes it different to `tests/weapons/test_weapon_set.gd`.
    - `tests/test_project_consistency.gd` already checks every `.tres` loads.
    - A new mechanic gets its own unit test in `tests/weapons/`.
-6. **Run** `.\tools\check.ps1` (add `-Smoke` for a new mechanic) and note it in `docs/PROGRESS.md`.
+6. **Run** `.\tools\check.ps1 -Changed` and note it in `docs/PROGRESS.md`.
 
 Don't forget: a fourth pose would need a picture in every look (`player/looks/*.tres`,
 `player/character_look.gd`). Use an existing pose unless art for a new one exists.

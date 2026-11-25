@@ -7,6 +7,9 @@
 #   .\tools\check.ps1 -Smoke -Scenarios A,E   only those smoke scenarios
 #   .\tools\check.ps1 -Only tests     one step: import, tests, lint, format or smoke
 #   .\tools\check.ps1 -Fix            run gdformat (fixes formatting) before checking
+#   .\tools\check.ps1 -Changed        everything, plus only the smoke scenarios this branch's
+#                                     changes need (tools/check_scope.json); -Base sets what
+#                                     it compares with (default origin/main)
 # Godot is found from -Godot, the GODOT environment variable, PATH, or the usual folders.
 # gdtoolkit is found on PATH or run through Python. Exit code 0 = every step passed.
 param(
@@ -16,6 +19,8 @@ param(
     [string]$Only = "",
     [switch]$Fix,
     [string[]]$Scenarios = @(),
+    [switch]$Changed,
+    [string]$Base = "origin/main",
     [string]$LogDir = (Join-Path $env:TEMP "gunmo_check")
 )
 
@@ -39,9 +44,39 @@ function Invoke-GdTool([string]$Tool, [string[]]$Arguments) {
 }
 
 function Wants([string]$Step) {
+    if ($Step -eq "smoke" -and $script:scope -and $script:scope.None) { return $false }
     if ($Only) { return $Only -eq $Step }
-    if ($Step -eq "smoke") { return $Smoke.IsPresent }
+    if ($Step -eq "smoke") { return $Smoke.IsPresent -or $Changed.IsPresent }
     return $true
+}
+
+# Files this branch changes compared with $Base, committed or not (new files included).
+function Get-ChangedFiles {
+    $since = git -C $root merge-base $Base HEAD 2>$null
+    if (-not $since) { return $null }
+    $files = @(git -C $root diff --name-only $since) +
+        @(git -C $root ls-files --others --exclude-standard)
+    # The comma keeps an empty list a list (PowerShell would otherwise return nothing).
+    return ,@($files | Where-Object { $_ } | Sort-Object -Unique)
+}
+
+# Which smoke scenarios the changed files need (tools/check_scope_cli.gd reads the rules).
+function Get-Scope([string]$Exe) {
+    $files = Get-ChangedFiles
+    if ($null -eq $files) {
+        return @{ Scenarios = @(); None = $false; Text = "all"; Why = @("can't compare with $Base") }
+    }
+    if ($files.Count -eq 0) { return @{ Scenarios = @(); None = $true; Text = "none"; Why = @() } }
+    $list = Join-Path $LogDir "changed_files.txt"
+    $files | Set-Content $list
+    $output = @(& $Exe --headless --path $root -s tools/check_scope_cli.gd -- $list 2>&1 |
+        ForEach-Object { "$_" })
+    $line = $output | Where-Object { $_ -like "SCOPE *" } | Select-Object -First 1
+    $why = @($output | Where-Object { $_ -like "WHY *" } | ForEach-Object { $_.Substring(4) })
+    $text = if ($line) { $line.Substring(6) } else { "all" }
+    if (-not $line) { $why = @("the scope script failed, so everything") }
+    $letters = if ($text -in @("all", "none")) { @() } else { @($text -split ",") }
+    return @{ Scenarios = $letters; None = ($text -eq "none"); Text = $text; Why = $why }
 }
 
 function Step-Import([string]$Exe) {
@@ -111,6 +146,14 @@ $needsGodot = (Wants "import") -or (Wants "tests") -or (Wants "smoke")
 if ($needsGodot -and -not $exe) {
     Write-Host "Godot 4.7.2 (console exe) not found. Pass -Godot <path> or set GODOT." -ForegroundColor Red
     exit 2
+}
+
+$scope = $null
+if ($Changed) {
+    $scope = Get-Scope $exe
+    if (-not $Scenarios.Count) { $Scenarios = $scope.Scenarios }
+    Write-Host "Smoke scenarios for this change (vs $Base): $($scope.Text)"
+    foreach ($line in @($scope.Why | Select-Object -First 10)) { Write-Host "         $line" }
 }
 
 if (Wants "import") { $results["import"] = Step-Import $exe }

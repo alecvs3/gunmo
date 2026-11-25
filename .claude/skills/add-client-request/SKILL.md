@@ -33,4 +33,4 @@ rules. Movement, aiming, firing and reloading are **not** requests: they're `Inp
 7. A new topic or payload is a network format change: bump `Handshake.PROTOCOL`
    (`shared/network/handshake.gd`). Add a smoke check if it matters to play (see
    `tests/net/shop_smoke.gd`, which also sends purchases the host must refuse). Run
-   `.\tools\check.ps1 -Smoke` and update `docs/PROGRESS.md`.
+   `.\tools\check.ps1 -Changed` and update `docs/PROGRESS.md`.

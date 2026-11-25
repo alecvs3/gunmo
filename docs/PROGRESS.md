@@ -1132,3 +1132,25 @@ knew it was there.
 ### Known limitations
 - Checked in a window (host, solo). **Not verified:** how the two lines look with long modifier
   lists.
+
+
+## Checks run only what a change needs ✅
+
+The full smoke suite takes 2.5–5 minutes on every change, even a typo fix. Now the smoke
+scenarios are picked from the files a branch changes; the cheap checks still always run.
+
+| Feature | Status | Where |
+|---|---|---|
+| Rules: each folder → the smoke scenarios that exercise it (longest path wins; `*.md` none; a file in no rule, or more than 25 files, means all) | Done, tested | `tools/check_scope.json`, `tools/check_scope.gd` |
+| `.\tools\check.ps1 -Changed` (`-Base`, default `origin/main`): prints the scenarios and why, then runs only those | Done | `tools/check.ps1`, `tools/check_scope_cli.gd` |
+| CI: a pull request runs its scenarios (all with the `full-checks` label); a push to main runs all | Done | `.github/workflows/checks.yml` |
+| The rule for Claude: "Which checks to run" | Done | `CLAUDE.md`, the recipes |
+| A test fails if a project folder has no rule or a rule names a scenario `run_smoke.ps1` lacks | Done | `tests/tools/test_check_scope.gd` |
+
+A pets-only change now runs C, D and F: 56 s instead of about 4 minutes locally. Docs-only
+changes run no smoke at all.
+
+### Known limitations
+- A pull request can pass with its scenarios and still break one it didn't run; the full run on
+  main catches it, but only after the merge.
+- The `full-checks` label has to exist on GitHub before it can be added to a PR.
