@@ -90,8 +90,12 @@ func _use_name() -> void:
 	NetworkManager.set_local_name(GameSettings.player_name)
 
 
+## Shows the bot row for modes with bots, starting at the mode's own bot_fill_to (Waves 0).
 func _on_mode_selected(index: int) -> void:
-	%BotsRow.visible = MODES[maxi(index, 0)]["bots"]
+	var mode: Dictionary = MODES[maxi(index, 0)]
+	%BotsRow.visible = mode["bots"]
+	if mode["bots"]:
+		_bots_spin.value = (load(mode["match"]) as MatchSettings).bot_fill_to
 
 
 func _set_joining(joining: bool) -> void:
