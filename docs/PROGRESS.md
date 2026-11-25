@@ -1154,6 +1154,22 @@ changes run no smoke at all.
 - A pull request can pass with its scenarios and still break one it didn't run; the full run on
   main catches it, but only after the merge.
 - The `full-checks` label has to exist on GitHub before it can be added to a PR.
+
+
+## Early calls only through wave 5 ✅
+
+Calling early all game, with stacked waves paying for the same leftovers again on every call,
+could add about 5,000 credits late and break the economy. Rushing waves 1–4 (about 400) stays.
+
+| Feature | Status | Where |
+|---|---|---|
+| `MatchSettings.early_call_last_wave` (255 = no limit; 5 in the default match): the last wave that may be started early, so the break before wave 6 always happens | Done, tested | `modes/match_settings.gd`, `modes/waves/early_call.gd`, `tests/modes/waves/test_early_call.gd` |
+| The per-enemy bonus counts only the called-away wave's own enemies still alive (not older leftovers or split children) | Done, tested | `modes/waves/wave_spawner.gd` (`alive_count`), `modes/wave_mode.gd` |
+
+### Known limitations
+- Not checked in a 2-instance window test; the HUD prompt goes away through `call_open`, which
+  was already in the match state.
+
 ## Wave difficulty 1: every wave measured on a 0–10 scale ✅ (issue #147)
 
 Plan: https://claude.ai/artifact/TWnaN1PmUgMJ38VWhFugNw. This part only measures; the waves
@@ -1229,3 +1245,14 @@ Plan: https://claude.ai/artifact/7EPV52pTXaRkvnrzkgHpJm (section 1).
   list, and damage types come with the counters PR.
 - **Not checked in a window:** whether ▲ renders in the HUD font on every platform (Godot falls
   back to a system font for it).
+
+## Strategy 2: interest on held credits ✅ (issue #157)
+
+| What | Status | Where |
+|---|---|---|
+| After each clear bonus (and for a wave called away early), every standing player earns 10 for every 100 credits they hold, at most 50 a wave (`MatchSettings.interest_step` / `interest_per_step` / `interest_cap`, 0 = off). The final wave pays none: it ends the match | Done, tested | `modes/waves/interest.gd`, `modes/wave_mode.gd`, `modes/data/default_match.tres` |
+| Economy: a bank of 500+ held from wave 5 earns about 1,000 by wave 25, against about 8,650 from kills and clear bonuses by wave 22 (tested) | Done, tested | `tests/modes/waves/test_wave_composer.gd` |
+
+### Known limitations
+- **Not played.** Whether 50 a wave is worth skipping a purchase for needs the playtests.
+- Interest isn't shown on the HUD or shop yet; players only see their credits jump.

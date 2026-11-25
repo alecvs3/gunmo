@@ -138,7 +138,9 @@ func call_open() -> bool:
 	if not multiplayer.is_server():
 		return state.call_open
 	var active: bool = _flow.phase == GameMode.Phase.ACTIVE
-	return EarlyCall.can_call(active, _flow.wave, _flow.total_waves, _spawner.is_finished())
+	return EarlyCall.can_call(
+		active, _flow.wave, _flow.total_waves, _spawner.is_finished(), settings.early_call_last_wave
+	)
 
 
 ## Vote to call the next wave early (or take it back). The host applies it; a client asks.
@@ -172,7 +174,7 @@ func _on_input(event: InputEvent) -> bool:
 ## Calling early: the called-away wave's clear bonus plus the early bonus, to everyone standing.
 func _pay_early_call() -> void:
 	_pay_wave_bonus_for(_flow.wave - 1)
-	var bonus: int = EarlyCall.bonus(level.enemy_count(), settings.break_seconds, settings)
+	var bonus: int = EarlyCall.bonus(_spawner.alive_count(), settings.break_seconds, settings)
 	for player in level.players():
 		if player.is_alive:
 			player.get_wallet().add(bonus)
@@ -261,11 +263,25 @@ func _pay_wave_bonus() -> void:
 	_pay_wave_bonus_for(_flow.wave)
 
 
+## The wave's clear bonus, then interest on what each player now holds, to everyone standing.
 func _pay_wave_bonus_for(wave: int) -> void:
 	var bonus: int = settings.wave_clear_bonus + settings.wave_clear_bonus_per_wave * wave
 	for player in level.players():
 		if player.is_alive:
 			player.get_wallet().add(bonus)
+	_pay_interest(wave)
+
+
+func _pay_interest(wave: int) -> void:
+	var paid: int = 0
+	for player in level.players():
+		if player.is_alive:
+			var wallet: WalletComponent = player.get_wallet()
+			var interest: int = Interest.amount(wallet.credits, settings)
+			wallet.add(interest)
+			paid += interest
+	if paid > 0:
+		NetLog.write("wave %d interest: +%d credits in all" % [wave, paid])
 
 
 func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:
