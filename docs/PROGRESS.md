@@ -1169,3 +1169,8 @@ could add about 5,000 credits late and break the economy. Rushing waves 1–4 (a
 ### Known limitations
 - Not checked in a 2-instance window test; the HUD prompt goes away through `call_open`, which
   was already in the match state.
+
+## Waves starts with 0 bots ✅ (issue #155)
+
+The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
+Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
