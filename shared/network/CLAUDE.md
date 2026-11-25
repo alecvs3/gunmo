@@ -52,6 +52,6 @@ Tuning lives in `default_network_config.tres` (`NetworkConfig`), never in code.
 - Unit tests: `tests/shared/network/`. The field round trip test is
   `tests/shared/network/test_net_state_fields.gd`; it has a `NOT_PUBLIC` list of private fields.
 - Run `.\tools\check.ps1 -Smoke` for **any** change here (a big change: `-Changed` picks every scenario too). It runs the multiplayer scenarios in
-  `tests/net/` (lag, dedicated server, waves, shop, gun game, stress, latency, fairness).
+  `tests/net/` (lag, dedicated server, waves, shop, gun game, stress, latency, fairness, Waves fairness).
 - Soak: `.\tools\check.ps1 -Smoke -Scenarios S` runs the stress scene for 10 minutes and fails
   if memory, objects or nodes keep growing. Opt-in; run it after big changes.
