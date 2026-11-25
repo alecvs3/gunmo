@@ -1229,6 +1229,23 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
 Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
 
+## Strategy 1: the next-wave forecast ✅
+
+Plan: https://claude.ai/artifact/7EPV52pTXaRkvnrzkgHpJm (section 1).
+
+| What | Status | Where |
+|---|---|---|
+| In the lobby and every break, the HUD shows the next wave: its two strongest difficulty axes (▲▲ when one is at least 35% of the wave), its modifiers, and a boss warning. "Next: Toughness ▲▲ · Ranged ▲ · Armored · Boss" | Done, tested | `ui/hud.gd` (`Hud.forecast_line`) |
+| It's exact: a wave depends only on the match seed and its number, so the host builds it at the start of the break (`WaveComposer.plan_wave`, also used by the wave report) and the wave that spawns is the one forecast (tested against the report for every default wave) | Done, tested | `modes/waves/wave_forecast.gd`, `modes/wave_mode.gd` |
+| 7 bytes in the match state: flags, the modifier mask and one byte per axis (tenths, up to 25.5). Protocol 22 | Done, tested | `shared/network/states/match_net_state.gd`, `shared/network/handshake.gd` |
+| Smoke C: host and client both see a forecast during a break, and the boss warning before wave 3 | Done | `tests/net/wave_smoke.gd` |
+
+### Known limitations
+- No "new enemy type" or "bring this damage type" yet: clients don't know the schedule's enemy
+  list, and damage types come with the counters PR.
+- **Not checked in a window:** whether ▲ renders in the HUD font on every platform (Godot falls
+  back to a system font for it).
+
 ## Strategy 2: interest on held credits ✅ (issue #157)
 
 | What | Status | Where |

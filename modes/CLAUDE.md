@@ -24,6 +24,7 @@ reviewed by both developers.
 | `waves/wave_flow.gd` | The wave mode's state machine |
 | `waves/wave_composer.gd` | Builds each wave to hit its target difficulty (`waves/wave_draft.gd` is one try; rules in `waves/difficulty/`) |
 | `waves/wave_schedule.gd` | How waves grow (data in `waves/data/default_waves.tres`) |
+| `waves/wave_forecast.gd` | The next wave ahead of time (exact: `WaveComposer.plan_wave` from the match seed), shown in the lobby and breaks |
 | `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
 | `waves/early_call.gd` | Calling the next wave early: when it's allowed (only up to `MatchSettings.early_call_last_wave`, 5 by default), the vote, the bonus (per enemy of the called-away wave still alive: `WaveSpawner.alive_count`) |
 | `waves/interest.gd` | Interest on held credits after each clear bonus: per step held, up to a cap (`MatchSettings.interest_*`) |
@@ -69,10 +70,12 @@ modifiers, never on the players. Recipe: `tune-wave-difficulty`.
   wave.
 
 ## MatchNetState fields by mode
-`shared/network/states/match_net_state.gd` holds both modes' fields in one 26-byte state.
+`shared/network/states/match_net_state.gd` holds both modes' fields in one 34-byte state.
 That's kept on purpose: splitting it would change the network format for little gain.
 - **Both:** `mode_kind`, `phase`, `phase_end_tick`, `ready_count`, `player_count`, `living_count`, `winner_id`
-- **Waves:** `wave`, `total_waves`, `enemies_left`, `modifier_mask`, `shop_open`, `call_open`, `call_votes`
+- **Waves:** `wave`, `total_waves`, `enemies_left`, `modifier_mask`, `shop_open`, `call_open`, `call_votes`,
+  and in the lobby and breaks the forecast (`forecast`, `forecast_boss`, `forecast_modifier_mask`,
+  `forecast_scores`: one byte per difficulty axis, so adding an axis changes the format)
 - **Gun Game:** `ladder_length`, `kills_per_tier`, `final_tier_kills`
 
 ## Requests

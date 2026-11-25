@@ -9,7 +9,8 @@ extends "res://tests/net/smoke_script.gd"
 ## The host also checks a Splitter split, that its children had to die before wave 1 cleared,
 ## and that the boss reached its second phase and was killed. The host gives the client a
 ## tier-2 Healer pet: the client must see its heals (pet effects from the host). The host gets
-## a tier-5 Wizard: the client must see its lightning and runes.
+## a tier-5 Wizard: the client must see its lightning and runes. Both sides must see the
+## forecast of the next wave during a break, warning of the boss before wave 3.
 ## In the second run the host downs the client and revives it (holding revive next to it);
 ## the client must see itself go down and come back.
 ## Role botwavehost (its own port, + BOT_PORT_OFFSET): 1 human host who never fires and can't be
@@ -50,6 +51,9 @@ var _heals_seen: int = 0
 ## Client: Wizard effects seen (PetEffects.Kind ARC = 1, RUNE = 2).
 var _spells_seen: int = 0
 var _kills: int = 0
+## Both sides: a forecast seen during a break, and one warning of the boss (wave 3).
+var _saw_forecast: bool = false
+var _saw_boss_forecast: bool = false
 ## Host: kills seen when wave 1 ended (a split's children must die too).
 var _kills_by_wave_two: int = -1
 
@@ -91,6 +95,7 @@ func _run_host() -> void:
 	_check(_splits >= 1, "the Splitter never split")
 	_check(_boss_phase >= 1, "the boss never reached its second phase (%d)" % _boss_phase)
 	_check(_boss_killed, "the boss was never killed")
+	_check_forecast()
 	_check(
 		_kills_by_wave_two >= 3,
 		"wave 1 cleared after %d kills; the Splitter and its 2 children make 3" % _kills_by_wave_two
@@ -129,6 +134,7 @@ func _run_client() -> void:
 	_check(_spells_seen > 0, "never saw the Wizard's lightning or runes")
 	_check(_saw_self_revived, "never saw our own player revived")
 	_check(_saw_results, "the results screen never appeared")
+	_check_forecast()
 	await _wait_until(func() -> bool: return not _end_reason.is_empty(), 15.0)
 	_check(
 		_end_reason.contains("closed"), "expected the host-closed notice, got '%s'" % _end_reason
@@ -203,6 +209,9 @@ func _check_sequence() -> void:
 
 func _on_state(state: RefCounted) -> void:
 	_state = state
+	if state.phase == _phase["BREAK"] and state.get("forecast"):
+		_saw_forecast = true
+		_saw_boss_forecast = _saw_boss_forecast or state.get("forecast_boss")
 	var name: String = _phase.find_key(state.phase)
 	var token: String = name if name == "LOBBY" else "%s %d" % [name, state.wave]
 	if _seen.is_empty() or _seen.back() != token:
@@ -223,6 +232,11 @@ func _on_state(state: RefCounted) -> void:
 				]
 			)
 		)
+
+
+func _check_forecast() -> void:
+	_check(_saw_forecast, "no forecast of the next wave during a break")
+	_check(_saw_boss_forecast, "the forecast never warned of the boss wave")
 
 
 func _is_phase(name: String) -> bool:
