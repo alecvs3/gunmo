@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://modes/gun_game/gun_game_mode.gd" id="1_gungame"]
 [ext_resource type="Script" path="res://shared/network/net_entity.gd" id="2_netentity"]
+[ext_resource type="Resource" path="res://modes/data/gun_game_latency.tres" id="3_latency"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_spawn"]
 properties/0/path = NodePath("NetEntity:net_id")
@@ -10,6 +11,7 @@ properties/0/replication_mode = 0
 
 [node name="GunGameMode" type="Node"]
 script = ExtResource("1_gungame")
+latency_policy = ExtResource("3_latency")
 
 [node name="NetEntity" type="Node" parent="."]
 script = ExtResource("2_netentity")

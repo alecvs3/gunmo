@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="LatencyPolicy" format=3]
+
+[ext_resource type="Script" path="res://shared/network/latency_policy.gd" id="1_policy"]
+
+[resource]
+script = ExtResource("1_policy")
+victim_rewind = 0.25

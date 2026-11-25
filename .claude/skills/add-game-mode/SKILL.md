@@ -16,6 +16,9 @@ plan first and wait for an OK.
    the `NetEntity`, kind MATCH). Override what you need: `_start()`, `restart()`,
    `_on_peer_joined()`, `_on_ready_changed()`, `_on_player_killed()`, `_on_request()`.
    Everything runs on the host. Set `state` and call `publish_state()`.
+   Give the scene a `latency_policy` (`modes/data/<mode>_latency.tres`, a `LatencyPolicy`:
+   how the mode hides lag; copy `gun_game_latency.tres` for PvP, `waves_latency.tres` for co-op).
+   Don't override `_enter_tree()`/`_exit_tree()` without calling `super`: they hand it over.
 3. **Settings:** new tuning goes in `MatchSettings` (`modes/match_settings.gd`) as an
    `@export_group`. Create `modes/data/<mode>_match.tres` with `mode_scene` set to the new scene.
 4. **Spawning:** add the scene to `_spawnable_scenes` of `ModeSpawner` in `main.tscn` (shared;
