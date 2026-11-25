@@ -7,6 +7,14 @@ func before_each() -> void:
 	pets = PetCatalog.load_default()
 
 
+func test_the_wizard_deals_arcane_and_the_others_kinetic() -> void:
+	for pet in pets.pets:
+		var expected: int = DamageType.Type.KINETIC
+		if pet.kind == PetData.Kind.WIZARD:
+			expected = DamageType.Type.ARCANE
+		assert_eq(pet.damage_type, expected, pet.display_name)
+
+
 func test_three_pets_with_five_rising_tiers() -> void:
 	assert_eq(pets.pets.size(), 3)
 	var kinds: Array[int] = []

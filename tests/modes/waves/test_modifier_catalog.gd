@@ -1,5 +1,7 @@
 extends GutTest
 
+const ARMORED_TRAIT: String = "res://enemies/data/traits/armored.tres"
+
 var catalog: ModifierCatalog
 
 
@@ -151,6 +153,78 @@ func test_caps_hold_however_many_stack() -> void:
 	assert_eq(all.speed_multiplier, huge.max_speed_multiplier)
 	assert_eq(all.damage_taken_multiplier, huge.min_damage_taken_multiplier)
 	assert_eq(all.regen_per_second, huge.max_regen_per_second)
+
+
+func _with_traits(name: String, taken: float, traits: Array) -> WaveModifier:
+	var modifier: WaveModifier = _modifier(name, 1.0, 1.0, taken, 0.0)
+	modifier.adds_traits.assign(traits)
+	return modifier
+
+
+func test_added_traits_are_all_kept_and_stack() -> void:
+	var armored: EnemyTrait = load(ARMORED_TRAIT)
+	var swarm: EnemyTrait = load("res://enemies/data/traits/swarm.tres")
+	var traited := ModifierCatalog.new()
+	traited.min_damage_taken_multiplier = 0.1
+	(
+		traited
+		. modifiers
+		. assign(
+			[
+				_with_traits("Armored", 1.0, [armored]),
+				_with_traits("Swarming", 1.0, [swarm]),
+				_with_traits("Frenzied", 1.15, []),
+			]
+		)
+	)
+	var all: WaveModifier = traited.combined(0b111)
+	assert_eq(all.adds_traits.size(), 2)
+	assert_almost_eq(all.taken(DamageType.Type.KINETIC), 1.15 * 0.6, 1e-6)
+	assert_almost_eq(all.taken(DamageType.Type.BLAST), 1.15 * 0.7 * 1.5, 1e-6)
+	assert_almost_eq(all.taken(DamageType.Type.PIERCE), 1.15 * 1.3 * 0.7, 1e-6)
+	assert_true(traited.combined(0b100).adds_traits.is_empty())
+
+
+func test_the_damage_taken_floor_holds_for_every_type() -> void:
+	var armored: EnemyTrait = load(ARMORED_TRAIT)
+	var doubled := ModifierCatalog.new()
+	doubled.min_damage_taken_multiplier = 0.4
+	doubled.modifiers.assign([_with_traits("A", 1.0, [armored]), _with_traits("B", 1.0, [armored])])
+	var both: WaveModifier = doubled.combined(0b11)
+	assert_almost_eq(both.taken(DamageType.Type.KINETIC), 0.4, 1e-6, "0.36 raised to the floor")
+	assert_almost_eq(both.taken(DamageType.Type.PIERCE), 1.69 * 0.4 / 0.36, 1e-6, "all types rise")
+	assert_almost_eq(both.taken(DamageType.Type.BLAST), 0.49 * 0.4 / 0.36, 1e-6)
+
+
+func test_floored_taken_leaves_values_above_the_floor_alone() -> void:
+	var none: Array[EnemyTrait] = []
+	assert_eq(ModifierCatalog.floored_taken(0.6, none, 0.4), 0.6)
+	assert_eq(ModifierCatalog.floored_taken(0.3, none, 0.4), 0.4)
+
+
+func test_default_armored_adds_the_armored_trait_with_the_same_kinetic_armor() -> void:
+	var real: ModifierCatalog = ModifierCatalog.load_default()
+	var armored: WaveModifier = real.modifiers[0]
+	assert_eq(armored.display_name, "Armored")
+	assert_eq(armored.damage_taken_multiplier, 1.0, "no flat armor: the trait is the armor")
+	assert_eq(armored.adds_traits.size(), 1)
+	assert_almost_eq(armored.taken(DamageType.Type.KINETIC), 0.6, 1e-6, "as before for Kinetic")
+	assert_gt(armored.taken(DamageType.Type.PIERCE), 1.0, "Pierce beats it now")
+
+
+func test_enemy_traits_and_wave_traits_stack() -> void:
+	var real: ModifierCatalog = ModifierCatalog.load_default()
+	var tank: EnemyData = load("res://enemies/data/tank.tres")
+	var wave: WaveModifier = real.combined(0b1)
+	var kinetic: int = DamageType.Type.KINETIC
+	assert_almost_eq(tank.taken(kinetic) * wave.taken(kinetic), 0.36, 1e-6, "a Tank in Armored")
+	var health := HealthComponent.new()
+	health.max_health = 1000
+	add_child_autofree(health)
+	health.damage_taken_multiplier = wave.damage_taken_multiplier * tank.damage_taken
+	health.type_multipliers = EnemyTrait.profile(tank.traits + wave.adds_traits)
+	health.take_damage(100, 1, DamageType.Type.PIERCE)
+	assert_eq(health.current_health, 1000 - 169, "Pierce: 1.3 x 1.3")
 
 
 func test_conflicting_modifiers_never_share_a_wave() -> void:

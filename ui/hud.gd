@@ -18,6 +18,7 @@ var _local_call: bool = false
 var _spectating: int = 0
 var _banner_left: float = 0.0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
+var _difficulty: DifficultyModel = DifficultyModel.load_default()
 ## Gun Game: the tier our player was on last frame (-1 = unknown), for the next-gun banner.
 var _last_tier: int = -1
 var _sounds: SoundData = SoundData.load_default()
@@ -44,6 +45,27 @@ static func call_line(state: MatchNetState, voted: bool) -> String:
 	if voted:
 		return "Calling the next wave early (%s) · G to cancel" % counts
 	return "G: call the next wave early for bonus credits (%s)" % counts
+
+
+## In the lobby and breaks: the next wave's two strongest difficulty axes, its modifiers and
+## whether a boss comes ("Next: Toughness ▲▲ · Ranged ▲ · Armored · Boss"; "" without one).
+static func forecast_line(
+	state: MatchNetState, model: DifficultyModel, catalog: ModifierCatalog
+) -> String:
+	if not state.forecast:
+		return ""
+	var scores: PackedFloat32Array = state.forecast_axis_scores()
+	var shares: PackedFloat32Array = model.shares(scores)
+	var parts := PackedStringArray()
+	for axis in WaveForecast.top_axes(model, scores):
+		var arrows: String = "▲▲" if shares[axis] >= WaveForecast.STRONG_SHARE else "▲"
+		parts.append("%s %s" % [model.axes[axis].display_name, arrows])
+	var modifiers: String = catalog.names(state.forecast_modifier_mask)
+	if modifiers != "":
+		parts.append(modifiers)
+	if state.forecast_boss:
+		parts.append("Boss")
+	return "Next: " + " · ".join(parts)
 
 
 ## Two HUD lines under each other, leaving out an empty one (during a wave: the modifiers,
@@ -206,6 +228,8 @@ func _show_match() -> void:
 	_ready_label.text = lines[1]
 	if _state.phase == GameMode.Phase.ACTIVE:
 		_ready_label.text = stack_lines(_modifiers.names(_state.modifier_mask), lines[1])
+	else:
+		_ready_label.text = stack_lines(lines[1], forecast_line(_state, _difficulty, _modifiers))
 
 
 func _show_gun_game(player: Player) -> void:

@@ -7,7 +7,8 @@ extends RefCounted
 ## Values are keyed by name, so a new stat needs no new field: an attack sets it in add_stats
 ## and an axis reads it from the WaveSheet.
 
-## Effective health: max_health / damage_taken.
+## Effective health against Kinetic damage: max_health / taken(KINETIC). The score never
+## depends on the players' guns, so Kinetic is its baseline.
 const HEALTH := &"health"
 ## Effective health × heal_received (what regeneration can restore).
 const HEALABLE := &"healable"
@@ -39,7 +40,7 @@ static func of(data: EnemyData, cone_degrees: float = 30.0, level: int = 0) -> E
 	stats.depth = level
 	if data == null or level > MAX_DEPTH:
 		return stats
-	var health: float = data.max_health / data.damage_taken
+	var health: float = data.max_health / data.taken(DamageType.Type.KINETIC)
 	stats.add(HEALTH, health)
 	stats.add(HEALABLE, health * data.heal_received)
 	if not data.is_boss():

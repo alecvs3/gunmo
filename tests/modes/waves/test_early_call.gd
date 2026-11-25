@@ -10,10 +10,29 @@ func before_each() -> void:
 
 
 func test_only_once_the_wave_has_spawned_and_not_on_the_last() -> void:
-	assert_true(EarlyCall.can_call(true, 3, 25, true))
-	assert_false(EarlyCall.can_call(true, 3, 25, false), "still spawning")
-	assert_false(EarlyCall.can_call(false, 3, 25, true), "not during a break")
-	assert_false(EarlyCall.can_call(true, 25, 25, true), "nothing after the last wave")
+	assert_true(EarlyCall.can_call(true, 3, 25, true, 255))
+	assert_false(EarlyCall.can_call(true, 3, 25, false, 255), "still spawning")
+	assert_false(EarlyCall.can_call(false, 3, 25, true, 255), "not during a break")
+	assert_false(EarlyCall.can_call(true, 25, 25, true, 255), "nothing after the last wave")
+
+
+func test_only_the_early_waves_can_be_started_early() -> void:
+	assert_true(EarlyCall.can_call(true, 4, 25, true, 5), "calling into wave 5 is fine")
+	assert_false(EarlyCall.can_call(true, 5, 25, true, 5), "wave 6 always gets its break")
+	assert_false(EarlyCall.can_call(true, 25, 25, true, 5), "nor after the last wave")
+	assert_false(EarlyCall.can_call(true, 3, 3, true, 255), "no limit still stops at the end")
+
+
+func test_leftovers_from_earlier_waves_are_not_paid_again() -> void:
+	var alive: Node = autofree(Node.new())
+	var killed: Node = Node.new()
+	var dying: Node = autofree(Node.new())
+	var spawned: Array[Node] = [alive, killed, dying]
+	killed.free()
+	dying.queue_free()
+	assert_eq(WaveSpawner.count_alive(spawned), 1, "only this wave's enemies still standing")
+	var spawner: WaveSpawner = autofree(WaveSpawner.new())
+	assert_eq(spawner.alive_count(), 0, "older waves' enemies are in no list of this wave")
 
 
 func test_the_vote_needs_everyone() -> void:
@@ -54,4 +73,6 @@ func test_hud_prompt() -> void:
 func test_default_match_pays_for_calling_early() -> void:
 	var real: MatchSettings = load("res://modes/data/default_match.tres")
 	assert_gt(real.early_call_bonus_per_enemy, 0)
+	assert_eq(real.early_call_last_wave, 5, "the break before wave 6 always happens")
+	assert_eq(MatchSettings.new().early_call_last_wave, 255, "no limit unless a match sets one")
 	assert_true(InputMap.has_action("call_wave"))

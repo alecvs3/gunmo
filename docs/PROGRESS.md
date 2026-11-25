@@ -1154,6 +1154,22 @@ changes run no smoke at all.
 - A pull request can pass with its scenarios and still break one it didn't run; the full run on
   main catches it, but only after the merge.
 - The `full-checks` label has to exist on GitHub before it can be added to a PR.
+
+
+## Early calls only through wave 5 ✅
+
+Calling early all game, with stacked waves paying for the same leftovers again on every call,
+could add about 5,000 credits late and break the economy. Rushing waves 1–4 (about 400) stays.
+
+| Feature | Status | Where |
+|---|---|---|
+| `MatchSettings.early_call_last_wave` (255 = no limit; 5 in the default match): the last wave that may be started early, so the break before wave 6 always happens | Done, tested | `modes/match_settings.gd`, `modes/waves/early_call.gd`, `tests/modes/waves/test_early_call.gd` |
+| The per-enemy bonus counts only the called-away wave's own enemies still alive (not older leftovers or split children) | Done, tested | `modes/waves/wave_spawner.gd` (`alive_count`), `modes/wave_mode.gd` |
+
+### Known limitations
+- Not checked in a 2-instance window test; the HUD prompt goes away through `call_open`, which
+  was already in the match state.
+
 ## Wave difficulty 1: every wave measured on a 0–10 scale ✅ (issue #147)
 
 Plan: https://claude.ai/artifact/TWnaN1PmUgMJ38VWhFugNw. This part only measures; the waves
@@ -1213,6 +1229,60 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
 Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
 
+## Strategy 1: the next-wave forecast ✅
+
+Plan: https://claude.ai/artifact/7EPV52pTXaRkvnrzkgHpJm (section 1).
+
+| What | Status | Where |
+|---|---|---|
+| In the lobby and every break, the HUD shows the next wave: its two strongest difficulty axes (▲▲ when one is at least 35% of the wave), its modifiers, and a boss warning. "Next: Toughness ▲▲ · Ranged ▲ · Armored · Boss" | Done, tested | `ui/hud.gd` (`Hud.forecast_line`) |
+| It's exact: a wave depends only on the match seed and its number, so the host builds it at the start of the break (`WaveComposer.plan_wave`, also used by the wave report) and the wave that spawns is the one forecast (tested against the report for every default wave) | Done, tested | `modes/waves/wave_forecast.gd`, `modes/wave_mode.gd` |
+| 7 bytes in the match state: flags, the modifier mask and one byte per axis (tenths, up to 25.5). Protocol 22 | Done, tested | `shared/network/states/match_net_state.gd`, `shared/network/handshake.gd` |
+| Smoke C: host and client both see a forecast during a break, and the boss warning before wave 3 | Done | `tests/net/wave_smoke.gd` |
+
+### Known limitations
+- No "new enemy type" or "bring this damage type" yet: clients don't know the schedule's enemy
+  list, and damage types come with the counters PR.
+- **Not checked in a window:** whether ▲ renders in the HUD font on every platform (Godot falls
+  back to a system font for it).
+
+## Strategy 2: interest on held credits ✅ (issue #157)
+
+| What | Status | Where |
+|---|---|---|
+| After each clear bonus (and for a wave called away early), every standing player earns 10 for every 100 credits they hold, at most 50 a wave (`MatchSettings.interest_step` / `interest_per_step` / `interest_cap`, 0 = off). The final wave pays none: it ends the match | Done, tested | `modes/waves/interest.gd`, `modes/wave_mode.gd`, `modes/data/default_match.tres` |
+| Economy: a bank of 500+ held from wave 5 earns about 1,000 by wave 25, against about 8,650 from kills and clear bonuses by wave 22 (tested) | Done, tested | `tests/modes/waves/test_wave_composer.gd` |
+
+### Known limitations
+- **Not played.** Whether 50 a wave is worth skipping a purchase for needs the playtests.
+- Interest isn't shown on the HUD or shop yet; players only see their credits jump.
+
+## Strategy 3: counters (damage types and enemy traits) ⚠️ (issue #158; playtests to do)
+
+Every hit has a damage type and every enemy has traits, so a wave can need a specific answer.
+Part 3 of the strategy-layer plan; the forecast's "Bring: <type>" reads `CounterProfile`.
+
+| What | Status | Where |
+|---|---|---|
+| **Damage types:** Kinetic (default), Pierce, Blast, Arcane, one enum | Done | `shared/components/damage_type.gd` |
+| **Sources:** `WeaponData.damage_type` (rocket launcher Blast, hit and explosion; pistol, SMG, rifle, shotgun Kinetic), `PetData.damage_type` (Wizard Arcane, Soldier Kinetic). Host only: the host's `Shot` takes it from its own `WeaponData` and it is never sent, so no protocol change | Done, tested (smoke E checks every rocket the host simulates is Blast) | `weapons/`, `pets/` |
+| **Traits:** `EnemyTrait` (a multiplier per type), `EnemyData.traits`. Armored (Kinetic 0.6, Pierce 1.3, Blast 0.7, Arcane 1.0) on the Tank (was `damage_taken` 0.6); Swarm (Pierce 0.7, Blast 1.5) on Swarmers and Splitlings | Done, tested | `enemies/enemy_trait.gd`, `enemies/data/traits/` |
+| **Modifiers add traits:** `WaveModifier.adds_traits`. The Armored modifier adds the Armored trait instead of its flat 0.6, so Pierce now beats it. `combined()` keeps every added trait; the 0.4 damage taken floor holds for every type | Done, tested | `modes/waves/` |
+| **Host applies it:** `HitboxComponent.hit(..., damage_type)` → `HealthComponent.type_multipliers` (the enemy's traits plus the wave's, `EnemyTrait.profile`) | Done, tested | `shared/components/`, `enemies/chaser.gd` |
+| **Score unchanged:** the difficulty score reads Kinetic only (`EnemyData.taken`, `WaveModifier.taken`); the wave report is identical before and after | Done, tested | `enemies/enemy_stats.gd`, `modes/waves/difficulty/` |
+| **`CounterProfile`:** per type, the health-weighted multiplier of a planned wave, and `best_type(min_edge)`. Every default Armored wave gives Pierce | Done, tested | `modes/waves/difficulty/counter_profile.gd` |
+| Recipe `add-damage-type`; `add-weapon`, `add-enemy`, `add-wave-modifier` updated | Done | `.claude/skills/` |
+
+### Known limitations
+- **Nothing deals Pierce yet.** Only the rocket (Blast) and the Wizard (Arcane) aren't Kinetic;
+  Pierce comes with the Path (armor-piercing rounds). Until then an Armored wave is just tougher,
+  as before, and Blast does a little better than Kinetic against it (0.7 against 0.6).
+- The rocket now deals 1.5× to Swarmers and Splitlings and 0.7× (instead of 0.6×) to Tanks and
+  Armored waves: a small buff the score can't see (it is Kinetic-based). Playtests decide.
+- Bosses keep a flat `damage_taken` (0.75, 0.8) that applies to every type, so no type counters
+  them yet.
+- No trait fears or resists Arcane yet (the plan has Warded and Ethereal for later).
+
 ## Strategy 4: the Path engine ⚠️ (issue #159; playtests to do)
 
 Part 1 of the Path (strategy-layer plan, section 4): a run-long route bought with Cores, a second,
@@ -1224,7 +1294,7 @@ scarce currency. This proves the engine end to end with one branch; the other br
 | **Data:** `PathNode` (name, description, branch, tier, Core cost, `requires`, `excludes`, `effects`) and `PathTree` (every node in a fixed order, at most 64; append, never reorder). Effects: `StatEffect` (a player stat through PlayerStats' multipliers) and `EconomyEffect` (shop upgrade price multiplier, extra Cores per boss) | Done, tested | `path/` |
 | **Rules:** a step only in a break, one per break (calling a wave early skips that break's step), enough Cores, every requirement owned, nothing excluded either way, never twice; no respec | Done, tested | `path/path_rules.gd` |
 | **Request** `WaveMode.REQUEST_PATH` (4): `[node index]`, checked by the host with PathRules | Done, smoke D | `modes/wave_mode.gd` |
-| **Replication:** owned nodes (u64, public: everyone sees everyone's route), Cores and the break's step (owner only) in the player snapshot (Cores and the step share one byte), 106 / 41 bytes; protocol 22. Smoke F's download budget goes from 60 to 64 KB/s: 8 players' masks add about 3.9 KB/s (61.5 KB/s measured before packing) StatEffects apply from the owned mask in `PlayerLoadout._apply` on the host and in the owner's prediction alike | Done, smoke D | `shared/network/states/player_net_state.gd`, `player/player_loadout.gd` |
+| **Replication:** owned nodes (u64, public: everyone sees everyone's route), Cores and the break's step (owner only) in the player snapshot (Cores and the step share one byte), 106 / 41 bytes; protocol 23 (the forecast took 22). Smoke F's download budget goes from 60 to 64 KB/s: 8 players' masks add about 3.9 KB/s (61.5 KB/s measured before packing) StatEffects apply from the owned mask in `PlayerLoadout._apply` on the host and in the owner's prediction alike | Done, smoke D | `shared/network/states/player_net_state.gd`, `player/player_loadout.gd` |
 | **Window:** O (new input action `path` in `project.godot`) opens it in the lobby and breaks: one column per branch, nodes by tier (owned / available / locked, teammates who own each), Cores, this break's step, a Take button. **For Yusuf's review** (`ui/` is his) | Done, layout test | `ui/path_panel.gd`, `ui/path_node_card.gd` |
 | **Starter branch "Logistics":** Fortitude (+10% max health, 1 Core) → Quick hands (reload 20% faster, 2) and Quartermaster (shop upgrades −10%, 2) → Fleet foot (+10% move speed, 3, needs Quick hands) or Scavenger (+1 Core per boss, 3, needs Quartermaster); the two tier-3 nodes lock each other out | Done, tested | `path/data/` |
 | Smoke D: in the break after wave 1 the client takes Fortitude, a second step is refused, and its own loadout shows 110 max health | Done | `tests/net/shop_smoke.gd` |

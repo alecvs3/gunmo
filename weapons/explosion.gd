@@ -33,5 +33,5 @@ static func detonate(
 		return false
 	for hitbox in targets(shot, at, skip, candidates):
 		var away: Vector2 = at.direction_to(hitbox.center())
-		hitbox.hit(shot.blast_damage, shot.shooter_id, away * shot.knockback)
+		hitbox.hit(shot.blast_damage, shot.shooter_id, away * shot.knockback, shot.damage_type)
 	return true

@@ -51,12 +51,12 @@ static func row(
 ) -> Row:
 	var result := Row.new()
 	result.wave = wave
-	var rng := RandomNumberGenerator.new()
-	rng.seed = WaveComposer.wave_seed(match_seed, wave)
 	result.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
 	result.modifiers = catalog.names(result.modifier_mask)
 	var combined: WaveModifier = catalog.combined(result.modifier_mask)
-	var planned: Array[EnemyData] = WaveComposer.plan(schedule, model, wave, rng, combined)
+	var planned: Array[EnemyData] = WaveComposer.plan_wave(
+		schedule, model, catalog, match_seed, wave
+	)
 	var effective: float = 0.0
 	for type in planned:
 		result.counts[type.display_name] = result.counts.get(type.display_name, 0) + 1
@@ -64,7 +64,8 @@ static func row(
 			var health: int = combined.scaled_health(each.max_health)
 			result.total_health += health
 			result.bounty += each.bounty
-			effective += health / (combined.damage_taken_multiplier * each.damage_taken)
+			var kinetic: int = DamageType.Type.KINETIC
+			effective += health / (combined.taken(kinetic) * each.taken(kinetic))
 	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
 	result.peak_alive = mini(planned.size(), schedule.max_alive)

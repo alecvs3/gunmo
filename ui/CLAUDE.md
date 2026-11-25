@@ -6,7 +6,7 @@ gameplay.
 ## Where the UI gets its data
 | Data | From |
 |---|---|
-| Phase, wave, timers, shop open, winner | EventBus `match_state_changed` (a `MatchNetState`) |
+| Phase, wave, timers, shop open, winner, next-wave forecast | EventBus `match_state_changed` (a `MatchNetState`) |
 | Your health, ammo, reload, credits | `Player.find_local(tree).hud_stats()` (`Player.HudStats`) |
 | Scores | Players' replicated `ScoreComponent`s, through `Scoreboard.ranked_players` (`Scoreboard.Row`) |
 | Being hit, ready state, spectating | EventBus `local_player_hurt`, `local_ready_changed`, `spectating_changed` |

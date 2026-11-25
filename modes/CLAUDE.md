@@ -24,13 +24,16 @@ reviewed by both developers.
 | `waves/wave_flow.gd` | The wave mode's state machine |
 | `waves/wave_composer.gd` | Builds each wave to hit its target difficulty (`waves/wave_draft.gd` is one try; rules in `waves/difficulty/`) |
 | `waves/wave_schedule.gd` | How waves grow (data in `waves/data/default_waves.tres`) |
+| `waves/wave_forecast.gd` | The next wave ahead of time (exact: `WaveComposer.plan_wave` from the match seed), shown in the lobby and breaks |
 | `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
-| `waves/early_call.gd` | Calling the next wave early: when it's allowed, the vote, the bonus |
+| `waves/early_call.gd` | Calling the next wave early: when it's allowed (only up to `MatchSettings.early_call_last_wave`, 5 by default), the vote, the bonus (per enemy of the called-away wave still alive: `WaveSpawner.alive_count`) |
+| `waves/interest.gd` | Interest on held credits after each clear bonus: per step held, up to a cap (`MatchSettings.interest_*`) |
 | `waves/wave_path.gd` | The Path in a match (host): Cores per wave, boss and solo bonus, one step per break, taking a node (rules in `path/path_rules.gd`) |
 | `waves/revive_rules.gd` | Downed and revive: bleed-out timer, revive bar, range, interruption (`waves/downed_players.gd` applies it on the host) |
 | `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |
 | `waves/difficulty/difficulty_model.gd` | How hard a wave is, 0–10, from its enemies' own numbers (see "Wave difficulty" below) |
 | `waves/difficulty/difficulty_curve.gd` | The difficulty each wave aims for |
+| `waves/difficulty/counter_profile.gd` | Which damage type works best against a planned wave (see "Counters" below) |
 | `gun_game/gun_game_ladder.gd` | Kills per tier, the last tier, who has won |
 | `gun_game/spawn_protection.gd` | Spawn protection: how long, and that firing ends it |
 
@@ -48,7 +51,7 @@ modifiers, never on the players. Recipe: `tune-wave-difficulty`.
 
 | Axis | Raw amount | Modifiers that move it |
 |---|---|---|
-| H Toughness | effective health | health, damage taken |
+| H Toughness | effective health against Kinetic damage (flat armor and traits) | health, damage taken, added traits (their Kinetic part) |
 | M Melee | contact damage per second | |
 | P Pressure | Σ speed × body size / 140 | speed |
 | R Ranged | projectile damage per second that can hit (fans and rings: shots inside a 30° cone) | |
@@ -68,11 +71,38 @@ modifiers, never on the players. Recipe: `tune-wave-difficulty`.
 - `tools/wave_report.ps1` prints the target, the difficulty, every axis and the bounty of each
   wave.
 
+## Counters
+Every hit has a damage type (`DamageType.Type`: Kinetic, Pierce, Blast, Arcane;
+`shared/components/damage_type.gd`) and every enemy has traits (`EnemyTrait`,
+`enemies/data/traits/`: Armored, Swarm). Recipe: `add-damage-type`.
+- **Where traits come from:** the enemy's own `EnemyData.traits`, plus the wave's
+  `WaveModifier.adds_traits` (the Armored modifier adds the Armored trait).
+  `ModifierCatalog.combined()` keeps every added trait (a trait twice counts twice: a Tank in an
+  Armored wave takes 0.36 Kinetic, as before); the catalog's damage taken floor (0.4) holds for
+  every type.
+- **On the host:** `ChaserEnemy._apply_modifiers` gives its `HealthComponent` one multiplier per
+  type (`EnemyTrait.profile`); `HitboxComponent.hit(damage, source, push, damage_type)` passes
+  the type. Guns take it from `WeaponData.damage_type` (the rocket launcher is Blast, hit and
+  explosion), pets from `PetData.damage_type` (the Wizard is Arcane). It is never sent.
+- **The score stays Kinetic-based** (`EnemyData.taken(KINETIC)`, `WaveModifier.taken(KINETIC)`),
+  so it never depends on the players' guns.
+- **`CounterProfile`** (`waves/difficulty/counter_profile.gd`, pure), for the forecast:
+  - `CounterProfile.of(planned: Array[EnemyData], modifier: WaveModifier) -> CounterProfile`:
+    `planned` from `WaveComposer.plan`, `modifier` from `ModifierCatalog.combined(mask)`.
+  - `multiplier(damage_type: int) -> float`: what hits of that type are multiplied by against
+    this wave, weighted by each enemy's health (splits included). 1.0 = a plain enemy.
+  - `best_type(min_edge: float = 0.0) -> int`: the type with the highest multiplier; Kinetic
+    unless another beats Kinetic's by more than `min_edge` (ties go to the earlier type).
+    `DamageType.name_of(type)` gives its name ("Bring: Pierce").
+  - Every default Armored wave (seed 1) gives Pierce with `min_edge` 0.1 (tested).
+
 ## MatchNetState fields by mode
-`shared/network/states/match_net_state.gd` holds both modes' fields in one 26-byte state.
+`shared/network/states/match_net_state.gd` holds both modes' fields in one 34-byte state.
 That's kept on purpose: splitting it would change the network format for little gain.
 - **Both:** `mode_kind`, `phase`, `phase_end_tick`, `ready_count`, `player_count`, `living_count`, `winner_id`
-- **Waves:** `wave`, `total_waves`, `enemies_left`, `modifier_mask`, `shop_open`, `call_open`, `call_votes`
+- **Waves:** `wave`, `total_waves`, `enemies_left`, `modifier_mask`, `shop_open`, `call_open`, `call_votes`,
+  and in the lobby and breaks the forecast (`forecast`, `forecast_boss`, `forecast_modifier_mask`,
+  `forecast_scores`: one byte per difficulty axis, so adding an axis changes the format)
 - **Gun Game:** `ladder_length`, `kills_per_tier`, `final_tier_kills`
 
 ## Requests
@@ -83,7 +113,7 @@ Host-to-client events: `GunGameMode.KILL_FEED_TOPIC` (3) reports each kill to ev
 (ProjectileSystem uses topic 1).
 
 ## Recipes
-`add-game-mode`, `add-wave-modifier`, `tune-wave-difficulty`, `add-client-request` (in `.claude/skills/`).
+`add-game-mode`, `add-wave-modifier`, `tune-wave-difficulty`, `add-damage-type`, `add-client-request` (in `.claude/skills/`).
 
 ## Tests
 `tests/modes/`, plus smoke scenarios C (wave loop), D (shop) and E (gun game).

@@ -36,6 +36,9 @@ var projectile: int = 0
 ## Explosion where it lands (host only; the host tells everyone where blasts happen).
 var blast_radius: float = 0.0
 var blast_damage: int = 0
+## DamageType.Type of its hit and its blast (host only: only the host's bullets deal damage, and
+## it comes from the weapon, so it is never sent).
+var damage_type: int = DamageType.Type.KINETIC
 
 
 static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: Vector2) -> Shot:
@@ -50,6 +53,7 @@ static func from_weapon(data: WeaponData, origin_point: Vector2, aim_direction: 
 	shot.knockback = data.knockback
 	shot.pierce = data.pierce
 	shot.projectile = data.projectile
+	shot.damage_type = data.damage_type
 	if data.explodes():
 		shot.blast_radius = data.blast_radius
 		shot.blast_damage = data.blast_damage

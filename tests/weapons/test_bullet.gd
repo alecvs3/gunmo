@@ -43,6 +43,16 @@ func test_fast_bullet_does_not_tunnel_through_thin_target() -> void:
 	assert_eq((target["health"] as HealthComponent).current_health, 65, "100 px per tick")
 
 
+func test_a_hit_deals_the_shots_damage_type() -> void:
+	var target: Dictionary = _make_target(Vector2(30, 0), 100)
+	var swarm: EnemyTrait = load("res://enemies/data/traits/swarm.tres")
+	var traits: Array[EnemyTrait] = [swarm]
+	(target["health"] as HealthComponent).type_multipliers = EnemyTrait.profile(traits)
+	data.damage_type = DamageType.Type.BLAST
+	_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 10)
+	assert_eq((target["health"] as HealthComponent).current_health, 47, "35 x 1.5, rounded")
+
+
 func test_same_team_is_not_hit() -> void:
 	var friend: Dictionary = _make_target(Vector2(30, 0), 100)
 	(friend["hitbox"] as HitboxComponent).team = &"players"

@@ -40,6 +40,7 @@ role = "Control"
 blurb = "Hits many enemies at once and links them together: slow them, they conduct, mark the big one, then it all chains."
 kind = 1
 color = Color(0.5, 0.65, 1, 1)
+damage_type = 3
 arc_chance = 0.15
 arc_chance_upgraded = 0.2
 arc_jumps = 2
