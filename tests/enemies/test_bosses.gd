@@ -120,7 +120,8 @@ func test_bosses_come_at_10_20_25_and_the_last_ends_the_match() -> void:
 	assert_true(_boss("overlord").ends_wave_on_death, "beating it wins")
 	assert_false(_boss("warden").ends_wave_on_death)
 	var rng := RandomNumberGenerator.new()
-	var plan: Array[EnemyData] = WaveBudget.plan(schedule, 20, rng)
+	var model: DifficultyModel = DifficultyModel.load_default()
+	var plan: Array[EnemyData] = WaveComposer.plan(schedule, model, 20, rng, WaveModifier.new())
 	assert_eq(plan[0], _boss("warden"), "the boss comes first")
 	assert_eq(plan.count(_boss("warden")), 1)
 

@@ -1,17 +1,16 @@
 class_name WaveReport
 extends RefCounted
 ## The difficulty curve on paper: for every wave of a schedule, what the host spawns with a
-## given match seed. Uses the same functions as WaveMode and WaveSpawner (wave seed, budget
-## plan, modifier pick, scaled health), so the numbers are the game's. Printed by
+## given match seed. Uses the same functions as WaveMode and WaveSpawner (wave seed,
+## WaveComposer, modifier pick, scaled health), so the numbers are the game's. Printed by
 ## tools/wave_report.ps1; later balance PRs paste it before and after.
 
 
 ## One wave's numbers.
 class Row:
 	var wave: int = 0
-	var budget: float = 0.0
 	var enemies: int = 0
-	## Enemy display name -> how many of that type this wave buys.
+	## Enemy display name -> how many of that type this wave has.
 	var counts: Dictionary = {}
 	## Sum of the enemies' max health after the wave's modifiers, splits included (a Splitter's
 	## children are health the players must also chew through).
@@ -21,11 +20,8 @@ class Row:
 	var effective_health: int = 0
 	var modifier_mask: int = 0
 	var modifiers: String = ""
-	## How much tougher the modifiers make each enemy (ModifierCatalog.threat).
-	var threat_factor: float = 1.0
-	## The difficulty on paper: points of enemies bought times threat_factor. The curve that must
-	## rise every wave (the budget minus what could not be spent).
-	var threat: float = 0.0
+	## Credits the wave's kills pay (EnemyData.bounty, splits included; not the clear bonus).
+	var bounty: int = 0
 	## Most enemies alive at once if nobody kills anything: the schedule's cap, not a prediction.
 	var peak_alive: int = 0
 	## Seconds from the first spawn to the last when max_alive never holds one back.
@@ -55,25 +51,22 @@ static func row(
 ) -> Row:
 	var result := Row.new()
 	result.wave = wave
-	result.budget = WaveBudget.budget(schedule, wave)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = WaveBudget.wave_seed(match_seed, wave)
+	rng.seed = WaveComposer.wave_seed(match_seed, wave)
 	result.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
-	result.threat_factor = catalog.threat(result.modifier_mask)
-	var planned: Array[EnemyData] = WaveBudget.plan(schedule, wave, rng, result.threat_factor)
 	result.modifiers = catalog.names(result.modifier_mask)
 	var combined: WaveModifier = catalog.combined(result.modifier_mask)
+	var planned: Array[EnemyData] = WaveComposer.plan(schedule, model, wave, rng, combined)
 	var effective: float = 0.0
 	for type in planned:
 		result.counts[type.display_name] = result.counts.get(type.display_name, 0) + 1
 		for each in with_splits(type):
 			var health: int = combined.scaled_health(each.max_health)
 			result.total_health += health
+			result.bounty += each.bounty
 			effective += health / (combined.damage_taken_multiplier * each.damage_taken)
 	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
-	for type in planned:
-		result.threat += type.cost * result.threat_factor
 	result.peak_alive = mini(planned.size(), schedule.max_alive)
 	result.spawn_seconds = maxi(planned.size() - 1, 0) * schedule.spawn_interval(wave)
 	_measure(result, schedule, model, planned, combined)
@@ -113,7 +106,7 @@ static func format(schedule: WaveSchedule, model: DifficultyModel, rows: Array[R
 	var header := PackedStringArray(["Wave", "Target", "Difficulty"])
 	for axis in model.axes:
 		header.append(axis.short_name)
-	header.append_array(["Budget", "Threat", "Enemies"])
+	header.append_array(["Bounty", "Enemies"])
 	header.append_array(names)
 	header.append_array(["Health", "Effective", "Peak alive", "Spawn s", "Modifiers"])
 	var lines := PackedStringArray([_line(header), _line(_rule(header.size()))])
@@ -128,7 +121,7 @@ static func _cells(each: Row, names: PackedStringArray) -> PackedStringArray:
 	cells.append("%.2f" % each.difficulty)
 	for score in each.axis_scores:
 		cells.append("%.1f" % score)
-	cells.append_array(["%.1f" % each.budget, "%.1f" % each.threat, "%d" % each.enemies])
+	cells.append_array(["%d" % each.bounty, "%d" % each.enemies])
 	for name in names:
 		cells.append("%d" % each.counts.get(name, 0))
 	(
