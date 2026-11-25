@@ -21,6 +21,20 @@ Edit the `DifficultyCurve` sub-resource in `modes/waves/data/default_waves.tres`
 - `tolerance`: how close a wave must land to its target.
 - `overrides`: pin a wave's target (`overrides[w - 1]`, 0 = use the curve).
 
+## Limit or require enemies, or make a themed wave (data only)
+Append to `rules` in `default_waves.tres` (each has `from_wave`, `to_wave`, 0 = to the end):
+- `EnemyLimit`: `enemy`, `min_count`, `max_count` (-1 = none). "At most 3 Tanks before wave 18".
+- `AxisLimit`: `axis` (index into the model's `axes`: 0 H, 1 M, 2 P, 3 R, 4 S), `max_share`
+  (a pick that takes the axis past it is refused) and `min_share` (below it, types that add to
+  the axis are `push` times likelier): "wave 14 is a ranged wave".
+`test_every_default_wave_lands_near_its_target` (`tests/modes/waves/test_wave_composer.gd`) fails
+when rules make a target unreachable.
+
+## Credits
+More enemies pay more bounty. `test_credits_by_wave_22_stay_where_the_balance_pass_left_them`
+keeps a player's credits by wave 22 near 8,650 (balance pass #139). If a harder curve breaks it,
+lower the `bounty` values in `enemies/data/` by the same factor rather than widening the test.
+
 ## Weigh a category more or less (data only)
 In `modes/waves/data/difficulty_model.tres`, each axis has a `weight` (how much it counts) and a
 `reference` (the raw amount that scores 10). A bigger reference makes the same enemies score

@@ -28,9 +28,6 @@ tolerance = 0.3
 [resource]
 script = ExtResource("5_cj0e0")
 total_waves = 25
-base_budget = 6.0
-budget_growth = 1.9
-budget_curve = 1.35
 first_spawn_interval = 0.8
 last_spawn_interval = 0.35
 max_alive = 40

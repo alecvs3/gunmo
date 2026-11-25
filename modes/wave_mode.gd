@@ -112,9 +112,9 @@ func _start_wave() -> void:
 	_set_local_call_vote(false)
 	var schedule: WaveSchedule = settings.wave_schedule
 	_modifier_mask = _modifiers.pick_for_wave(schedule, _match_seed, _flow.wave)
-	var seed_value: int = WaveBudget.wave_seed(_match_seed, _flow.wave)
+	var seed_value: int = WaveComposer.wave_seed(_match_seed, _flow.wave)
 	_spawner.start_wave(
-		level, schedule, _flow.wave, seed_value, _modifier_mask, _modifiers.threat(_modifier_mask)
+		level, schedule, _flow.wave, seed_value, _modifier_mask, _modifiers.combined(_modifier_mask)
 	)
 	_powers.on_wave_started(_spawner.planned_health, _flow.wave)
 

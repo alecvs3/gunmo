@@ -5,13 +5,35 @@
 [ext_resource type="Resource" path="res://tests/net/data/combo_support.tres" id="3_support"]
 [ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="4_schedule"]
 [ext_resource type="Resource" path="res://tests/net/data/combo_boss.tres" id="5_boss"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/difficulty_curve.gd" id="90_curve"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/enemy_limit.gd" id="91_limit"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/wave_rule.gd" id="92_rule"]
+
+[sub_resource type="Resource" id="Resource_curve"]
+script = ExtResource("90_curve")
+first = 0.1
+last = 0.1
+tolerance = 0.05
+
+[sub_resource type="Resource" id="Resource_one_splitter"]
+script = ExtResource("91_limit")
+from_wave = 1
+to_wave = 1
+enemy = ExtResource("2_splitter")
+min_count = 1
+max_count = 1
+
+[sub_resource type="Resource" id="Resource_one_support"]
+script = ExtResource("91_limit")
+from_wave = 2
+to_wave = 2
+enemy = ExtResource("3_support")
+min_count = 1
+max_count = 1
 
 [resource]
 script = ExtResource("4_schedule")
 total_waves = 3
-base_budget = 3.0
-budget_growth = 1.0
-budget_curve = 1.0
 first_spawn_interval = 0.2
 last_spawn_interval = 0.2
 max_alive = 10
@@ -22,3 +44,5 @@ shares_first = PackedFloat32Array(0, 0, 0, 1)
 boss_waves = PackedInt32Array(3)
 bosses = Array[ExtResource("1_edata")]([ExtResource("5_boss")])
 enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_splitter"), ExtResource("3_support")])
+difficulty = SubResource("Resource_curve")
+rules = Array[ExtResource("92_rule")]([SubResource("Resource_one_splitter"), SubResource("Resource_one_support")])

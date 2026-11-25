@@ -22,7 +22,7 @@ reviewed by both developers.
 | File | Rules |
 |---|---|
 | `waves/wave_flow.gd` | The wave mode's state machine |
-| `waves/wave_budget.gd` | How many points a wave may spend, and which enemies it buys (role shares, modifier threat) |
+| `waves/wave_composer.gd` | Builds each wave to hit its target difficulty (`waves/wave_draft.gd` is one try; rules in `waves/difficulty/`) |
 | `waves/wave_schedule.gd` | How waves grow (data in `waves/data/default_waves.tres`) |
 | `waves/modifier_catalog.gd` | Which modifiers a wave gets (`pick_for_wave`), sent as a one-byte mask |
 | `waves/early_call.gd` | Calling the next wave early: when it's allowed, the vote, the bonus |
@@ -57,8 +57,15 @@ modifiers, never on the players. Recipe: `tune-wave-difficulty`.
   length `√(Σ weight × score² / Σ weight)`. Every axis at its reference = 10.
 - **Target:** `WaveSchedule.difficulty` (a `DifficultyCurve`): a straight trend, boss waves a
   little above it, the two waves after a boss a little below, `overrides` to pin a wave.
-- `tools/wave_report.ps1` prints the target, the difficulty and every axis for each wave. The
-  waves are still bought from the budget (`WaveBudget`) until the composer replaces it.
+- **Building a wave** (`WaveComposer.plan`): the boss first, then every minimum the schedule's
+  `rules` ask for, then random types (`spawn_weight`, pulled toward the role shares by each
+  type's solo difficulty) while the wave stays under target + tolerance, until it reaches the
+  target. A few tries keep the closest. Modifiers are picked first (their own seed), so a Tough
+  wave needs fewer enemies. `max_enemies` is a safety stop.
+- **Rules** (`WaveSchedule.rules`, for a wave range): `EnemyLimit` (min/max count of one type),
+  `AxisLimit` (an axis's share of the difficulty: a max, or a min that makes a themed wave).
+- `tools/wave_report.ps1` prints the target, the difficulty, every axis and the bounty of each
+  wave.
 
 ## MatchNetState fields by mode
 `shared/network/states/match_net_state.gd` holds both modes' fields in one 26-byte state.
@@ -79,5 +86,5 @@ Host-to-client events: `GunGameMode.KILL_FEED_TOPIC` (3) reports each kill to ev
 
 ## Tests
 `tests/modes/`, plus smoke scenarios C (wave loop), D (shop) and E (gun game).
-A change to wave balance (budgets, enemy numbers, modifiers) pastes `.\tools\wave_report.ps1`
+A change to wave balance (the curve, enemy numbers, modifiers, rules) pastes `.\tools\wave_report.ps1`
 before and after into its PR.

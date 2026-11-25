@@ -28,8 +28,9 @@ func _modifier(name: String, health: float, taken: float) -> WaveModifier:
 func before_each() -> void:
 	schedule = WaveSchedule.new()
 	schedule.total_waves = 3
-	schedule.base_budget = 4.0
-	schedule.budget_growth = 3.0
+	schedule.difficulty = DifficultyCurve.new()
+	schedule.difficulty.first = 0.2
+	schedule.difficulty.last = 0.4
 	schedule.first_spawn_interval = 1.0
 	schedule.last_spawn_interval = 0.5
 	schedule.max_alive = 5
@@ -44,9 +45,9 @@ func before_each() -> void:
 
 func _plan(wave: int) -> Array[EnemyData]:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = WaveBudget.wave_seed(MATCH_SEED, wave)
-	var threat: float = catalog.threat(catalog.pick_for_wave(schedule, MATCH_SEED, wave))
-	return WaveBudget.plan(schedule, wave, rng, threat)
+	rng.seed = WaveComposer.wave_seed(MATCH_SEED, wave)
+	var merged: WaveModifier = catalog.combined(catalog.pick_for_wave(schedule, MATCH_SEED, wave))
+	return WaveComposer.plan(schedule, model, wave, rng, merged)
 
 
 func test_one_row_per_wave() -> void:
@@ -55,14 +56,13 @@ func test_one_row_per_wave() -> void:
 	assert_eq(rows.map(func(r: WaveReport.Row) -> int: return r.wave), [1, 2, 3])
 
 
-func test_rows_match_budget_and_spawner() -> void:
+func test_rows_match_composer_and_spawner() -> void:
 	for row in WaveReport.build(schedule, catalog, model, MATCH_SEED):
-		assert_eq(row.budget, WaveBudget.budget(schedule, row.wave))
+		assert_almost_eq(row.difficulty, row.target, 0.3, "wave %d on target" % row.wave)
 		var spawner := WaveSpawner.new()
-		var seed_value: int = WaveBudget.wave_seed(MATCH_SEED, row.wave)
-		spawner.start_wave(
-			null, schedule, row.wave, seed_value, row.modifier_mask, row.threat_factor
-		)
+		var seed_value: int = WaveComposer.wave_seed(MATCH_SEED, row.wave)
+		var merged: WaveModifier = catalog.combined(row.modifier_mask)
+		spawner.start_wave(null, schedule, row.wave, seed_value, row.modifier_mask, merged)
 		assert_eq(row.enemies, spawner.remaining(), "wave %d: the spawner's queue" % row.wave)
 		spawner.free()
 		var planned: Array[EnemyData] = _plan(row.wave)
@@ -92,10 +92,10 @@ func test_health_uses_the_wave_modifiers() -> void:
 
 
 func test_peak_alive_is_the_cap_and_spawn_time_follows_the_interval() -> void:
-	schedule.max_alive = 2
+	schedule.max_alive = 1
 	var row: WaveReport.Row = WaveReport.row(schedule, catalog, model, MATCH_SEED, 3)
-	assert_gt(row.enemies, 2)
-	assert_eq(row.peak_alive, 2)
+	assert_gt(row.enemies, 1)
+	assert_eq(row.peak_alive, 1)
 	assert_almost_eq(row.spawn_seconds, (row.enemies - 1) * 0.5, 1e-4)
 	schedule.max_alive = 500
 	assert_eq(WaveReport.row(schedule, catalog, model, MATCH_SEED, 3).peak_alive, row.enemies)
@@ -106,10 +106,9 @@ func test_format_has_a_line_per_wave_and_a_column_per_type() -> void:
 	var lines: PackedStringArray = WaveReport.format(schedule, model, rows).split("\n")
 	assert_eq(lines.size(), 2 + 3, "header, rule, 3 waves")
 	assert_string_contains(lines[0], "| Imp | Ogre |")
-	assert_string_starts_with(lines[2], "| 1 | - | ")
-	assert_string_contains(lines[2], "| 4.0 | 4.0 | ")
-	assert_string_contains(lines[0], "| Wave | Target | Difficulty | H | M | P | R | S | Budget |")
-	assert_true(lines[2].ends_with("| 3.0 | - |"), "no modifiers in wave 1: " + lines[2])
+	assert_string_starts_with(lines[2], "| 1 | 0.20 | ")
+	assert_string_contains(lines[0], "| Wave | Target | Difficulty | H | M | P | R | S | Bounty |")
+	assert_true(lines[2].ends_with(" | - |"), "no modifiers in wave 1: " + lines[2])
 
 
 func test_every_default_wave_has_enemies() -> void:

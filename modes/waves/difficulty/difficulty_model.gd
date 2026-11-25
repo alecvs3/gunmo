@@ -16,6 +16,7 @@ const DEFAULT_PATH: String = "res://modes/waves/data/difficulty_model.tres"
 @export_range(1.0, 360.0) var aim_cone_degrees: float = 30.0
 
 var _stats: Dictionary = {}
+var _solo: Dictionary = {}
 
 
 static func load_default() -> DifficultyModel:
@@ -27,6 +28,16 @@ func stats_for(data: EnemyData) -> EnemyStats:
 	if not _stats.has(data):
 		_stats[data] = EnemyStats.of(data, aim_cone_degrees)
 	return _stats[data]
+
+
+## The difficulty of a wave of just one `data`, without modifiers: how much it adds on its own
+## (role balance in WaveComposer, target danger for bots).
+func solo(data: EnemyData) -> float:
+	if not _solo.has(data):
+		var sheet := WaveSheet.new()
+		sheet.add(stats_for(data))
+		_solo[data] = difficulty(sheet, WaveModifier.new())
+	return _solo[data]
 
 
 func sheet_for(enemies: Array[EnemyData]) -> WaveSheet:
@@ -48,6 +59,18 @@ func scores(sheet: WaveSheet, modifier: WaveModifier) -> PackedFloat32Array:
 ## The wave's difficulty: the weighted length of its scores.
 func difficulty(sheet: WaveSheet, modifier: WaveModifier) -> float:
 	return length(scores(sheet, modifier))
+
+
+## Each axis's part of the squared length (they add up to 1; all 0 for an empty wave).
+func shares(axis_scores: PackedFloat32Array) -> PackedFloat32Array:
+	var found := PackedFloat32Array()
+	var sum: float = 0.0
+	for i in mini(axes.size(), axis_scores.size()):
+		found.append(axes[i].weight * axis_scores[i] * axis_scores[i])
+		sum += found[i]
+	for i in found.size():
+		found[i] = found[i] / sum if sum > 0.0 else 0.0
+	return found
 
 
 func length(axis_scores: PackedFloat32Array) -> float:

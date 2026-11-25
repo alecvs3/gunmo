@@ -1,25 +1,20 @@
 class_name WaveSchedule
 extends Resource
 ## How the waves grow. Real values live in modes/waves/data/*.tres.
-## Wave w may spend budget(w) = base_budget + budget_growth × (w − 1)^budget_curve points on
-## enemies (each EnemyData has a cost and a first wave). Enemies arrive one at a time, faster
-## in later waves, never more than max_alive at once.
+## Each wave is built to hit the difficulty its curve aims for (`difficulty`, WaveComposer),
+## from the enemy types reached by then (EnemyData.first_wave), within the `rules`. Enemies
+## arrive one at a time, faster in later waves, never more than max_alive at once.
 
 @export_range(1, 255) var total_waves: int = 1
-## Points to spend in wave 1.
-@export_range(0.0, 1000.0) var base_budget: float = 1.0
-## How many more points each later wave gets (before the curve).
-@export_range(0.0, 100.0) var budget_growth: float = 0.0
-## 1 = straight line; above 1 = later waves grow faster.
-@export_range(0.5, 3.0) var budget_curve: float = 1.0
-## Every enemy type the waves may buy.
+## Every enemy type the waves may use.
 @export var enemy_types: Array[EnemyData] = []
-## Boss waves: bosses[i] comes first in wave boss_waves[i], paid from that wave's budget.
+## Boss waves: bosses[i] comes first in wave boss_waves[i] and counts toward its difficulty.
 @export var boss_waves: PackedInt32Array = []
 @export var bosses: Array[EnemyData] = []
-## Share of the budget for each EnemyData.Role (frontline, ranged, swarm, support) in wave 1
-## and in the last wave, blended in between. A role with no type available yet passes its share
-## on to the others. Empty = everything frontline.
+## Share of the wave (by each enemy's own difficulty, DifficultyModel.solo) the composer pulls
+## each EnemyData.Role (frontline, ranged, swarm, support) toward, in wave 1 and in the last
+## wave, blended in between. A role with no type available yet passes its share on to the
+## others. Empty = everything frontline.
 @export var shares_first: PackedFloat32Array = []
 @export var shares_last: PackedFloat32Array = []
 ## Seconds between spawns in wave 1, and in the last wave (blended in between).
@@ -36,6 +31,10 @@ extends Resource
 @export_range(1, 256) var triple_modifier_wave: int = 256
 ## The difficulty each wave aims for (DifficultyCurve, on DifficultyModel's 0–10 scale).
 @export var difficulty: DifficultyCurve
+## Minimums and maximums per enemy type or difficulty axis (EnemyLimit, AxisLimit).
+@export var rules: Array[WaveRule] = []
+## Most enemies one wave may have, the boss included (a safety stop; split children not counted).
+@export_range(1, 10000) var max_enemies: int = 400
 
 
 func spawn_interval(wave: int) -> float:
