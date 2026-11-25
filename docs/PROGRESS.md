@@ -1212,3 +1212,14 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
 Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
+
+## Strategy 2: interest on held credits ✅ (issue #157)
+
+| What | Status | Where |
+|---|---|---|
+| After each clear bonus (and for a wave called away early), every standing player earns 10 for every 100 credits they hold, at most 50 a wave (`MatchSettings.interest_step` / `interest_per_step` / `interest_cap`, 0 = off). The final wave pays none: it ends the match | Done, tested | `modes/waves/interest.gd`, `modes/wave_mode.gd`, `modes/data/default_match.tres` |
+| Economy: a bank of 500+ held from wave 5 earns about 1,000 by wave 25, against about 8,650 from kills and clear bonuses by wave 22 (tested) | Done, tested | `tests/modes/waves/test_wave_composer.gd` |
+
+### Known limitations
+- **Not played.** Whether 50 a wave is worth skipping a purchase for needs the playtests.
+- Interest isn't shown on the HUD or shop yet; players only see their credits jump.

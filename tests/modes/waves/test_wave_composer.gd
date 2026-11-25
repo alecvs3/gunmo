@@ -1,6 +1,7 @@
 extends GutTest
 
 const DEFAULT_SCHEDULE: String = "res://modes/waves/data/default_waves.tres"
+const DEFAULT_MATCH: String = "res://modes/data/default_match.tres"
 
 var schedule: WaveSchedule
 var model: DifficultyModel
@@ -220,7 +221,7 @@ func test_late_default_waves_have_every_role() -> void:
 ## composer, two players each got about 8,650 from kills and clear bonuses by wave 22: keep it.
 func test_credits_by_wave_22_stay_where_the_balance_pass_left_them() -> void:
 	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
-	var settings: MatchSettings = load("res://modes/data/default_match.tres")
+	var settings: MatchSettings = load(DEFAULT_MATCH)
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	var totals: Array[float] = []
 	for seed_value in 10:
@@ -231,3 +232,17 @@ func test_credits_by_wave_22_stay_where_the_balance_pass_left_them() -> void:
 		totals.append(credits)
 	totals.sort()
 	assert_between(totals[5], 8000.0, 9300.0, "median credits per player by wave 22")
+
+
+## Interest is paid at every clear but the last (wave 25 ends the match). A player who keeps a
+## bank of 500 or more from wave 5 earns the cap each wave: about 1,000, never more.
+func test_interest_from_a_bank_held_since_wave_5_adds_at_most_about_1000() -> void:
+	var settings: MatchSettings = load(DEFAULT_MATCH)
+	var last_paid: int = settings.wave_schedule.total_waves - 1
+	var held: int = 0
+	var hoarded: int = 0
+	for _wave in range(5, last_paid + 1):
+		held += Interest.amount(500, settings)
+		hoarded += Interest.amount(100000, settings)
+	assert_between(held, 900, 1100, "interest on 500 held from wave 5 to wave 25")
+	assert_eq(hoarded, held, "holding more than 500 pays no more")
