@@ -1195,3 +1195,8 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
   waves 6–12 than before reads well, needs the playtests.
 - A target is only reached in steps of one enemy, so waves land up to 0.3 above or below it.
 - `EnemyData.cost` is still read by the bots (target danger); the next part replaces it.
+
+## Waves starts with 0 bots ✅ (issue #155)
+
+The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
+Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
