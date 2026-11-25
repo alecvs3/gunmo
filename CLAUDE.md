@@ -39,7 +39,8 @@ enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, be
                  (movement + attack parts an EnemyData combines)
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 pets/*           Waves pets: PetData/PetCatalog (pets/data/*.tres), PetLook, PetFollower
-modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings
+modes/*          GameMode base, WaveMode + modes/waves/ (difficulty score in modes/waves/difficulty/),
+                 GunGameMode + modes/gun_game/, MatchSettings
 ui/*             menus, HUD, scoreboard, shop, results, F3 overlay
 levels/          maps: MapData (levels/data/*.tres, picked by MatchSettings.map) → a Level scene
                  (where things spawn, never when); MapCheck validates every map
@@ -55,7 +56,7 @@ NetClock's render tick. **A shot:** `simulate()` fires → EventBus `shot_fired`
 everyone how the bullet ended.
 
 **Recipes** (`.claude/skills/`): step-by-step checklists for adding a weapon, enemy, upgrade,
-wave modifier, networked field, client request or game mode. Use one when it fits.
+wave modifier, tuning wave difficulty, networked field, client request or game mode. Use one when it fits.
 
 ## Architecture rules
 1. **The host decides everything that matters:** damage, health, kills, spawns, wave state, upgrades, ladder progress and all bot and enemy AI. Clients send only inputs and requests, and the host checks them. Never trust a client to report damage or kills.

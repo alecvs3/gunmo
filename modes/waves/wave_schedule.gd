@@ -34,6 +34,8 @@ extends Resource
 @export_range(1, 256) var first_modifier_wave: int = 256
 @export_range(1, 256) var double_modifier_wave: int = 256
 @export_range(1, 256) var triple_modifier_wave: int = 256
+## The difficulty each wave aims for (DifficultyCurve, on DifficultyModel's 0–10 scale).
+@export var difficulty: DifficultyCurve
 
 
 func spawn_interval(wave: int) -> float:

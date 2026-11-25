@@ -41,6 +41,12 @@ func make_shot(own: Vector2, target: Vector2, velocity: Vector2) -> Shot:
 	return shot
 
 
+func add_stats(stats: EnemyStats, weight: float) -> void:
+	if weapon != null:
+		var damage: float = weapon.damage * weapon.pellets
+		stats.add(EnemyStats.RANGED_DPS, weight * damage / cycle_seconds())
+
+
 func perform(enemy: Node2D, target: Node2D, _touching: Array[HitboxComponent]) -> bool:
 	var shooter := enemy as ChaserEnemy
 	if shooter == null or target == null:

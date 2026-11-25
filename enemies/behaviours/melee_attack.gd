@@ -13,6 +13,10 @@ func push(own: Vector2, victim: Vector2) -> Vector2:
 	return own.direction_to(victim) * knockback
 
 
+func add_stats(stats: EnemyStats, weight: float) -> void:
+	stats.add(EnemyStats.MELEE_DPS, weight * damage / cycle_seconds())
+
+
 func perform(enemy: Node2D, _target: Node2D, touching: Array[HitboxComponent]) -> bool:
 	for hitbox in touching:
 		hitbox.hit(damage, 0, push(enemy.global_position, hitbox.center()))
