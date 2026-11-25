@@ -23,6 +23,7 @@ func play_at(cue: SoundCue, at: Vector2) -> void:
 	var player := AudioStreamPlayer2D.new()
 	player.stream = cue.stream
 	player.volume_db = cue.volume_db
+	player.pitch_scale = cue.pitch_scale
 	player.max_distance = cue.max_distance
 	player.position = at  # the parent is a plain Node, so this is a world position
 	add_child(player)
@@ -36,6 +37,7 @@ func play(cue: SoundCue) -> void:
 	var player := AudioStreamPlayer.new()
 	player.stream = cue.stream
 	player.volume_db = cue.volume_db
+	player.pitch_scale = cue.pitch_scale
 	add_child(player)
 	_track(player.finished, player, cue)
 	player.play()

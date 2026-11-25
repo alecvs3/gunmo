@@ -46,7 +46,7 @@ path/*           Waves Path: PathNode/PathTree (path/data/*.tres), PathEffect ki
 modes/*          GameMode base, WaveMode + modes/waves/ (difficulty score in modes/waves/difficulty/,
                  team progression and strain on paper in modes/waves/progression/),
                  GunGameMode + modes/gun_game/, MatchSettings
-ui/*             menus, HUD, scoreboard, shop, results, F3 overlay
+ui/*             menus, HUD, scoreboard, shop, results, F3 overlay; HudMenu (base of every pop-up menu)
 levels/          maps: MapData (levels/data/*.tres, picked by MatchSettings.map) → a Level scene
                  (where things spawn, never when); MapCheck validates every map
 tests/           GUT tests mirroring the folders; tests/net/ = multiplayer smoke scenarios
@@ -62,7 +62,7 @@ everyone how the bullet ended.
 
 **Recipes** (`.claude/skills/`): step-by-step checklists for adding a weapon, enemy, upgrade,
 wave modifier, damage type or trait, Path node, tuning wave difficulty, networked field, client
-request or game mode. Use one when it fits.
+request, pop-up menu or game mode. Use one when it fits.
 
 ## Architecture rules
 1. **The host decides everything that matters:** damage, health, kills, spawns, wave state, upgrades, ladder progress and all bot and enemy AI. Clients send only inputs and requests, and the host checks them. Never trust a client to report damage or kills.

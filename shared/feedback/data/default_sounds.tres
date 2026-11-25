@@ -21,7 +21,7 @@
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_003.ogg" id="20_impactSoft_heavy_003"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/impactSoft_heavy_004.ogg" id="21_impactSoft_heavy_004"]
 [ext_resource type="AudioStream" path="res://assets/kenney_sounds/open_001.ogg" id="29_open_001"]
-[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/explosion_1.wav" id="80_explosion_1"]
+[ext_resource type="AudioStream" path="res://assets/pixabay_sounds/rocket_launch_1.wav" id="80_rocket_launch_1"]
 [ext_resource type="AudioStream" path="res://assets/pixabay_sounds/boss_death_1.wav" id="82_boss_death_1"]
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_enemy_death"]
@@ -47,13 +47,14 @@ max_at_once = 4
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_blast"]
 random_pitch = 1.06
 streams_count = 1
-stream_0/stream = ExtResource("80_explosion_1")
+stream_0/stream = ExtResource("80_rocket_launch_1")
 stream_0/weight = 1.0
 
 [sub_resource type="Resource" id="Resource_blast"]
 script = ExtResource("2_cue")
 stream = SubResource("AudioStreamRandomizer_blast")
-volume_db = -4.0
+volume_db = -10.0
+pitch_scale = 0.6
 max_at_once = 3
 
 [sub_resource type="AudioStreamRandomizer" id="AudioStreamRandomizer_player_hurt"]
