@@ -49,4 +49,4 @@ func show_state(owned_tier: int, selected: bool) -> void:
 	var fill: Color = Color(pet.color, 0.16 if selected else 0.06)
 	for state in ["normal", "hover", "pressed", "disabled"]:
 		var boost: float = 0.06 if state == "hover" else 0.0
-		add_theme_stylebox_override(state, PetPanel.box(Color(fill, fill.a + boost), border, 2))
+		add_theme_stylebox_override(state, HudMenu.box(Color(fill, fill.a + boost), border, 2))
