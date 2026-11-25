@@ -16,8 +16,12 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 ## Size of its hitbox, touch area and body (1 = a normal enemy's 32 px); bosses are bigger.
 @export_range(0.5, 4.0) var body_scale: float = 1.0
 @export_range(1, 100000) var max_health: int = 1
-## Armor: damage it takes is multiplied by this (0.7 = 30% less). Stacks with wave modifiers.
+## Damage of every type it takes is multiplied by this (0.75 = 25% less): a boss's thick hide.
+## Armor that a damage type can beat is a trait instead. Stacks with wave modifiers.
 @export_range(0.05, 2.0) var damage_taken: float = 1.0
+## What it is (Armored, Swarm...): each trait takes more or less of each damage type
+## (enemies/data/traits/). The wave's modifiers can add more (WaveModifier.adds_traits).
+@export var traits: Array[EnemyTrait] = []
 ## Healing it receives (support pulses, Regenerating waves) is multiplied by this. Those heal
 ## a share of max health, so bosses take far less, or a boss would out-heal the players.
 @export_range(0.0, 1.0) var heal_received: float = 1.0
@@ -70,6 +74,11 @@ enum Role { FRONTLINE, RANGED, SWARM, SUPPORT }
 
 func is_boss() -> bool:
 	return not phases.is_empty()
+
+
+## Pure: damage of `type` (a DamageType.Type) it takes is multiplied by this, before modifiers.
+func taken(type: int) -> float:
+	return damage_taken * EnemyTrait.product(traits, type)
 
 
 ## Pure: the points it really gets back from `amount` points of healing (see heal_received).

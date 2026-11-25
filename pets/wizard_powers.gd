@@ -52,7 +52,7 @@ func on_hit(player: Player, enemy: ChaserEnemy, amount: int, now: int) -> void:
 	for index in WizardRules.chain(origin.global_position, places, jumps, data.arc_radius):
 		var target: ChaserEnemy = others[index]
 		var slowed: bool = target.status.is_slowed(now)
-		_deal(target, WizardRules.arc_damage(data, tier, amount, slowed), player.peer_id)
+		_deal(target, WizardRules.arc_damage(data, tier, amount, slowed), player.peer_id, data)
 		path.append(places[index])
 	if path.size() > 2:
 		PetEffects.broadcast(PetEffects.Kind.ARC, path, 0.0, 0.25)
@@ -142,7 +142,8 @@ func _strike_due(now: int) -> void:
 			continue
 		for enemy in still_standing(strike[2]):
 			var boss: bool = enemy.enemy_data.is_boss()
-			_deal(enemy, WizardRules.tempest_damage(wizard[0], enemy.max_health(), boss), strike[1])
+			var damage: int = WizardRules.tempest_damage(wizard[0], enemy.max_health(), boss)
+			_deal(enemy, damage, strike[1], wizard[0])
 			var sky: Vector2 = enemy.global_position + Vector2(0, -220)
 			PetEffects.broadcast(
 				PetEffects.Kind.ARC, PackedVector2Array([sky, enemy.global_position]), 0.0, 0.3
@@ -161,9 +162,9 @@ static func still_standing(marked: Array) -> Array[ChaserEnemy]:
 	return standing
 
 
-func _deal(enemy: ChaserEnemy, damage: int, owner_id: int) -> void:
+func _deal(enemy: ChaserEnemy, damage: int, owner_id: int, data: WizardData) -> void:
 	_dealing = true
-	enemy.hitbox().hit(damage, owner_id)
+	enemy.hitbox().hit(damage, owner_id, Vector2.ZERO, data.damage_type)
 	_dealing = false
 
 

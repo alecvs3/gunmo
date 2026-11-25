@@ -38,6 +38,14 @@ reloading are `shared/components/weapon_component.gd`.
   away; never the shooter or teammates) and tells every peer (`EVENT_BLAST`), who draws
   `explosion_flash.tscn`.
 
+## Damage types
+`WeaponData.damage_type` (Kinetic, Pierce, Blast or Arcane; `shared/components/damage_type.gd`)
+is copied into the host's `Shot` by `Shot.from_weapon` and passed to `HitboxComponent.hit()` by
+`bullet.gd` and `explosion.gd`; enemy traits take more or less of it (`modes/CLAUDE.md`,
+"Counters"). It is never encoded: only the host's bullets deal damage, and the host builds its
+shots from its own `WeaponData`. The rocket launcher is Blast (hit and explosion); the other
+guns are Kinetic. Recipe: `add-damage-type`.
+
 ## Rules that aren't obvious
 - **Only AUTHORITATIVE bullets deal damage.**
 - Bullets draw **under** characters, so a fired bullet doesn't cover the gun: every map puts its

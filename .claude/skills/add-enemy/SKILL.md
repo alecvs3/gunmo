@@ -16,7 +16,10 @@ a range and a lead).
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
    closest type (grunt, runner, brute, shooter, tank, swarmer) and change its numbers:
    `display_name`, `role` (frontline / ranged / swarm / support: the schedule gives each role a
-   share of each wave), `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
+   share of each wave), `color`, `visual_scale`, `max_health`, `traits` (what it is, from
+   `enemies/data/traits/`: Armored for armor Pierce beats, Swarm for small bodies Blast beats;
+   this is how players counter it, recipe `add-damage-type`), `damage_taken` (a flat
+   multiplier on every type, for a boss's thick hide; armor goes in a trait),
    `heal_received` (how much healing it gets; 1.0 for normal enemies),
    `move_speed`, `repath_interval`, the Behaviours group
    (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
@@ -24,7 +27,8 @@ a range and a lead).
    its own stats decide how much it adds to a wave, and bots rank it by that too.
    `split_into` + `split_count` make it die into other enemies (Splitter → Splitling); a
    `HealPulseAttack` makes a support that heals enemies near it (they find each other through
-   the `Groups.ENEMIES` group). It **must** live in `enemies/data/`: clients only load enemy data from
+   the `Groups.ENEMIES` group). Traits with a `kinetic` multiplier change its effective health
+   in the difficulty score (Kinetic is the baseline). It **must** live in `enemies/data/`: clients only load enemy data from
    `Chaser.DATA_FOLDER`.
 2. **Let the waves buy it:** add it to `enemy_types` in `modes/waves/data/default_waves.tres`
    (`WaveSchedule`). `first_wave` decides when it can show up and `spawn_weight` how often; the
@@ -32,7 +36,7 @@ a range and a lead).
    difficulty. To keep it rare or make it required, add an `EnemyLimit` to the schedule's
    `rules` (recipe `tune-wave-difficulty`).
 3. **Tests:** `tests/enemies/test_enemy_data.gd` checks every type is complete and that types
-   play differently. Add to it. `tests/modes/waves/test_wave_composer.gd` checks every default wave still lands on its target and that credits by wave 22 stay put (lower `bounty` values if they don't).
+   play differently. Add to it (with traits: which type beats it). `tests/modes/waves/test_wave_composer.gd` checks every default wave still lands on its target and that credits by wave 22 stay put (lower `bounty` values if they don't).
 4. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR.
    The Difficulty and H M P R S columns show what the new type adds to its waves.
 

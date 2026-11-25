@@ -291,8 +291,8 @@ func max_health() -> int:
 	return _health.max_health
 
 
-## The wave's modifiers change health, speed, armor and regeneration, and tint the enemy so
-## players can read the wave (every peer tints; only the host's numbers matter).
+## The wave's modifiers change health, speed, armor, traits and regeneration, and tint the enemy
+## so players can read the wave (every peer tints; only the host's numbers matter).
 func _apply_modifiers(combined: WaveModifier) -> void:
 	var tinted: Color = enemy_data.color
 	if modifier_mask != 0:
@@ -302,6 +302,7 @@ func _apply_modifiers(combined: WaveModifier) -> void:
 	_health.max_health = combined.scaled_health(enemy_data.max_health)
 	_base_damage_taken = combined.damage_taken_multiplier * enemy_data.damage_taken
 	_health.damage_taken_multiplier = _base_damage_taken
+	_health.type_multipliers = EnemyTrait.profile(enemy_data.traits + combined.adds_traits)
 	_speed = enemy_data.move_speed * combined.speed_multiplier
 	_regen_per_second = combined.regen_per_second * enemy_data.heal_received
 

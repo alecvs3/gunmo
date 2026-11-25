@@ -64,7 +64,8 @@ static func row(
 			var health: int = combined.scaled_health(each.max_health)
 			result.total_health += health
 			result.bounty += each.bounty
-			effective += health / (combined.damage_taken_multiplier * each.damage_taken)
+			var kinetic: int = DamageType.Type.KINETIC
+			effective += health / (combined.taken(kinetic) * each.taken(kinetic))
 	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
 	result.peak_alive = mini(planned.size(), schedule.max_alive)

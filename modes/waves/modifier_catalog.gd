@@ -11,7 +11,8 @@ const MAX_MODIFIERS: int = 8
 @export var modifiers: Array[WaveModifier] = []
 
 @export_group("Caps")
-## However many modifiers stack, the merged numbers stay within these.
+## However many modifiers stack, the merged numbers stay within these. The damage taken floor
+## holds for every damage type (traits included).
 @export_range(1.0, 10.0) var max_health_multiplier: float = 2.5
 @export_range(1.0, 10.0) var max_speed_multiplier: float = 1.8
 @export_range(0.05, 1.0) var min_damage_taken_multiplier: float = 0.4
@@ -77,8 +78,9 @@ func _fits(index: int, mask: int) -> bool:
 	return true
 
 
-## All modifiers in `mask` merged into one: multipliers multiply, regeneration adds up (the
-## order never matters), then the caps apply; the color is their average.
+## All modifiers in `mask` merged into one: multipliers multiply, regeneration adds up, added
+## traits are all kept (one listed twice counts twice), the order never matters; then the caps
+## apply; the color is their average.
 func combined(mask: int) -> WaveModifier:
 	var result := WaveModifier.new()
 	var colors: Array[Color] = []
@@ -90,11 +92,12 @@ func combined(mask: int) -> WaveModifier:
 		result.speed_multiplier *= modifier.speed_multiplier
 		result.damage_taken_multiplier *= modifier.damage_taken_multiplier
 		result.regen_per_second += modifier.regen_per_second
+		result.adds_traits.append_array(modifier.adds_traits)
 		colors.append(modifier.color)
 	result.health_multiplier = minf(result.health_multiplier, max_health_multiplier)
 	result.speed_multiplier = minf(result.speed_multiplier, max_speed_multiplier)
-	result.damage_taken_multiplier = maxf(
-		result.damage_taken_multiplier, min_damage_taken_multiplier
+	result.damage_taken_multiplier = floored_taken(
+		result.damage_taken_multiplier, result.adds_traits, min_damage_taken_multiplier
 	)
 	result.regen_per_second = minf(result.regen_per_second, max_regen_per_second)
 	if not colors.is_empty():
@@ -103,6 +106,17 @@ func combined(mask: int) -> WaveModifier:
 			sum += color
 		result.color = sum / colors.size()
 	return result
+
+
+## Pure: the flat damage taken multiplier, raised just enough that no damage type does less
+## than `minimum` with `traits` on top (with no traits: at least `minimum`).
+static func floored_taken(flat: float, traits: Array[EnemyTrait], minimum: float) -> float:
+	var lowest: float = INF
+	for type in DamageType.COUNT:
+		lowest = minf(lowest, EnemyTrait.product(traits, type))
+	if flat * lowest >= minimum:
+		return flat
+	return minimum / lowest
 
 
 ## "Armored · Fast" for the HUD ("" when none).

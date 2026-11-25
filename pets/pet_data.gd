@@ -14,6 +14,8 @@ const TIERS: int = 5
 @export_multiline var blurb: String = ""
 @export var kind: Kind = Kind.HEALER
 @export var color: Color = Color.WHITE
+## What kind of damage its abilities deal (enemy traits take more or less of it).
+@export var damage_type: DamageType.Type = DamageType.Type.KINETIC
 @export var tiers: Array[PetTier] = []
 
 

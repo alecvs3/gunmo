@@ -33,6 +33,8 @@ enum Projectile { BULLET, ROCKET, PELLET, RIFLE_ROUND, ENEMY_BOLT }
 @export_range(0.0, 64.0) var bullet_radius: float = 4.0
 ## Push given to whatever the bullet hits (px/s along the bullet's path).
 @export_range(0.0, 3000.0) var knockback: float = 0.0
+## What kind of damage its hits and its explosion deal; enemy traits take more or less of it.
+@export var damage_type: DamageType.Type = DamageType.Type.KINETIC
 
 @export_group("Per upgrade level")
 ## What one level of each gun upgrade adds to this gun (shop upgrades on DAMAGE, FIRE_RATE,
