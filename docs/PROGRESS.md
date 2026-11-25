@@ -1260,6 +1260,19 @@ scarce currency. This proves the engine end to end with one branch; the other br
 - Someone joining late starts with no Cores (they only get what is paid after they join).
 - Not played: the Core numbers and node costs are the plan's first draft.
 
+## Menus share one base ✅
+
+The Shop, Pets and Path windows were built separately, so they drifted: the "P: Pets" and
+"O: Path" hints had a thicker outline than "B: Shop" (they looked bold), the windows had
+different padding, and all three could be open at once.
+
+| What | Status | Where |
+|---|---|---|
+| **`HudMenu`:** the base of every pop-up menu: the bottom-right hint (one style, stacked by slot), the dim, the window style, open/close with the menu's key, Esc or a click outside, the sounds, closing when a new phase starts. Hints hide while any menu is open | Done, tested | `ui/hud_menu.gd` |
+| **One menu at a time:** opening a menu closes the others (P while the shop is open switches to Pets) | Done, tested | `ui/hud_menu.gd` |
+| Shop, Pets and Path extend it; all three now use the shop's look (outline 4, window padding 16/12, fill 0.82) | Done, layout test | `ui/shop_panel.gd`, `ui/pet_panel.gd`, `ui/path_panel.gd` |
+| A test finds every menu scene in `ui/` and fails if one looks different or two can be open; recipe `add-menu` for the next one | Done | `tests/ui/test_hud_menus.gd`, `.claude/skills/add-menu/SKILL.md` |
+
 ## Quieter rifle and rocket, new rocket blast sound ✅
 
 | What | Status | Where |

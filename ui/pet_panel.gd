@@ -1,29 +1,17 @@
 class_name PetPanel
-extends Control
-## The Pets menu (Waves): a see-through window like the shop. While the shop is open (the lobby
-## and between waves) a "P: Pets" hint shows; P opens the window, P, Esc or a click outside
-## closes it. On the left the three pets; on the right the chosen pet's five-tier ladder and
-## one big button that adopts it or buys its next tier.
+extends HudMenu
+## The Pets menu (P, Waves). On the left the three pets; on the right the chosen pet's five-tier
+## ladder and one big button that adopts it or buys its next tier. Opening, closing and the look
+## of the window come from HudMenu.
 ## Buying only *asks* (EventBus.shop_purchase_requested with ShopRules.KIND_PET); the host checks
 ## and applies. Your pet, tier and credits come from your own player's replicated state, so a
 ## tier lights up only once the host has confirmed it.
 
-const GOLD := Color(1, 0.85, 0.35, 1)
-const MUTED := Color(0.62, 0.65, 0.7, 1)
-
 var _pets: PetCatalog = PetCatalog.load_default()
-var _open: bool = false
-var _shown: bool = false
-var _phase: int = -1
 var _selected: int = 0
 var _last_owned: Vector2i = Vector2i(-2, 0)
-var _sounds: SoundData = SoundData.load_default()
-var _sound := SoundPlayback.new()
 var _cards: Array[PetCard] = []
 var _rows: Array[PetTierRow] = []
-var _hint := Label.new()
-var _dim := ColorRect.new()
-var _window := PanelContainer.new()
 var _credits := Label.new()
 var _portrait := PetPortrait.new()
 var _name := Label.new()
@@ -31,17 +19,6 @@ var _role := Label.new()
 var _blurb := Label.new()
 var _buy := Button.new()
 var _warning := Label.new()
-
-
-## A rounded box in the menus' style.
-static func box(fill: Color, border: Color, width: int = 1, radius: int = 8) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = fill
-	style.border_color = border
-	style.set_border_width_all(width)
-	style.set_corner_radius_all(radius)
-	style.set_content_margin_all(10.0)
-	return style
 
 
 ## The big button: adopt the pet, buy its next tier, or nothing left to buy.
@@ -64,62 +41,39 @@ static func switch_warning(current: PetData, tier: int, chosen: PetData) -> Stri
 	)
 
 
-func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hide()
-	add_child(_sound)
-	_build_hint()
-	_build_window()
-	_show_detail(_pets.pet(0), 0, false)
-	for card in _cards:
-		card.show_state(0, card.pet == _pets.pet(0))
-	EventBus.match_state_changed.connect(_on_match_state_changed)
-	NetworkManager.session_ended.connect(_on_session_ended.unbind(1))
+func _action() -> StringName:
+	return &"pets"
 
 
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and visible and _shown:
-		_show_window(false)
-		get_viewport().set_input_as_handled()
+func _hint_text() -> String:
+	return "P: Pets"
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("pets") and _open:
-		_show_window(not _shown)
-		get_viewport().set_input_as_handled()
+func _hint_slot() -> int:
+	return 1
 
 
-func _process(_delta: float) -> void:
-	visible = NetworkManager.is_online() and _open
-	_hint.visible = not _shown
-	_dim.visible = _shown
-	_window.visible = _shown
-	var player: Player = Player.find_local(get_tree())
-	if _shown and player != null:
-		_refresh(player)
-
-
-func _show_window(shown: bool) -> void:
-	_shown = shown
-	_sound.play(_sounds.shop_open if shown else _sounds.shop_close)
-	var player: Player = Player.find_local(get_tree())
-	if shown and player != null and player.get_loadout().pet_index >= 0:
+## Opens on your own pet, if you have one.
+func _on_opened(player: Player) -> void:
+	if player != null and player.get_loadout().pet_index >= 0:
 		_selected = player.get_loadout().pet_index
 
 
-func _on_match_state_changed(state: RefCounted) -> void:
-	var match_state := state as MatchNetState
-	_open = match_state.shop_open
-	if match_state.phase != _phase:
-		_phase = match_state.phase
-		_shown = false
-
-
-func _on_session_ended() -> void:
-	_phase = -1
-	_open = false
-	_shown = false
+func _build_content(into: PanelContainer) -> void:
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	into.add_child(column)
+	column.add_child(_build_header())
+	var body := HBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 14)
+	column.add_child(body)
+	body.add_child(_build_list())
+	body.add_child(_build_detail())
+	column.add_child(label("P or Esc to close · the host confirms every purchase", 12, MUTED))
+	_show_detail(_pets.pet(0), 0, false)
+	for card in _cards:
+		card.show_state(0, card.pet == _pets.pet(0))
 
 
 func _select(index: int) -> void:
@@ -175,55 +129,14 @@ func _pop_if_bought(loadout: PlayerLoadout) -> void:
 	_last_owned = now
 
 
-func _build_hint() -> void:
-	_hint.text = "P: Pets"
-	_hint.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_hint.offset_left = -136.0
-	_hint.offset_top = -76.0
-	_hint.offset_right = -16.0
-	_hint.offset_bottom = -48.0
-	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_hint.add_theme_color_override("font_color", GOLD)
-	_hint.add_theme_color_override("font_outline_color", Color.BLACK)
-	_hint.add_theme_constant_override("outline_size", 6)
-	_hint.add_theme_font_size_override("font_size", 18)
-	add_child(_hint)
-
-
-func _build_window() -> void:
-	_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_dim.color = Color(0, 0, 0, 0.4)
-	_dim.gui_input.connect(_on_dim_input)
-	add_child(_dim)
-	_window.anchor_left = 0.08
-	_window.anchor_top = 0.07
-	_window.anchor_right = 0.92
-	_window.anchor_bottom = 0.93
-	_window.add_theme_stylebox_override(
-		"panel", box(Color(0.08, 0.09, 0.11, 0.86), Color(GOLD, 0.35), 1)
-	)
-	add_child(_window)
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 8)
-	_window.add_child(column)
-	column.add_child(_build_header())
-	var body := HBoxContainer.new()
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_theme_constant_override("separation", 14)
-	column.add_child(body)
-	body.add_child(_build_list())
-	body.add_child(_build_detail())
-	column.add_child(_label("P or Esc to close · the host confirms every purchase", 12, MUTED))
-
-
 func _build_header() -> Control:
 	var header := HBoxContainer.new()
 	var titles := VBoxContainer.new()
 	titles.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(titles)
-	titles.add_child(_label("Pets", 24, Color.WHITE))
+	titles.add_child(label("Pets", 24, Color.WHITE))
 	titles.add_child(
-		_label("One pet each. Every tier adds an ability and strengthens the last.", 13, MUTED)
+		label("One pet each. Every tier adds an ability and strengthens the last.", 13, MUTED)
 	)
 	_credits.add_theme_color_override("font_color", GOLD)
 	_credits.add_theme_font_size_override("font_size", 20)
@@ -292,19 +205,3 @@ func _build_ladder() -> Control:
 		ladder.add_child(row)
 		_rows.append(row)
 	return scroll
-
-
-func _label(text: String, font_size: int, color: Color) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", color)
-	return label
-
-
-func _on_dim_input(event: InputEvent) -> void:
-	var click := event as InputEventMouseButton
-	if click != null and click.pressed:
-		_show_window(false)
-		_dim.accept_event()
