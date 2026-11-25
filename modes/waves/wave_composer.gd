@@ -44,7 +44,10 @@ static func plan(
 		draft.fill(target, rng)
 		if best == null or draft.gap(target) < best.gap(target):
 			best = draft
-		if best.gap(target) <= tolerance_for(schedule) or draft.sheet.enemies >= schedule.max_enemies:
+		if (
+			best.gap(target) <= tolerance_for(schedule)
+			or draft.sheet.enemies >= schedule.max_enemies
+		):
 			break
 	return best.enemies(rng)
 

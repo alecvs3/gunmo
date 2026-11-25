@@ -28,8 +28,8 @@ const COVER_COOLDOWN: float = 8.0
 ## A Wizard's hexed enemy counts this much more dangerous (bots focus it).
 const HEXED_DANGER: float = 2.0
 
-## How hard each enemy type is (target danger), loaded once.
-static var _difficulty: DifficultyModel
+## Each enemy type's target danger (BotBrain.danger_of), worked out once.
+static var _danger: Dictionary = {}
 
 @export var profile: BotProfile
 
@@ -134,10 +134,10 @@ static func _danger_of(hitbox: HitboxComponent) -> float:
 	if enemy == null:
 		return 1.0
 	var hexed: bool = enemy.status.is_hexed(NetworkManager.clock.tick)
-	if _difficulty == null:
-		_difficulty = DifficultyModel.load_default()
-	var danger: float = BotBrain.danger_of(enemy.enemy_data, _difficulty)
-	return danger * (HEXED_DANGER if hexed else 1.0)
+	var data: EnemyData = enemy.enemy_data
+	if not _danger.has(data):
+		_danger[data] = BotBrain.danger_of(data, DifficultyModel.load_default())
+	return _danger[data] * (HEXED_DANGER if hexed else 1.0)
 
 
 ## Living players on our own team (co-op), not us.
