@@ -1154,3 +1154,7 @@ changes run no smoke at all.
 - A pull request can pass with its scenarios and still break one it didn't run; the full run on
   main catches it, but only after the merge.
 - The `full-checks` label has to exist on GitHub before it can be added to a PR.
+## Waves starts with 0 bots ✅ (issue #155)
+
+The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
+Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
