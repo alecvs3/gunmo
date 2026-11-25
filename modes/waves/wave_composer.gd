@@ -52,6 +52,22 @@ static func plan(
 	return best.enemies(rng)
 
 
+## Wave `wave` of the match with `match_seed`, as the host will spawn it: its modifiers from
+## their own seed (ModifierCatalog.pick_for_wave), merged, then the enemies from the wave seed.
+## WaveReport and WaveForecast use it, so they always show the wave that really comes.
+static func plan_wave(
+	schedule: WaveSchedule,
+	model: DifficultyModel,
+	catalog: ModifierCatalog,
+	match_seed: int,
+	wave: int
+) -> Array[EnemyData]:
+	var merged: WaveModifier = catalog.combined(catalog.pick_for_wave(schedule, match_seed, wave))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = wave_seed(match_seed, wave)
+	return plan(schedule, model, wave, rng, merged)
+
+
 static func target_for(schedule: WaveSchedule, wave: int) -> float:
 	return schedule.difficulty.target(wave, schedule) if schedule.difficulty != null else 0.0
 

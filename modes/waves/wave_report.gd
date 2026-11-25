@@ -51,12 +51,12 @@ static func row(
 ) -> Row:
 	var result := Row.new()
 	result.wave = wave
-	var rng := RandomNumberGenerator.new()
-	rng.seed = WaveComposer.wave_seed(match_seed, wave)
 	result.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
 	result.modifiers = catalog.names(result.modifier_mask)
 	var combined: WaveModifier = catalog.combined(result.modifier_mask)
-	var planned: Array[EnemyData] = WaveComposer.plan(schedule, model, wave, rng, combined)
+	var planned: Array[EnemyData] = WaveComposer.plan_wave(
+		schedule, model, catalog, match_seed, wave
+	)
 	var effective: float = 0.0
 	for type in planned:
 		result.counts[type.display_name] = result.counts.get(type.display_name, 0) + 1
