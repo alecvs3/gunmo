@@ -64,3 +64,19 @@ func test_results_detail() -> void:
 	state.phase = GameMode.Phase.DEFEAT
 	state.wave = 9
 	assert_eq(ResultsScreen.detail_text(state), "The team fell on wave 9 of 25.")
+
+
+func test_forecast_line_shows_the_strongest_axes_modifiers_and_boss() -> void:
+	var model: DifficultyModel = DifficultyModel.load_default()
+	var catalog: ModifierCatalog = ModifierCatalog.load_default()
+	assert_eq(Hud.forecast_line(state, model, catalog), "", "no forecast, no line")
+	var next := WaveForecast.new()
+	next.scores = PackedFloat32Array([9.0, 2.0, 1.0, 5.0, 0.0])
+	next.modifier_mask = 0b1
+	next.boss = true
+	state.set_forecast(next)
+	var armored: String = catalog.names(0b1)
+	assert_eq(
+		Hud.forecast_line(state, model, catalog),
+		"Next: Toughness ▲▲ · Ranged ▲ · %s · Boss" % armored
+	)

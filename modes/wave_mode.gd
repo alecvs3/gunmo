@@ -25,6 +25,8 @@ var _call_peers: Dictionary = {}
 var _match_seed: int = 0
 var _modifier_mask: int = 0
 var _modifiers: ModifierCatalog = ModifierCatalog.load_default()
+## Host: the next wave, shown in the lobby and breaks (null when none comes).
+var _forecast: WaveForecast = null
 var _downed: DownedPlayers = null
 ## Host: the pets' abilities.
 var _powers: PetPowers = null
@@ -84,6 +86,7 @@ func _start() -> void:
 	_match_seed = randi()
 	_ready_peers.clear()
 	_spawner.stop()
+	_forecast_wave(1)
 
 
 func _handle(event: WaveFlow.Event) -> void:
@@ -100,10 +103,21 @@ func _handle(event: WaveFlow.Event) -> void:
 			_downed.clear()
 			_pay_wave_bonus()
 			_powers.on_wave_cleared()
+			_forecast_wave(_flow.wave + 1)
 			if settings.revive_at_break:
 				_revive(false)
 		WaveFlow.Event.VICTORY, WaveFlow.Event.DEFEAT:
 			_spawner.stop()
+
+
+## Works out wave `wave` ahead for the forecast (none past the last wave).
+func _forecast_wave(wave: int) -> void:
+	_forecast = null
+	var schedule: WaveSchedule = settings.wave_schedule
+	if wave <= schedule.total_waves:
+		_forecast = WaveForecast.of(
+			schedule, DifficultyModel.load_default(), _modifiers, _match_seed, wave
+		)
 
 
 ## The current wave's modifiers and enemies (the same seed gives the same wave).
@@ -124,7 +138,9 @@ func call_open() -> bool:
 	if not multiplayer.is_server():
 		return state.call_open
 	var active: bool = _flow.phase == GameMode.Phase.ACTIVE
-	return EarlyCall.can_call(active, _flow.wave, _flow.total_waves, _spawner.is_finished())
+	return EarlyCall.can_call(
+		active, _flow.wave, _flow.total_waves, _spawner.is_finished(), settings.early_call_last_wave
+	)
 
 
 ## Vote to call the next wave early (or take it back). The host applies it; a client asks.
@@ -158,7 +174,7 @@ func _on_input(event: InputEvent) -> bool:
 ## Calling early: the called-away wave's clear bonus plus the early bonus, to everyone standing.
 func _pay_early_call() -> void:
 	_pay_wave_bonus_for(_flow.wave - 1)
-	var bonus: int = EarlyCall.bonus(level.enemy_count(), settings.break_seconds, settings)
+	var bonus: int = EarlyCall.bonus(_spawner.alive_count(), settings.break_seconds, settings)
 	for player in level.players():
 		if player.is_alive:
 			player.get_wallet().add(bonus)
@@ -247,11 +263,25 @@ func _pay_wave_bonus() -> void:
 	_pay_wave_bonus_for(_flow.wave)
 
 
+## The wave's clear bonus, then interest on what each player now holds, to everyone standing.
 func _pay_wave_bonus_for(wave: int) -> void:
 	var bonus: int = settings.wave_clear_bonus + settings.wave_clear_bonus_per_wave * wave
 	for player in level.players():
 		if player.is_alive:
 			player.get_wallet().add(bonus)
+	_pay_interest(wave)
+
+
+func _pay_interest(wave: int) -> void:
+	var paid: int = 0
+	for player in level.players():
+		if player.is_alive:
+			var wallet: WalletComponent = player.get_wallet()
+			var interest: int = Interest.amount(wallet.credits, settings)
+			wallet.add(interest)
+			paid += interest
+	if paid > 0:
+		NetLog.write("wave %d interest: +%d credits in all" % [wave, paid])
 
 
 func _on_enemy_killed(enemy: Node2D, killer_peer_id: int) -> void:
@@ -369,6 +399,8 @@ func _refresh_state(player_count: int, living: int, ready: int) -> void:
 	state.living_count = living
 	state.ready_count = ready
 	state.modifier_mask = _modifier_mask if _flow.phase == GameMode.Phase.ACTIVE else 0
+	var waiting: bool = _flow.phase in [GameMode.Phase.LOBBY, GameMode.Phase.BREAK]
+	state.set_forecast(_forecast if waiting else null)
 	state.call_open = call_open()
 	state.call_votes = _count_votes(level.players(), _call_peers) if state.call_open else 0
 	publish_state()
