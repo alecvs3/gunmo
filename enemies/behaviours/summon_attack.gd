@@ -13,6 +13,12 @@ func has_room(alive: int) -> bool:
 	return alive + count <= max_alive
 
 
+func add_stats(stats: EnemyStats, weight: float) -> void:
+	var called: EnemyStats = EnemyStats.of(into, stats.aim_cone_degrees, stats.depth + 1)
+	var health: float = called.value(EnemyStats.HEALTH) * count
+	stats.add(EnemyStats.SUMMONED_HEALTH, weight * health / cycle_seconds())
+
+
 func perform(enemy: Node2D, _target: Node2D, _touching: Array[HitboxComponent]) -> bool:
 	if into == null or not has_room(enemy.get_tree().get_nodes_in_group(Groups.ENEMIES).size()):
 		return false

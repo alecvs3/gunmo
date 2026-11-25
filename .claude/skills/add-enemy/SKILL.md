@@ -30,6 +30,7 @@ a range and a lead).
 3. **Tests:** `tests/enemies/test_enemy_data.gd` checks every type is complete and that types
    play differently. Add to it. If wave budgets change, check `tests/modes/waves/test_wave_budget.gd`.
 4. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR.
+   The Difficulty and H M P R S columns show what the new type adds to its waves.
 
 ## A boss
 A boss is an `EnemyData` in `enemies/data/bosses/` with `phases` (`BossPhase`: a health
@@ -49,6 +50,8 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
   can_see)` (pure) and `perform(enemy, target, touching)` (host; return true to restart the
   cooldown). Tuning goes in the behaviour's `@export`s, not in `EnemyData`.
 - Put a GUT test for its pure decisions in `tests/enemies/test_enemy_behaviours.gd`.
+- Override `add_stats(stats, weight)` so the wave difficulty score sees what the attack does
+  (damage, healing or summons per second; recipe `tune-wave-difficulty`).
 - **AI runs only on the host** (rule 3). Clients only draw it.
 - Shots go through EventBus `shot_fired` like a player's, so `ProjectileSystem` handles them.
 - Death fires EventBus `enemy_killed`. Never call into the mode directly.

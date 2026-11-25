@@ -1,0 +1,53 @@
+[gd_resource type="Resource" script_class="DifficultyModel" load_steps=13 format=3]
+
+[ext_resource type="Script" path="res://modes/waves/difficulty/difficulty_model.gd" id="1_model"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/difficulty_axis.gd" id="2_axis"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/toughness_axis.gd" id="3_tough"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/melee_axis.gd" id="4_melee"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/pressure_axis.gd" id="5_pressure"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/ranged_axis.gd" id="6_ranged"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/sustain_axis.gd" id="7_sustain"]
+
+[sub_resource type="Resource" id="Resource_tough"]
+script = ExtResource("3_tough")
+display_name = "Toughness"
+short_name = "H"
+weight = 1.0
+reference = 9800.0
+
+[sub_resource type="Resource" id="Resource_melee"]
+script = ExtResource("4_melee")
+display_name = "Melee"
+short_name = "M"
+weight = 1.0
+reference = 670.0
+
+[sub_resource type="Resource" id="Resource_pressure"]
+script = ExtResource("5_pressure")
+display_name = "Pressure"
+short_name = "P"
+weight = 0.8
+reference = 73.0
+reference_speed = 140.0
+
+[sub_resource type="Resource" id="Resource_ranged"]
+script = ExtResource("6_ranged")
+display_name = "Ranged"
+short_name = "R"
+weight = 1.0
+reference = 73.0
+
+[sub_resource type="Resource" id="Resource_sustain"]
+script = ExtResource("7_sustain")
+display_name = "Sustain"
+short_name = "S"
+weight = 0.7
+reference = 245.0
+allies_per_pulse = 3.0
+
+[resource]
+script = ExtResource("1_model")
+axes = Array[ExtResource("2_axis")]([SubResource("Resource_tough"), SubResource("Resource_melee"), SubResource("Resource_pressure"), SubResource("Resource_ranged"), SubResource("Resource_sustain")])
+exponent = 0.7
+scale = 10.0
+aim_cone_degrees = 30.0

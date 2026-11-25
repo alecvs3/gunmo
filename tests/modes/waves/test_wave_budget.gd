@@ -162,7 +162,7 @@ func test_default_curve_rises_every_wave_without_spikes() -> void:
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	for seed_value in 20:
 		var previous: float = 0.0
-		for row in WaveReport.build(real, catalog, seed_value):
+		for row in WaveReport.build(real, catalog, DifficultyModel.load_default(), seed_value):
 			var label: String = "seed %d wave %d" % [seed_value, row.wave]
 			assert_gt(row.threat, previous, label + " rises")
 			assert_gt(row.threat, row.budget - 3.0, label + " spends its budget (no dips)")
@@ -179,7 +179,9 @@ func test_late_default_waves_have_every_role() -> void:
 	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	for seed_value in 10:
-		for row in WaveReport.build(real, catalog, seed_value).slice(19):
+		for row in (
+			WaveReport.build(real, catalog, DifficultyModel.load_default(), seed_value).slice(19)
+		):
 			if real.boss_for(row.wave) != null:
 				continue
 			for name in ["Shooter", "Swarmer", "Support"]:

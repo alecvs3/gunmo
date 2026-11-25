@@ -15,11 +15,12 @@ func _initialize() -> void:
 		printerr("wave report: need a WaveSchedule (--schedule) and a whole-number --seed")
 		quit(1)
 		return
+	var model: DifficultyModel = DifficultyModel.load_default()
 	var rows: Array[WaveReport.Row] = WaveReport.build(
-		schedule, ModifierCatalog.load_default(), seed_text.to_int()
+		schedule, ModifierCatalog.load_default(), model, seed_text.to_int()
 	)
 	print("Wave report: %s, seed %s, max_alive %d" % [path, seed_text, schedule.max_alive])
-	print(WaveReport.format(schedule, rows))
+	print(WaveReport.format(schedule, model, rows))
 	quit(0)
 
 

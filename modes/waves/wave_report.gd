@@ -30,17 +30,28 @@ class Row:
 	var peak_alive: int = 0
 	## Seconds from the first spawn to the last when max_alive never holds one back.
 	var spawn_seconds: float = 0.0
+	## The difficulty the schedule's curve aims for (0 = no curve) and the one this wave has
+	## (DifficultyModel), with each axis's score.
+	var target: float = 0.0
+	var difficulty: float = 0.0
+	var axis_scores := PackedFloat32Array()
 
 
-static func build(schedule: WaveSchedule, catalog: ModifierCatalog, match_seed: int) -> Array[Row]:
+static func build(
+	schedule: WaveSchedule, catalog: ModifierCatalog, model: DifficultyModel, match_seed: int
+) -> Array[Row]:
 	var rows: Array[Row] = []
 	for wave in range(1, schedule.total_waves + 1):
-		rows.append(row(schedule, catalog, match_seed, wave))
+		rows.append(row(schedule, catalog, model, match_seed, wave))
 	return rows
 
 
 static func row(
-	schedule: WaveSchedule, catalog: ModifierCatalog, match_seed: int, wave: int
+	schedule: WaveSchedule,
+	catalog: ModifierCatalog,
+	model: DifficultyModel,
+	match_seed: int,
+	wave: int
 ) -> Row:
 	var result := Row.new()
 	result.wave = wave
@@ -65,7 +76,22 @@ static func row(
 		result.threat += type.cost * result.threat_factor
 	result.peak_alive = mini(planned.size(), schedule.max_alive)
 	result.spawn_seconds = maxi(planned.size() - 1, 0) * schedule.spawn_interval(wave)
+	_measure(result, schedule, model, planned, combined)
 	return result
+
+
+## The wave's difficulty (DifficultyModel) and the target its schedule's curve aims for.
+static func _measure(
+	result: Row,
+	schedule: WaveSchedule,
+	model: DifficultyModel,
+	planned: Array[EnemyData],
+	combined: WaveModifier
+) -> void:
+	if schedule.difficulty != null:
+		result.target = schedule.difficulty.target(result.wave, schedule)
+	result.axis_scores = model.scores(model.sheet_for(planned), combined)
+	result.difficulty = model.length(result.axis_scores)
 
 
 ## `type` and every enemy it splits into when it dies (and they into theirs, a few levels deep).
@@ -77,13 +103,17 @@ static func with_splits(type: EnemyData, depth: int = 0) -> Array[EnemyData]:
 	return found
 
 
-## The rows as a markdown table, one column per enemy type of the schedule.
-static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
+## The rows as a markdown table: target and difficulty, one column per axis of `model`, then
+## one per enemy type of the schedule.
+static func format(schedule: WaveSchedule, model: DifficultyModel, rows: Array[Row]) -> String:
 	var names := PackedStringArray()
 	for type in schedule.enemy_types + schedule.bosses:
 		if type != null and not names.has(type.display_name):
 			names.append(type.display_name)
-	var header := PackedStringArray(["Wave", "Budget", "Threat", "Enemies"])
+	var header := PackedStringArray(["Wave", "Target", "Difficulty"])
+	for axis in model.axes:
+		header.append(axis.short_name)
+	header.append_array(["Budget", "Threat", "Enemies"])
 	header.append_array(names)
 	header.append_array(["Health", "Effective", "Peak alive", "Spawn s", "Modifiers"])
 	var lines := PackedStringArray([_line(header), _line(_rule(header.size()))])
@@ -93,9 +123,12 @@ static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
 
 
 static func _cells(each: Row, names: PackedStringArray) -> PackedStringArray:
-	var cells := PackedStringArray(
-		["%d" % each.wave, "%.1f" % each.budget, "%.1f" % each.threat, "%d" % each.enemies]
-	)
+	var cells := PackedStringArray(["%d" % each.wave])
+	cells.append("%.2f" % each.target if each.target > 0.0 else "-")
+	cells.append("%.2f" % each.difficulty)
+	for score in each.axis_scores:
+		cells.append("%.1f" % score)
+	cells.append_array(["%.1f" % each.budget, "%.1f" % each.threat, "%d" % each.enemies])
 	for name in names:
 		cells.append("%d" % each.counts.get(name, 0))
 	(

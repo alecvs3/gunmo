@@ -28,10 +28,37 @@ reviewed by both developers.
 | `waves/early_call.gd` | Calling the next wave early: when it's allowed, the vote, the bonus |
 | `waves/revive_rules.gd` | Downed and revive: bleed-out timer, revive bar, range, interruption (`waves/downed_players.gd` applies it on the host) |
 | `waves/wave_report.gd` | The difficulty curve on paper, from the same functions (`tools/wave_report.ps1`) |
+| `waves/difficulty/difficulty_model.gd` | How hard a wave is, 0–10, from its enemies' own numbers (see "Wave difficulty" below) |
+| `waves/difficulty/difficulty_curve.gd` | The difficulty each wave aims for |
 | `gun_game/gun_game_ladder.gd` | Kills per tier, the last tier, who has won |
 | `gun_game/spawn_protection.gd` | Spawn protection: how long, and that firing ends it |
 
 Put new rules in a pure class like these and test it. The mode node should only wire it up.
+
+## Wave difficulty
+Every wave gets a score from 0 to 10 (wave 25 ≈ 10) that depends only on its enemies and
+modifiers, never on the players. Recipe: `tune-wave-difficulty`.
+- **Stats:** `enemies/enemy_stats.gd` turns an `EnemyData` into numbers per second (effective
+  health, melee and ranged damage, healing, summons, speed × size). Each attack reports its own
+  part in `add_stats()`. Splits count as part of the enemy, and boss phases count by the share
+  of health they cover.
+- **Axes:** `waves/difficulty/*_axis.gd`, listed in `waves/data/difficulty_model.tres`. Each
+  reads the wave's summed stats (`WaveSheet`) and its merged modifier:
+
+| Axis | Raw amount | Modifiers that move it |
+|---|---|---|
+| H Toughness | effective health | health, damage taken |
+| M Melee | contact damage per second | |
+| P Pressure | Σ speed × body size / 140 | speed |
+| R Ranged | projectile damage per second that can hit (fans and rings: shots inside a 30° cone) | |
+| S Sustain | support pulses (on 3 average allies) + regeneration + summons, health per second | regeneration, toughness |
+
+- **Score:** each axis scores `10 × (raw / reference) ^ 0.7`; the difficulty is the weighted
+  length `√(Σ weight × score² / Σ weight)`. Every axis at its reference = 10.
+- **Target:** `WaveSchedule.difficulty` (a `DifficultyCurve`): a straight trend, boss waves a
+  little above it, the two waves after a boss a little below, `overrides` to pin a wave.
+- `tools/wave_report.ps1` prints the target, the difficulty and every axis for each wave. The
+  waves are still bought from the budget (`WaveBudget`) until the composer replaces it.
 
 ## MatchNetState fields by mode
 `shared/network/states/match_net_state.gd` holds both modes' fields in one 26-byte state.
@@ -48,7 +75,7 @@ Host-to-client events: `GunGameMode.KILL_FEED_TOPIC` (3) reports each kill to ev
 (ProjectileSystem uses topic 1).
 
 ## Recipes
-`add-game-mode`, `add-wave-modifier`, `add-client-request` (in `.claude/skills/`).
+`add-game-mode`, `add-wave-modifier`, `tune-wave-difficulty`, `add-client-request` (in `.claude/skills/`).
 
 ## Tests
 `tests/modes/`, plus smoke scenarios C (wave loop), D (shop) and E (gun game).

@@ -1154,6 +1154,29 @@ changes run no smoke at all.
 - A pull request can pass with its scenarios and still break one it didn't run; the full run on
   main catches it, but only after the merge.
 - The `full-checks` label has to exist on GitHub before it can be added to a PR.
+## Wave difficulty 1: every wave measured on a 0–10 scale ✅ (issue #147)
+
+Plan: https://claude.ai/artifact/TWnaN1PmUgMJ38VWhFugNw. This part only measures; the waves
+are still bought from the budget. The next part builds each wave to hit its target.
+
+| What | Status | Where |
+|---|---|---|
+| Each enemy type as numbers per second: effective health (armor, splits), melee and ranged damage (fans and rings: shots inside a 30° cone; windups slow the cycle), healing, summons, speed × size. Each attack reports its own part (`add_stats`); boss phases count by the share of health they cover | Done, tested | `enemies/enemy_stats.gd`, `enemies/behaviours/*_attack.gd` |
+| Five axes: Toughness, Melee, Pressure, Ranged, Sustain. Each scores `10 × (raw / reference) ^ 0.7`; the difficulty is their weighted length (every axis at its reference = 10). Modifiers move the axes they touch instead of being their own axis | Done, tested | `modes/waves/difficulty/`, `modes/waves/data/difficulty_model.tres` |
+| The target curve: a straight trend from 2.05 (wave 1) to 10 (wave 25); boss waves +0.4, the two waves after a boss −0.3 and −0.15 (a boss wave is a little harder than the next); the final wave 10.25 | Done, tested | `modes/waves/difficulty/difficulty_curve.gd`, `default_waves.tres` |
+| The target is **about 15% above today's waves** (fitted line of today's scores × 1.15), as asked | Data | same |
+| Wave report: Target, Difficulty and an H M P R S column per wave | Done, tested | `modes/waves/wave_report.gd`, `tools/wave_report.gd` |
+| Recipe for tuning it, adding a category or recalibrating; `add-enemy` asks new attacks for `add_stats` | Done | `.claude/skills/tune-wave-difficulty/`, `modes/CLAUDE.md` |
+
+**What the score shows about today's curve (seed 1):** it zigzags. Boss wave 10 scores 4.3 but
+wave 11 scores 5.7; wave 13 is 6.5 and wave 16 is 5.0; wave 23 (9.2) beats the final wave (8.9),
+where the Overlord takes most of the budget and little stands around it.
+
+### Known limitations
+- The weights and references are a first calibration, fitted to today's waves; playtests will move
+  them. The score can't see pathing, focus fire or how readable a telegraph is.
+- Gameplay is unchanged until the next part (the composer) uses the target.
+
 ## Waves starts with 0 bots ✅ (issue #155)
 
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for

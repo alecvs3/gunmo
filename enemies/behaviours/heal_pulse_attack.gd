@@ -23,6 +23,10 @@ func wants_to_attack(cooldown_left: float, _distance: float, _can_see: bool) -> 
 	return cooldown_left <= 0.0
 
 
+func add_stats(stats: EnemyStats, weight: float) -> void:
+	stats.add(EnemyStats.HEAL_SHARE, weight * heal_share / cycle_seconds())
+
+
 func perform(enemy: Node2D, _target: Node2D, _touching: Array[HitboxComponent]) -> bool:
 	for node in enemy.get_tree().get_nodes_in_group(Groups.ENEMIES):
 		var other := node as ChaserEnemy
