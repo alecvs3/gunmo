@@ -18,7 +18,9 @@ func allows(draft: WaveDraft, type: EnemyData) -> bool:
 func pull(draft: WaveDraft, type: EnemyData) -> float:
 	if min_share <= 0.0 or axis >= draft.model.axes.size():
 		return 1.0
-	var now: PackedFloat32Array = draft.model.shares(draft.model.scores(draft.sheet, draft.modifier))
+	var now: PackedFloat32Array = draft.model.shares(
+		draft.model.scores(draft.sheet, draft.modifier)
+	)
 	if _share(now) >= min_share:
 		return 1.0
 	return push if _share(draft.shares_with(type)) > _share(now) else 1.0

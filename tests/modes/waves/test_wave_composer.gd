@@ -1,11 +1,14 @@
 extends GutTest
 
+const DEFAULT_SCHEDULE: String = "res://modes/waves/data/default_waves.tres"
+
 var schedule: WaveSchedule
 var model: DifficultyModel
 var none := WaveModifier.new()
 var grunt: EnemyData
 var runner: EnemyData
 var swarmer: EnemyData
+var shooter: EnemyData
 
 
 func _rng(seed_value: int = 7) -> RandomNumberGenerator:
@@ -28,6 +31,8 @@ func before_each() -> void:
 	runner = load("res://enemies/data/runner.tres")
 	swarmer = load("res://enemies/data/swarmer.tres").duplicate()
 	swarmer.first_wave = 1
+	shooter = load("res://enemies/data/shooter.tres").duplicate()
+	shooter.first_wave = 1
 	schedule = WaveSchedule.new()
 	schedule.total_waves = 5
 	schedule.difficulty = DifficultyCurve.new()
@@ -119,8 +124,6 @@ func test_an_axis_limit_caps_its_share() -> void:
 
 
 func test_role_shares_pull_toward_their_role() -> void:
-	var shooter: EnemyData = load("res://enemies/data/shooter.tres").duplicate()
-	shooter.first_wave = 1
 	schedule.enemy_types.assign([grunt, shooter])
 	schedule.shares_first = PackedFloat32Array([0.0, 1.0, 0.0, 0.0])
 	schedule.shares_last = schedule.shares_first
@@ -134,7 +137,7 @@ func test_role_shares_pull_toward_their_role() -> void:
 
 
 func test_every_default_wave_lands_near_its_target() -> void:
-	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	for seed_value in 20:
 		for wave in range(1, real.total_waves + 1):
@@ -151,7 +154,9 @@ func test_every_default_wave_lands_near_its_target() -> void:
 
 
 func test_wave_seed_is_match_seed_and_wave() -> void:
-	assert_eq(WaveComposer.wave_seed(99, 7), hash([99, 7]), "same seed as before: replays unchanged")
+	assert_eq(
+		WaveComposer.wave_seed(99, 7), hash([99, 7]), "same seed as before: replays unchanged"
+	)
 	assert_ne(WaveComposer.wave_seed(99, 7), WaveComposer.wave_seed(99, 8))
 
 
@@ -168,7 +173,6 @@ func test_role_shares_blend_and_skip_roles_without_types() -> void:
 	schedule.total_waves = 25
 	schedule.shares_first = PackedFloat32Array([1.0, 0.0, 0.0, 0.0])
 	schedule.shares_last = PackedFloat32Array([0.5, 0.3, 0.2, 0.0])
-	var shooter: EnemyData = load("res://enemies/data/shooter.tres")
 	var types: Array[EnemyData] = [grunt, shooter]
 	var last: PackedFloat32Array = WaveDraft.role_shares(schedule, 25, types)
 	assert_almost_eq(last[EnemyData.Role.FRONTLINE], 0.5 / 0.8, 1e-4, "no swarm type: its share")
@@ -184,7 +188,7 @@ func test_max_enemies_stops_an_unreachable_target() -> void:
 
 
 func test_default_schedule_shape() -> void:
-	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	assert_eq(real.total_waves, 25)
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	var rows: Array[WaveReport.Row] = WaveReport.build(real, catalog, model, 1)
@@ -195,7 +199,7 @@ func test_default_schedule_shape() -> void:
 ## Boss waves put much of their difficulty in the boss, so they may skip a role. Swarms have
 ## the smallest share (10%), so a late wave now and then has none.
 func test_late_default_waves_have_every_role() -> void:
-	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	var waves: int = 0
 	var swarms: int = 0
@@ -215,7 +219,7 @@ func test_late_default_waves_have_every_role() -> void:
 ## included), so maxing both upgrades (~9,500) and pets (~4,000) is impossible. Before the
 ## composer, two players each got about 8,650 from kills and clear bonuses by wave 22: keep it.
 func test_credits_by_wave_22_stay_where_the_balance_pass_left_them() -> void:
-	var real: WaveSchedule = load("res://modes/waves/data/default_waves.tres")
+	var real: WaveSchedule = load(DEFAULT_SCHEDULE)
 	var settings: MatchSettings = load("res://modes/data/default_match.tres")
 	var catalog: ModifierCatalog = ModifierCatalog.load_default()
 	var totals: Array[float] = []

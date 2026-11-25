@@ -1176,3 +1176,22 @@ where the Overlord takes most of the budget and little stands around it.
 - The weights and references are a first calibration, fitted to today's waves; playtests will move
   them. The score can't see pathing, focus fire or how readable a telegraph is.
 - Gameplay is unchanged until the next part (the composer) uses the target.
+
+## Wave difficulty 2: each wave built to hit its target ⚠️ (issue #151; playtests to do)
+
+The budget is gone: every wave is built to land on the difficulty its curve sets (part 1, #147).
+
+| What | Status | Where |
+|---|---|---|
+| **The composer:** the boss first, then every minimum the rules ask for, then random types (`spawn_weight`, pulled toward the role shares by each type's solo difficulty) while the wave stays under target + 0.3, until it reaches the target; 4 tries keep the closest. Same seed, same wave | Done, tested | `modes/waves/wave_composer.gd`, `modes/waves/wave_draft.gd` |
+| **Rules:** `EnemyLimit` (min/max of one type) and `AxisLimit` (an axis's share of the difficulty: a cap, or a minimum that makes a themed wave), each for a wave range. None in the default schedule yet | Done, tested | `modes/waves/difficulty/`, `WaveSchedule.rules` |
+| Removed: `WaveBudget`, `base_budget`/`budget_growth`/`budget_curve`, `ModifierCatalog.threat()`. Modifiers act through the score: a Tough wave gets fewer enemies | Done | |
+| **15% harder:** every default wave (20 seeds) lands within 0.3 of its target, about 15% above the old waves. Boss waves sit a little above the next wave (wave 10: 5.43, wave 11: 5.06) | Done, tested | `tests/modes/waves/test_wave_composer.gd` |
+| **Credits unchanged:** more enemies paid about 29% more bounty, which would have undone most of the 15%. Every bounty × 0.78 (Grunt 10 → 8, Tank 90 → 70, Warden 900 → 700...), so two players still earn about 8,650 each from kills and clear bonuses by wave 22, as after #139 (tested) | Done, tested | `enemies/data/*.tres` |
+| Wave report: a Bounty column instead of Budget and Threat | Done | `modes/waves/wave_report.gd` |
+
+### Known limitations
+- **Not played.** How 15% harder feels, and whether Shooters and Supports showing up more often in
+  waves 6–12 than before reads well, needs the playtests.
+- A target is only reached in steps of one enemy, so waves land up to 0.3 above or below it.
+- `EnemyData.cost` is still read by the bots (target danger); the next part replaces it.

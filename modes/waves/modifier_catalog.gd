@@ -17,6 +17,7 @@ const MAX_MODIFIERS: int = 8
 @export_range(0.05, 1.0) var min_damage_taken_multiplier: float = 0.4
 @export_range(0.0, 1.0) var max_regen_per_second: float = 0.08
 
+
 static func load_default() -> ModifierCatalog:
 	return load(DEFAULT_PATH)
 
