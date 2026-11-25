@@ -102,6 +102,29 @@ func test_armor_scales_damage_but_never_below_one() -> void:
 	assert_eq(health.current_health, 87, "a hit always does at least 1")
 
 
+func test_damage_type_uses_its_own_multiplier_on_top_of_armor() -> void:
+	health.type_multipliers = PackedFloat64Array([0.6, 1.3, 0.7, 1.0])
+	health.take_damage(20, 2, DamageType.Type.PIERCE)
+	assert_eq(health.current_health, 74)
+	health.take_damage(20, 2)
+	assert_eq(health.current_health, 62, "Kinetic by default")
+	health.damage_taken_multiplier = 0.5
+	health.take_damage(20, 2, DamageType.Type.BLAST)
+	assert_eq(health.current_health, 55, "20 x 0.5 x 0.7")
+
+
+func test_no_type_multipliers_take_every_type_fully() -> void:
+	for type in DamageType.COUNT:
+		assert_eq(health.type_factor(type), 1.0)
+	health.take_damage(30, 1, DamageType.Type.ARCANE)
+	assert_eq(health.current_health, 70)
+
+
+func test_scaled_damage_rounds_and_never_drops_below_one() -> void:
+	assert_eq(HealthComponent.scaled_damage(25, 1.3), 33)
+	assert_eq(HealthComponent.scaled_damage(1, 0.36), 1)
+
+
 func test_invulnerable_takes_no_damage() -> void:
 	health.invulnerable = true
 	health.take_damage(50, 3)

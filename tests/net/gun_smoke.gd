@@ -7,7 +7,9 @@ extends "res://tests/net/smoke_script.gd"
 ##   3. then everyone fights until someone finishes the ladder: both sides see VICTORY with
 ##      the same winner, who is on the last gun; somebody climbed a tier on the way
 ##      and the results screen names the winner next to a scoreboard of all 4 players;
-##      the client saw rockets explode (the host's blasts reach it)
+##      the client saw rockets explode (the host's blasts reach it); every rocket the host
+##      simulated deals Blast damage and every other bullet Kinetic (the host's own shots,
+##      rebuilt from its WeaponData, decide the damage type; it is never sent)
 ##   4. the host restarts: both sides see the match running again with every tier back at 0
 ## Role botduel (its own port, + DUEL_PORT_OFFSET): a dedicated server where a Hard bot and a
 ## Normal bot fight each other with SMGs for DUEL_SECONDS; it prints each bot's kills, shots and
@@ -27,11 +29,18 @@ const DUEL_SECONDS: float = 45.0
 ## Bot 1 takes the first profile (Hard), bot 2 the second (Normal).
 const HARD_BOT: int = -1
 const NORMAL_BOT: int = -2
+## WeaponData.Projectile.ROCKET, DamageType.Type.KINETIC and BLAST (no project class names here).
+const ROCKET_PROJECTILE: int = 1
+const KINETIC: int = 0
+const BLAST: int = 2
 
 var _state: RefCounted = null
 var _winner_id: int = 0
 var _highest_tier: int = 0
 var _blasts_seen: int = 0
+## Host: rockets fired, and shots whose damage type didn't fit their gun.
+var _rockets_fired: int = 0
+var _wrong_types: int = 0
 ## Kill feed entries seen ("killer>victim:weapon"), until the match is won.
 var _feed: PackedStringArray = []
 var _feed_closed: bool = false
@@ -59,6 +68,7 @@ func _run_host() -> void:
 	root.get_node("Main").call("_load_match_settings", MATCH_PATH)
 	net.set_local_name(HOST_NAME)
 	_check(net.host(_port) == OK, "host() failed")
+	root.get_node("EventBus").shot_fired.connect(_on_host_shot)
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
 	await _wait_until(func() -> bool: return _players().size() == 4, 5.0)
@@ -68,6 +78,9 @@ func _run_host() -> void:
 	_check(_bot_kills() > 0, "the bots never killed anyone")
 	await _fight_until_winner(95.0)
 	_info("winner id %d" % _winner_id)
+	_info("rockets fired %d, shots with the wrong damage type %d" % [_rockets_fired, _wrong_types])
+	_check(_rockets_fired > 0, "nobody fired a rocket on the host")
+	_check(_wrong_types == 0, "a shot's damage type didn't match its gun (rocket = Blast)")
 	await _report_feed()
 	await create_timer(0.5).timeout
 	root.get_node("EventBus").match_restart_requested.emit()
@@ -95,6 +108,14 @@ func _run_client() -> void:
 	await _wait_until(func() -> bool: return _is_phase("ACTIVE"), 10.0)
 	await _check_restarted()
 	await _wait_until(func() -> bool: return not net.is_online(), 15.0)
+
+
+func _on_host_shot(shot: RefCounted) -> void:
+	var rocket: bool = shot.get("projectile") == ROCKET_PROJECTILE
+	if rocket:
+		_rockets_fired += 1
+	if shot.get("damage_type") != (BLAST if rocket else KINETIC):
+		_wrong_types += 1
 
 
 func _on_projectile_added(node: Node) -> void:

@@ -11,7 +11,9 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
    closest existing weapon and change its numbers: `display_name`, `pose` (GUN, MACHINE or
    SILENCER: how the character holds it), `price`, `pellets`, `pierce`, `damage`, `fire_rate`,
    `bullet_speed`, `bullet_lifetime`, `spread`, `magazine_size`, `reload_time`, `bullet_radius`,
-   `knockback`, and what each upgrade level adds to it: `damage_per_level`,
+   `knockback`, `damage_type` (Kinetic for an ordinary gun; Pierce, Blast or Arcane make it a
+   counter to the enemy traits that fear it, recipe `add-damage-type`; it covers its explosion
+   too), and what each upgrade level adds to it: `damage_per_level`,
    `fire_rate_per_level`, `magazine_per_level`, `reload_per_level`, `knockback_per_level`
    (and `blast_damage_per_level` if it explodes). Every one must be above 0, so every level
    does something (`tests/upgrades/test_player_stats.gd` checks). No numbers in code (rule 6).
@@ -39,7 +41,8 @@ Area: **Alex** (`weapons/`, `upgrades/`). A weapon is data only, unless it needs
      and bump `Handshake.PROTOCOL` (`shared/network/handshake.gd`).
    - If it changes stats under upgrades, update `upgrades/player_stats.gd` and its tests.
 5. **Tests:**
-   - Add what makes it different to `tests/weapons/test_weapon_set.gd`.
+   - Add what makes it different to `tests/weapons/test_weapon_set.gd`, and its damage type to
+     `test_damage_types` there if it isn't Kinetic.
    - `tests/test_project_consistency.gd` already checks every `.tres` loads.
    - A new mechanic gets its own unit test in `tests/weapons/`.
 6. **Run** `.\tools\check.ps1 -Changed` and note it in `docs/PROGRESS.md`.

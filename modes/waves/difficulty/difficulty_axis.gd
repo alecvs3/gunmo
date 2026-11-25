@@ -17,6 +17,7 @@ func raw(_sheet: WaveSheet, _modifier: WaveModifier) -> float:
 	return 0.0
 
 
-## Pure: a modifier's effect on health: more health, less damage taken.
+## Pure: a modifier's effect on health: more health, less damage taken (Kinetic, the score's
+## baseline: it never depends on the players' guns).
 static func toughness(modifier: WaveModifier) -> float:
-	return modifier.health_multiplier / modifier.damage_taken_multiplier
+	return modifier.health_multiplier / modifier.taken(DamageType.Type.KINETIC)

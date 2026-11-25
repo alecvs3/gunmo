@@ -62,6 +62,20 @@ func test_blast_hurts_foes_in_radius_but_not_the_direct_hit_twice() -> void:
 	assert_eq(_health(far), 100)
 
 
+func test_a_rocket_deals_blast_from_its_weapon_both_hit_and_explosion() -> void:
+	var rocket: WeaponData = load("res://weapons/data/rocket_launcher.tres")
+	var shot: Shot = Shot.from_weapon(rocket, Vector2.ZERO, Vector2.RIGHT)
+	assert_eq(shot.damage_type, DamageType.Type.BLAST)
+	shot = _rocket()
+	shot.damage_type = DamageType.Type.BLAST
+	var swarm: HitboxComponent = _target(Vector2(40, 0))
+	var swarm_trait: EnemyTrait = load("res://enemies/data/traits/swarm.tres")
+	var traits: Array[EnemyTrait] = [swarm_trait]
+	swarm.health.type_multipliers = EnemyTrait.profile(traits)
+	Explosion.detonate(shot, Vector2.ZERO, null, candidates)
+	assert_eq(_health(swarm), 40, "40 blast damage x 1.5 against a swarm")
+
+
 func test_blast_pushes_away_from_the_center() -> void:
 	var near: HitboxComponent = _target(Vector2(0, 50))
 	Explosion.detonate(_rocket(), Vector2.ZERO, null, candidates)

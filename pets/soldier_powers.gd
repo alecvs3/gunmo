@@ -107,7 +107,8 @@ func _cover(player: Player, data: SoldierData, tier: int, now: int) -> void:
 		return
 	_cover_ready[player.peer_id] = now + roundi(data.cover_interval * NetClock.tick_rate())
 	var gun: int = player.get_loadout().weapon.weapon_data.damage
-	target.hitbox().hit(SoldierRules.cover_damage(data, tier, gun), player.peer_id)
+	var damage: int = SoldierRules.cover_damage(data, tier, gun)
+	target.hitbox().hit(damage, player.peer_id, Vector2.ZERO, data.damage_type)
 	var muzzle: Vector2 = player.global_position + PetFollower.OFFSET
 	PetEffects.broadcast(
 		PetEffects.Kind.TRACER, PackedVector2Array([muzzle, target.global_position]), 2.0, 0.12
@@ -163,7 +164,7 @@ func _strike_due(now: int) -> void:
 				var damage: int = SoldierRules.airstrike_damage(
 					data, wave, enemy.enemy_data.is_boss()
 				)
-				enemy.hitbox().hit(damage, strike[1])
+				enemy.hitbox().hit(damage, strike[1], Vector2.ZERO, data.damage_type)
 	_pending = still
 
 

@@ -33,10 +33,16 @@ func _exit_tree() -> void:
 	NetworkManager.lag_compensator.unregister(self)
 
 
-## Host only (HealthComponent ignores it elsewhere).
-func hit(damage: int, source_id: int, push: Vector2 = Vector2.ZERO) -> void:
+## Host only (HealthComponent ignores it elsewhere). damage_type is a DamageType.Type: the
+## target's traits take more or less of it.
+func hit(
+	damage: int,
+	source_id: int,
+	push: Vector2 = Vector2.ZERO,
+	damage_type: int = DamageType.Type.KINETIC
+) -> void:
 	if health != null:
-		health.take_damage(damage, source_id)
+		health.take_damage(damage, source_id, damage_type)
 	if knockback != null and multiplayer.is_server():
 		knockback.apply(push)
 

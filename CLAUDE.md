@@ -24,7 +24,8 @@ autoloads/       EventBus (signals only), NetworkManager (connection, clock, cha
                  lag compensator, stats), GameSettings (name, fullscreen)
 shared/network/* netcode: clock, channel, snapshots, prediction history, lag compensation
 shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback, Wallet, Score,
-                 DisplayDelay: the parts players, bots and enemies are built from
+                 DisplayDelay: the parts players, bots and enemies are built from; DamageType
+                 (Kinetic, Pierce, Blast, Arcane: what enemy traits resist or fear)
 shared/feedback/ looks and sounds only: HitFeedback (hit flash, damage numbers), FeedbackSystem (numbers,
                  death bursts, world sounds), FeedbackData (tuning, camera shake), SoundData +
                  SoundPlayback (which sound for each moment; files in assets/kenney_sounds/ and
@@ -36,7 +37,8 @@ shared/          WindowRules (window modes, min size, UI scales), Groups
 upgrades/        ShopCatalog, UpgradeData (stats), PlayerStats (each gun's per-level amounts),
                  ShopRules
 enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, behaviours/
-                 (movement + attack parts an EnemyData combines)
+                 (movement + attack parts an EnemyData combines), EnemyTrait
+                 (enemies/data/traits/: how much of each damage type an enemy takes)
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 pets/*           Waves pets: PetData/PetCatalog (pets/data/*.tres), PetLook, PetFollower
 modes/*          GameMode base, WaveMode + modes/waves/ (difficulty score in modes/waves/difficulty/),
@@ -56,7 +58,8 @@ NetClock's render tick. **A shot:** `simulate()` fires → EventBus `shot_fired`
 everyone how the bullet ended.
 
 **Recipes** (`.claude/skills/`): step-by-step checklists for adding a weapon, enemy, upgrade,
-wave modifier, tuning wave difficulty, networked field, client request or game mode. Use one when it fits.
+wave modifier, damage type or trait, tuning wave difficulty, networked field, client request
+or game mode. Use one when it fits.
 
 ## Architecture rules
 1. **The host decides everything that matters:** damage, health, kills, spawns, wave state, upgrades, ladder progress and all bot and enemy AI. Clients send only inputs and requests, and the host checks them. Never trust a client to report damage or kills.
@@ -111,4 +114,6 @@ Run only what a change can break; run everything for a big change.
 - **Tier:** one gun on the gun game ladder.
 - **Wave difficulty:** a 0–10 score for a wave from its enemies' own stats (five axes: toughness, melee, pressure, ranged, sustain). Each wave is built to hit the target its curve sets.
 - **Wave modifier:** a rule applied to a wave, such as "armored", "fast" or "regenerating".
+- **Damage type / trait:** every hit is Kinetic, Pierce, Blast or Arcane; an enemy's traits
+  (Armored, Swarm) take more or less of each. Picking the type that beats the next wave is a counter.
 - **Bot profile:** a Resource that sets a bot's skill (reaction time, aim error, awareness, playstyle).

@@ -26,7 +26,8 @@ the Pets window (`ui/pet_panel.gd`, P). Every tier adds an ability and strengthe
 - Ability numbers belong in the pet's data (`.tres`), never in code (rule 6): each kind has its
   own data class (`HealerData extends PetData`) and a pure rules class that reads it.
 - **Pet damage goes through the enemy's hitbox with the owner as the source**, so kills and
-  bounties go to the owner; `WizardPowers` ignores its own damage so arcs never arc again.
+  bounties go to the owner. Its damage type is `PetData.damage_type` (the Wizard is Arcane, the
+  others Kinetic), so enemy traits apply to it; `WizardPowers` ignores its own damage so arcs never arc again.
 - Enemies' **status** (slowed, hexed: `enemies/enemy_status.gd`) is decided on the host; clients
   get two flags packed into the telegraph byte of the enemy snapshot.
 - **Buffs that change `simulate()`** (fire rate, move speed) live on the loadout

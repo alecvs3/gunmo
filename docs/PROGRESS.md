@@ -1229,6 +1229,32 @@ The budget is gone: every wave is built to land on the difficulty its curve sets
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for
 Gun Game (it was 4 for both). Tested in `tests/ui/test_main_menu.gd`.
 
+## Strategy 3: counters (damage types and enemy traits) ⚠️ (issue #158; playtests to do)
+
+Every hit has a damage type and every enemy has traits, so a wave can need a specific answer.
+Part 3 of the strategy-layer plan; the forecast's "Bring: <type>" reads `CounterProfile`.
+
+| What | Status | Where |
+|---|---|---|
+| **Damage types:** Kinetic (default), Pierce, Blast, Arcane, one enum | Done | `shared/components/damage_type.gd` |
+| **Sources:** `WeaponData.damage_type` (rocket launcher Blast, hit and explosion; pistol, SMG, rifle, shotgun Kinetic), `PetData.damage_type` (Wizard Arcane, Soldier Kinetic). Host only: the host's `Shot` takes it from its own `WeaponData` and it is never sent, so no protocol change | Done, tested (smoke E checks every rocket the host simulates is Blast) | `weapons/`, `pets/` |
+| **Traits:** `EnemyTrait` (a multiplier per type), `EnemyData.traits`. Armored (Kinetic 0.6, Pierce 1.3, Blast 0.7, Arcane 1.0) on the Tank (was `damage_taken` 0.6); Swarm (Pierce 0.7, Blast 1.5) on Swarmers and Splitlings | Done, tested | `enemies/enemy_trait.gd`, `enemies/data/traits/` |
+| **Modifiers add traits:** `WaveModifier.adds_traits`. The Armored modifier adds the Armored trait instead of its flat 0.6, so Pierce now beats it. `combined()` keeps every added trait; the 0.4 damage taken floor holds for every type | Done, tested | `modes/waves/` |
+| **Host applies it:** `HitboxComponent.hit(..., damage_type)` → `HealthComponent.type_multipliers` (the enemy's traits plus the wave's, `EnemyTrait.profile`) | Done, tested | `shared/components/`, `enemies/chaser.gd` |
+| **Score unchanged:** the difficulty score reads Kinetic only (`EnemyData.taken`, `WaveModifier.taken`); the wave report is identical before and after | Done, tested | `enemies/enemy_stats.gd`, `modes/waves/difficulty/` |
+| **`CounterProfile`:** per type, the health-weighted multiplier of a planned wave, and `best_type(min_edge)`. Every default Armored wave gives Pierce | Done, tested | `modes/waves/difficulty/counter_profile.gd` |
+| Recipe `add-damage-type`; `add-weapon`, `add-enemy`, `add-wave-modifier` updated | Done | `.claude/skills/` |
+
+### Known limitations
+- **Nothing deals Pierce yet.** Only the rocket (Blast) and the Wizard (Arcane) aren't Kinetic;
+  Pierce comes with the Path (armor-piercing rounds). Until then an Armored wave is just tougher,
+  as before, and Blast does a little better than Kinetic against it (0.7 against 0.6).
+- The rocket now deals 1.5× to Swarmers and Splitlings and 0.7× (instead of 0.6×) to Tanks and
+  Armored waves: a small buff the score can't see (it is Kinetic-based). Playtests decide.
+- Bosses keep a flat `damage_taken` (0.75, 0.8) that applies to every type, so no type counters
+  them yet.
+- No trait fears or resists Arcane yet (the plan has Warded and Ethereal for later).
+
 ## Strategy 1: the next-wave forecast ✅
 
 Plan: https://claude.ai/artifact/7EPV52pTXaRkvnrzkgHpJm (section 1).

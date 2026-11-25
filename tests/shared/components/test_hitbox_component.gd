@@ -30,6 +30,20 @@ func test_hit_forwards_damage_source_and_push() -> void:
 	assert_eq(knockback.velocity, Vector2(50, 0))
 
 
+func test_hit_passes_the_damage_type_on() -> void:
+	var health := HealthComponent.new()
+	health.max_health = 100
+	health.type_multipliers = PackedFloat64Array([1.0, 1.0, 2.0, 1.0])
+	add_child_autofree(health)
+	var hitbox := HitboxComponent.new()
+	hitbox.health = health
+	add_child_autofree(hitbox)
+	hitbox.hit(10, 3, Vector2.ZERO, DamageType.Type.BLAST)
+	assert_eq(health.current_health, 80)
+	hitbox.hit(10, 3)
+	assert_eq(health.current_health, 70, "Kinetic by default")
+
+
 func test_hit_without_components_does_nothing() -> void:
 	var hitbox := HitboxComponent.new()
 	add_child_autofree(hitbox)

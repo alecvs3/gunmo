@@ -20,6 +20,7 @@ magazine_size = 3
 reload_time = 2.2
 bullet_radius = 7.0
 knockback = 300.0
+damage_type = 2
 damage_per_level = 10
 blast_damage_per_level = 6
 fire_rate_per_level = 0.08

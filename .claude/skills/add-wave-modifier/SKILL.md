@@ -10,16 +10,22 @@ Area: `modes/waves/` (no fixed owner for now; say what you're changing).
 ## Using the existing knobs (data only)
 1. **Create `modes/waves/data/modifiers/<name>.tres`** (a `WaveModifier`,
    `modes/waves/wave_modifier.gd`): `display_name`, `color` (enemies are tinted toward it),
-   `health_multiplier`, `speed_multiplier`, `damage_taken_multiplier`, `regen_per_second`
-   (times each enemy's `heal_received`, so bosses barely regenerate),
+   `health_multiplier`, `speed_multiplier`, `damage_taken_multiplier` (flat, every damage
+   type), `adds_traits` (traits every enemy of the wave gets, from `enemies/data/traits/`: the
+   Armored modifier adds the Armored trait, so Pierce beats the whole wave and the forecast
+   says so; armor a damage type can beat goes here, not in the flat multiplier),
+   `regen_per_second` (times each enemy's `heal_received`, so bosses barely regenerate),
    and `conflicts_with` (display names it never shares a wave with, e.g. Frenzied and Fast).
 2. **Append it to `modifiers`** in `modes/waves/data/modifier_catalog.tres`. Active modifiers
    travel as a one-byte mask by index, so append and never reorder. There's room for 8
    (`ModifierCatalog.MAX_MODIFIERS`).
 3. When modifiers start is set by `first_modifier_wave` / `double_modifier_wave` /
    `triple_modifier_wave` in `modes/waves/data/default_waves.tres`. However many stack, the
-   merged numbers stay within the catalog's caps (`max_health_multiplier`, ...).
-4. **Tests:** `tests/modes/waves/test_modifier_catalog.gd` (combining, names, the default catalog).
+   merged numbers stay within the catalog's caps (`max_health_multiplier`, ...). Added traits
+   are all kept (`ModifierCatalog.combined()`), and the damage taken floor holds for every type.
+4. **Tests:** `tests/modes/waves/test_modifier_catalog.gd` (combining, names, the default
+   catalog). With traits, a `CounterProfile` case
+   (`tests/modes/waves/difficulty/test_counter_profile.gd`) for the type that should beat it.
 5. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR
    (the H M P R S columns show which difficulty axes it moves; the composer then gives its
    waves fewer or more enemies to stay on target).
@@ -31,7 +37,8 @@ scenarios).
    `ModifierCatalog.combined()`: multiply, add or average.
    Then make the difficulty score see it: apply it in the `raw()` of each axis it affects
    (`modes/waves/difficulty/*_axis.gd`, recipe `tune-wave-difficulty`), or its waves won't get
-   any easier or harder on paper.
+   any easier or harder on paper. Anything that changes damage taken goes through
+   `WaveModifier.taken()`, which the score reads for Kinetic.
 2. Apply it in the enemy (`enemies/chaser.gd` `_apply_modifiers`), on the host for anything that
    matters. Every peer may apply looks.
 3. Add a test for how it combines.

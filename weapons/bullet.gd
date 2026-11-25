@@ -171,7 +171,7 @@ func _hit(target: LagCompensator.Hit) -> void:
 
 
 func _damage(hitbox: HitboxComponent, at: Vector2) -> void:
-	hitbox.hit(shot.damage, shot.shooter_id, shot.direction * shot.knockback)
+	hitbox.hit(shot.damage, shot.shooter_id, shot.direction * shot.knockback, shot.damage_type)
 	hit_landed.emit(self, at, hitbox)
 
 

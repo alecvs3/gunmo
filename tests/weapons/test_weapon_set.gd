@@ -19,6 +19,14 @@ func test_everyone_starts_with_a_free_pistol() -> void:
 	assert_eq(catalog.weapon(0).price, 0)
 
 
+func test_damage_types() -> void:
+	for weapon in catalog.weapons:
+		var expected: int = DamageType.Type.KINETIC
+		if weapon.display_name == "Rocket Launcher":
+			expected = DamageType.Type.BLAST
+		assert_eq(weapon.damage_type, expected, weapon.display_name)
+
+
 func test_weapons_play_differently() -> void:
 	var pistol: WeaponData = _named("Pistol")
 	var smg: WeaponData = _named("SMG")

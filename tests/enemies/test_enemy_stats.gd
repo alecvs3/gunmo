@@ -25,7 +25,17 @@ func test_a_grunt_s_numbers() -> void:
 func test_armor_raises_effective_health() -> void:
 	var tank: EnemyData = _load("tank")
 	var health: float = EnemyStats.of(tank).value(EnemyStats.HEALTH)
-	assert_almost_eq(health, tank.max_health / tank.damage_taken, 0.01)
+	assert_almost_eq(health, tank.max_health / 0.6, 0.01, "the Armored trait's Kinetic 0.6")
+
+
+func test_effective_health_is_kinetic_and_counts_flat_armor_too() -> void:
+	var armored: EnemyTrait = load("res://enemies/data/traits/armored.tres")
+	var ogre := EnemyData.new()
+	ogre.max_health = 300
+	ogre.damage_taken = 0.75
+	ogre.traits.assign([armored])
+	var health: float = EnemyStats.of(ogre).value(EnemyStats.HEALTH)
+	assert_almost_eq(health, 300 / (0.75 * armored.kinetic), 0.01)
 
 
 func test_a_splitter_counts_its_children() -> void:
