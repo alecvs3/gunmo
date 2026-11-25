@@ -6,13 +6,18 @@
 [ext_resource type="Resource" path="res://enemies/data/tank.tres" id="4_tank"]
 [ext_resource type="Resource" path="res://enemies/data/swarmer.tres" id="6_swarmer"]
 [ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="5_schedule"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/difficulty_curve.gd" id="90_curve"]
+
+[sub_resource type="Resource" id="Resource_curve"]
+script = ExtResource("90_curve")
+first = 20.0
+last = 20.0
+tolerance = 0.3
+overrides = PackedFloat32Array(1000)
 
 [resource]
 script = ExtResource("5_schedule")
 total_waves = 1
-base_budget = 3000.0
-budget_growth = 1.0
-budget_curve = 1.0
 first_spawn_interval = 0.05
 last_spawn_interval = 0.05
 max_alive = 40
@@ -21,3 +26,5 @@ first_modifier_wave = 99
 double_modifier_wave = 99
 shares_first = PackedFloat32Array(0.4, 0.3, 0.3, 0)
 enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_grunt"), ExtResource("3_shooter"), ExtResource("4_tank"), ExtResource("6_swarmer")])
+difficulty = SubResource("Resource_curve")
+max_enemies = 1500

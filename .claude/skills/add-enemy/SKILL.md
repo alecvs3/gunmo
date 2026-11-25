@@ -16,20 +16,25 @@ a range and a lead).
 1. **Create `enemies/data/<name>.tres`** (an `EnemyData`, `enemies/enemy_data.gd`). Copy the
    closest type (grunt, runner, brute, shooter, tank, swarmer) and change its numbers:
    `display_name`, `role` (frontline / ranged / swarm / support: the schedule gives each role a
-   share of the budget), `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
+   share of each wave), `color`, `visual_scale`, `max_health`, `damage_taken` (armor),
    `heal_received` (how much healing it gets; 1.0 for normal enemies),
    `move_speed`, `repath_interval`, the Behaviours group
    (`movement`: `chase.tres` or a `KeepDistanceMovement`; `attack`), knockback, and the Waves
-   group (`cost`, `first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`).
+   group (`first_wave`, `spawn_weight`, `group_size` for swarms, `bounty`). There is no cost:
+   its own stats decide how much it adds to a wave, and bots rank it by that too.
    `split_into` + `split_count` make it die into other enemies (Splitter → Splitling); a
    `HealPulseAttack` makes a support that heals enemies near it (they find each other through
    the `Groups.ENEMIES` group). It **must** live in `enemies/data/`: clients only load enemy data from
    `Chaser.DATA_FOLDER`.
 2. **Let the waves buy it:** add it to `enemy_types` in `modes/waves/data/default_waves.tres`
-   (`WaveSchedule`). `cost` and `first_wave` decide when it shows up (`modes/waves/wave_budget.gd`).
+   (`WaveSchedule`). `first_wave` decides when it can show up and `spawn_weight` how often; the
+   composer (`modes/waves/wave_composer.gd`) adds it while the wave is under its target
+   difficulty. To keep it rare or make it required, add an `EnemyLimit` to the schedule's
+   `rules` (recipe `tune-wave-difficulty`).
 3. **Tests:** `tests/enemies/test_enemy_data.gd` checks every type is complete and that types
-   play differently. Add to it. If wave budgets change, check `tests/modes/waves/test_wave_budget.gd`.
+   play differently. Add to it. `tests/modes/waves/test_wave_composer.gd` checks every default wave still lands on its target and that credits by wave 22 stay put (lower `bounty` values if they don't).
 4. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR.
+   The Difficulty and H M P R S columns show what the new type adds to its waves.
 
 ## A boss
 A boss is an `EnemyData` in `enemies/data/bosses/` with `phases` (`BossPhase`: a health
@@ -49,6 +54,8 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
   can_see)` (pure) and `perform(enemy, target, touching)` (host; return true to restart the
   cooldown). Tuning goes in the behaviour's `@export`s, not in `EnemyData`.
 - Put a GUT test for its pure decisions in `tests/enemies/test_enemy_behaviours.gd`.
+- Override `add_stats(stats, weight)` so the wave difficulty score sees what the attack does
+  (damage, healing or summons per second; recipe `tune-wave-difficulty`).
 - **AI runs only on the host** (rule 3). Clients only draw it.
 - Shots go through EventBus `shot_fired` like a player's, so `ProjectileSystem` handles them.
 - Death fires EventBus `enemy_killed`. Never call into the mode directly.

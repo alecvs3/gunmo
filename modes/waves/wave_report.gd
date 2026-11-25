@@ -1,17 +1,16 @@
 class_name WaveReport
 extends RefCounted
 ## The difficulty curve on paper: for every wave of a schedule, what the host spawns with a
-## given match seed. Uses the same functions as WaveMode and WaveSpawner (wave seed, budget
-## plan, modifier pick, scaled health), so the numbers are the game's. Printed by
+## given match seed. Uses the same functions as WaveMode and WaveSpawner (wave seed,
+## WaveComposer, modifier pick, scaled health), so the numbers are the game's. Printed by
 ## tools/wave_report.ps1; later balance PRs paste it before and after.
 
 
 ## One wave's numbers.
 class Row:
 	var wave: int = 0
-	var budget: float = 0.0
 	var enemies: int = 0
-	## Enemy display name -> how many of that type this wave buys.
+	## Enemy display name -> how many of that type this wave has.
 	var counts: Dictionary = {}
 	## Sum of the enemies' max health after the wave's modifiers, splits included (a Splitter's
 	## children are health the players must also chew through).
@@ -21,51 +20,71 @@ class Row:
 	var effective_health: int = 0
 	var modifier_mask: int = 0
 	var modifiers: String = ""
-	## How much tougher the modifiers make each enemy (ModifierCatalog.threat).
-	var threat_factor: float = 1.0
-	## The difficulty on paper: points of enemies bought times threat_factor. The curve that must
-	## rise every wave (the budget minus what could not be spent).
-	var threat: float = 0.0
+	## Credits the wave's kills pay (EnemyData.bounty, splits included; not the clear bonus).
+	var bounty: int = 0
 	## Most enemies alive at once if nobody kills anything: the schedule's cap, not a prediction.
 	var peak_alive: int = 0
 	## Seconds from the first spawn to the last when max_alive never holds one back.
 	var spawn_seconds: float = 0.0
+	## The difficulty the schedule's curve aims for (0 = no curve) and the one this wave has
+	## (DifficultyModel), with each axis's score.
+	var target: float = 0.0
+	var difficulty: float = 0.0
+	var axis_scores := PackedFloat32Array()
 
 
-static func build(schedule: WaveSchedule, catalog: ModifierCatalog, match_seed: int) -> Array[Row]:
+static func build(
+	schedule: WaveSchedule, catalog: ModifierCatalog, model: DifficultyModel, match_seed: int
+) -> Array[Row]:
 	var rows: Array[Row] = []
 	for wave in range(1, schedule.total_waves + 1):
-		rows.append(row(schedule, catalog, match_seed, wave))
+		rows.append(row(schedule, catalog, model, match_seed, wave))
 	return rows
 
 
 static func row(
-	schedule: WaveSchedule, catalog: ModifierCatalog, match_seed: int, wave: int
+	schedule: WaveSchedule,
+	catalog: ModifierCatalog,
+	model: DifficultyModel,
+	match_seed: int,
+	wave: int
 ) -> Row:
 	var result := Row.new()
 	result.wave = wave
-	result.budget = WaveBudget.budget(schedule, wave)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = WaveBudget.wave_seed(match_seed, wave)
+	rng.seed = WaveComposer.wave_seed(match_seed, wave)
 	result.modifier_mask = catalog.pick_for_wave(schedule, match_seed, wave)
-	result.threat_factor = catalog.threat(result.modifier_mask)
-	var planned: Array[EnemyData] = WaveBudget.plan(schedule, wave, rng, result.threat_factor)
 	result.modifiers = catalog.names(result.modifier_mask)
 	var combined: WaveModifier = catalog.combined(result.modifier_mask)
+	var planned: Array[EnemyData] = WaveComposer.plan(schedule, model, wave, rng, combined)
 	var effective: float = 0.0
 	for type in planned:
 		result.counts[type.display_name] = result.counts.get(type.display_name, 0) + 1
 		for each in with_splits(type):
 			var health: int = combined.scaled_health(each.max_health)
 			result.total_health += health
+			result.bounty += each.bounty
 			effective += health / (combined.damage_taken_multiplier * each.damage_taken)
 	result.effective_health = roundi(effective)
 	result.enemies = planned.size()
-	for type in planned:
-		result.threat += type.cost * result.threat_factor
 	result.peak_alive = mini(planned.size(), schedule.max_alive)
 	result.spawn_seconds = maxi(planned.size() - 1, 0) * schedule.spawn_interval(wave)
+	_measure(result, schedule, model, planned, combined)
 	return result
+
+
+## The wave's difficulty (DifficultyModel) and the target its schedule's curve aims for.
+static func _measure(
+	result: Row,
+	schedule: WaveSchedule,
+	model: DifficultyModel,
+	planned: Array[EnemyData],
+	combined: WaveModifier
+) -> void:
+	if schedule.difficulty != null:
+		result.target = schedule.difficulty.target(result.wave, schedule)
+	result.axis_scores = model.scores(model.sheet_for(planned), combined)
+	result.difficulty = model.length(result.axis_scores)
 
 
 ## `type` and every enemy it splits into when it dies (and they into theirs, a few levels deep).
@@ -77,13 +96,17 @@ static func with_splits(type: EnemyData, depth: int = 0) -> Array[EnemyData]:
 	return found
 
 
-## The rows as a markdown table, one column per enemy type of the schedule.
-static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
+## The rows as a markdown table: target and difficulty, one column per axis of `model`, then
+## one per enemy type of the schedule.
+static func format(schedule: WaveSchedule, model: DifficultyModel, rows: Array[Row]) -> String:
 	var names := PackedStringArray()
 	for type in schedule.enemy_types + schedule.bosses:
 		if type != null and not names.has(type.display_name):
 			names.append(type.display_name)
-	var header := PackedStringArray(["Wave", "Budget", "Threat", "Enemies"])
+	var header := PackedStringArray(["Wave", "Target", "Difficulty"])
+	for axis in model.axes:
+		header.append(axis.short_name)
+	header.append_array(["Bounty", "Enemies"])
 	header.append_array(names)
 	header.append_array(["Health", "Effective", "Peak alive", "Spawn s", "Modifiers"])
 	var lines := PackedStringArray([_line(header), _line(_rule(header.size()))])
@@ -93,9 +116,12 @@ static func format(schedule: WaveSchedule, rows: Array[Row]) -> String:
 
 
 static func _cells(each: Row, names: PackedStringArray) -> PackedStringArray:
-	var cells := PackedStringArray(
-		["%d" % each.wave, "%.1f" % each.budget, "%.1f" % each.threat, "%d" % each.enemies]
-	)
+	var cells := PackedStringArray(["%d" % each.wave])
+	cells.append("%.2f" % each.target if each.target > 0.0 else "-")
+	cells.append("%.2f" % each.difficulty)
+	for score in each.axis_scores:
+		cells.append("%.1f" % score)
+	cells.append_array(["%d" % each.bounty, "%d" % each.enemies])
 	for name in names:
 		cells.append("%d" % each.counts.get(name, 0))
 	(

@@ -39,7 +39,8 @@ enemies/         Chaser (one scene for every EnemyData), enemies/data/*.tres, be
                  (movement + attack parts an EnemyData combines)
 bots/*           BotController (host only) + BotBrain (pure decisions), bots/profiles/*.tres
 pets/*           Waves pets: PetData/PetCatalog (pets/data/*.tres), PetLook, PetFollower
-modes/*          GameMode base, WaveMode + modes/waves/, GunGameMode + modes/gun_game/, MatchSettings
+modes/*          GameMode base, WaveMode + modes/waves/ (difficulty score in modes/waves/difficulty/),
+                 GunGameMode + modes/gun_game/, MatchSettings
 ui/*             menus, HUD, scoreboard, shop, results, F3 overlay
 levels/          maps: MapData (levels/data/*.tres, picked by MatchSettings.map) → a Level scene
                  (where things spawn, never when); MapCheck validates every map
@@ -55,7 +56,7 @@ NetClock's render tick. **A shot:** `simulate()` fires → EventBus `shot_fired`
 everyone how the bullet ended.
 
 **Recipes** (`.claude/skills/`): step-by-step checklists for adding a weapon, enemy, upgrade,
-wave modifier, networked field, client request or game mode. Use one when it fits.
+wave modifier, tuning wave difficulty, networked field, client request or game mode. Use one when it fits.
 
 ## Architecture rules
 1. **The host decides everything that matters:** damage, health, kills, spawns, wave state, upgrades, ladder progress and all bot and enemy AI. Clients send only inputs and requests, and the host checks them. Never trust a client to report damage or kills.
@@ -81,7 +82,7 @@ wave modifier, networked field, client request or game mode. Use one when it fit
 - **Say what you're about to change.** There are no fixed areas yet (see Ownership), so before a big change name the systems it touches, in case the other developer is working there.
 - **Follow the roadmap.** `docs/ROADMAP.md` lists the next milestones and their steps in order, each with how to test it.
 - **Edit scene files carefully.** Keep `.tscn` diffs minimal and explain them. Never edit `project.godot`, `.import` files or `export_presets.cfg` without asking.
-- **Test logic.** Add or update tests for damage math, upgrade stacking, wave budgets, ladder progression and bot decisions.
+- **Test logic.** Add or update tests for damage math, upgrade stacking, wave difficulty, ladder progression and bot decisions.
 - **Before calling something done,** run the checks the change needs (see "Which checks to run") and report the results honestly, including which smoke scenarios ran and why. If you couldn't run the game or test multiplayer, say so.
 
 ## Which checks to run
@@ -103,11 +104,11 @@ Run only what a change can break; run everything for a big change.
 
 ## Commands
 - **All checks:** `.\tools\check.ps1` (import, GUT, lint, format; prints only failures). Add `-Smoke` for the multiplayer smoke test (run it for any networking change; `-Scenarios A,E` for just those), `-Changed` to run only the smoke scenarios this branch needs (`-Base <ref>`, default `origin/main`), `-Fix` to format first, `-Only tests|lint|format|smoke` for one step. `-Smoke -Scenarios S` is the 10-minute soak test (opt-in: memory and node counts must not keep growing).
-- **Wave report:** `.\tools\wave_report.ps1` (`-Seed N`, `-Schedule res://...`) prints every wave's budget, enemies by type, health, peak alive and modifiers as a markdown table. Paste it before/after in any PR that changes wave balance.
+- **Wave report:** `.\tools\wave_report.ps1` (`-Seed N`, `-Schedule res://...`) prints every wave's target and difficulty (each axis), bounty, enemies by type, health, peak alive and modifiers as a markdown table. Paste it before/after in any PR that changes wave balance.
 - Single steps: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit`, `gdlint .`, `gdformat --check .`, `.\tests\net\run_smoke.ps1 -Godot <console exe>`
 
 ## Glossary
 - **Tier:** one gun on the gun game ladder.
-- **Wave budget:** the points a wave can spend on enemies. Each enemy type has a cost, and the budget grows each wave.
+- **Wave difficulty:** a 0–10 score for a wave from its enemies' own stats (five axes: toughness, melee, pressure, ranged, sustain). Each wave is built to hit the target its curve sets.
 - **Wave modifier:** a rule applied to a wave, such as "armored", "fast" or "regenerating".
 - **Bot profile:** a Resource that sets a bot's skill (reaction time, aim error, awareness, playstyle).

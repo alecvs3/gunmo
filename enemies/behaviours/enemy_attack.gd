@@ -25,3 +25,15 @@ func wants_to_attack(cooldown_left: float, _distance: float, _can_see: bool) -> 
 ## Host: attack. `touching` = player hitboxes in its contact area. True = it attacked.
 func perform(_enemy: Node2D, _target: Node2D, _touching: Array[HitboxComponent]) -> bool:
 	return false
+
+
+## Pure: seconds from one attack to the next (the windup, then the cooldown).
+func cycle_seconds() -> float:
+	return maxf(interval + windup, 0.05)
+
+
+## Pure: adds what this attack does per second to `stats` (EnemyStats: damage, healing,
+## summons), times `weight` (a boss phase's share). Every attack type overrides it, or the wave
+## difficulty score can't see it.
+func add_stats(_stats: EnemyStats, _weight: float) -> void:
+	pass

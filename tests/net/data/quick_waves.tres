@@ -3,13 +3,17 @@
 [ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
 [ext_resource type="Resource" path="res://enemies/data/grunt.tres" id="2_grunt"]
 [ext_resource type="Script" path="res://modes/waves/wave_schedule.gd" id="3_schedule"]
+[ext_resource type="Script" path="res://modes/waves/difficulty/difficulty_curve.gd" id="90_curve"]
+
+[sub_resource type="Resource" id="Resource_curve"]
+script = ExtResource("90_curve")
+first = 1.0
+last = 1.2
+tolerance = 0.3
 
 [resource]
 script = ExtResource("3_schedule")
 total_waves = 2
-base_budget = 3.0
-budget_growth = 1.0
-budget_curve = 1.0
 first_spawn_interval = 0.2
 last_spawn_interval = 0.2
 max_alive = 10
@@ -17,3 +21,4 @@ min_spawn_distance = 0.0
 first_modifier_wave = 1
 double_modifier_wave = 2
 enemy_types = Array[ExtResource("1_edata")]([ExtResource("2_grunt")])
+difficulty = SubResource("Resource_curve")

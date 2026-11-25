@@ -21,13 +21,17 @@ Area: `modes/waves/` (no fixed owner for now; say what you're changing).
    merged numbers stay within the catalog's caps (`max_health_multiplier`, ...).
 4. **Tests:** `tests/modes/waves/test_modifier_catalog.gd` (combining, names, the default catalog).
 5. **Wave report:** run `.\tools\wave_report.ps1` before and after, and paste both into the PR
-   (the Effective column shows armor; regeneration isn't in it).
+   (the H M P R S columns show which difficulty axes it moves; the composer then gives its
+   waves fewer or more enemies to stay on target).
 
 ## A new kind of effect
 Modifiers should create strategy by combining (CLAUDE.md: systems that combine, not scripted
 scenarios).
 1. Add an `@export` to `WaveModifier`, and say how two of them combine in
    `ModifierCatalog.combined()`: multiply, add or average.
+   Then make the difficulty score see it: apply it in the `raw()` of each axis it affects
+   (`modes/waves/difficulty/*_axis.gd`, recipe `tune-wave-difficulty`), or its waves won't get
+   any easier or harder on paper.
 2. Apply it in the enemy (`enemies/chaser.gd` `_apply_modifiers`), on the host for anything that
    matters. Every peer may apply looks.
 3. Add a test for how it combines.

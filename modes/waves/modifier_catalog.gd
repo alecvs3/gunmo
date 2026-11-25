@@ -17,12 +17,6 @@ const MAX_MODIFIERS: int = 8
 @export_range(0.05, 1.0) var min_damage_taken_multiplier: float = 0.4
 @export_range(0.0, 1.0) var max_regen_per_second: float = 0.08
 
-@export_group("Threat")
-## How much tougher a wave's modifiers make each enemy (see threat()): speed and regeneration
-## count this much per unit.
-@export_range(0.0, 5.0) var speed_threat: float = 0.8
-@export_range(0.0, 50.0) var regen_threat: float = 6.0
-
 
 static func load_default() -> ModifierCatalog:
 	return load(DEFAULT_PATH)
@@ -109,16 +103,6 @@ func combined(mask: int) -> WaveModifier:
 			sum += color
 		result.color = sum / colors.size()
 	return result
-
-
-## How much tougher the modifiers in `mask` make each enemy (1 = not at all): health over
-## damage taken, times (1 + speed_threat * extra speed) * (1 + regen_threat * regeneration).
-## A wave buys budget / threat, so modifiers change a wave's shape more than its difficulty.
-func threat(mask: int) -> float:
-	var merged: WaveModifier = combined(mask)
-	var toughness: float = merged.health_multiplier / merged.damage_taken_multiplier
-	var speed: float = 1.0 + speed_threat * (merged.speed_multiplier - 1.0)
-	return maxf(toughness * speed * (1.0 + regen_threat * merged.regen_per_second), 0.1)
 
 
 ## "Armored · Fast" for the HUD ("" when none).

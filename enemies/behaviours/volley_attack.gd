@@ -41,6 +41,17 @@ func directions(aim: Vector2) -> Array[Vector2]:
 	return found
 
 
+## Pure: how many of a volley's shots can hit one player: those within `cone_degrees`.
+func shots_that_hit(cone_degrees: float) -> float:
+	return shots * minf(1.0, cone_degrees / maxf(spread_degrees, 1.0))
+
+
+func add_stats(stats: EnemyStats, weight: float) -> void:
+	if weapon != null:
+		var damage: float = weapon.damage * weapon.pellets * shots_that_hit(stats.aim_cone_degrees)
+		stats.add(EnemyStats.RANGED_DPS, weight * damage / cycle_seconds())
+
+
 func perform(enemy: Node2D, target: Node2D, _touching: Array[HitboxComponent]) -> bool:
 	var shooter := enemy as ChaserEnemy
 	if shooter == null or (target == null and not is_ring()):

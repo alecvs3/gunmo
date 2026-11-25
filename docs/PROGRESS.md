@@ -1170,6 +1170,60 @@ could add about 5,000 credits late and break the economy. Rushing waves 1–4 (a
 - Not checked in a 2-instance window test; the HUD prompt goes away through `call_open`, which
   was already in the match state.
 
+## Wave difficulty 1: every wave measured on a 0–10 scale ✅ (issue #147)
+
+Plan: https://claude.ai/artifact/TWnaN1PmUgMJ38VWhFugNw. This part only measures; the waves
+are still bought from the budget. The next part builds each wave to hit its target.
+
+| What | Status | Where |
+|---|---|---|
+| Each enemy type as numbers per second: effective health (armor, splits), melee and ranged damage (fans and rings: shots inside a 30° cone; windups slow the cycle), healing, summons, speed × size. Each attack reports its own part (`add_stats`); boss phases count by the share of health they cover | Done, tested | `enemies/enemy_stats.gd`, `enemies/behaviours/*_attack.gd` |
+| Five axes: Toughness, Melee, Pressure, Ranged, Sustain. Each scores `10 × (raw / reference) ^ 0.7`; the difficulty is their weighted length (every axis at its reference = 10). Modifiers move the axes they touch instead of being their own axis | Done, tested | `modes/waves/difficulty/`, `modes/waves/data/difficulty_model.tres` |
+| The target curve: a straight trend from 2.05 (wave 1) to 10 (wave 25); boss waves +0.4, the two waves after a boss −0.3 and −0.15 (a boss wave is a little harder than the next); the final wave 10.25 | Done, tested | `modes/waves/difficulty/difficulty_curve.gd`, `default_waves.tres` |
+| The target is **about 15% above today's waves** (fitted line of today's scores × 1.15), as asked | Data | same |
+| Wave report: Target, Difficulty and an H M P R S column per wave | Done, tested | `modes/waves/wave_report.gd`, `tools/wave_report.gd` |
+| Recipe for tuning it, adding a category or recalibrating; `add-enemy` asks new attacks for `add_stats` | Done | `.claude/skills/tune-wave-difficulty/`, `modes/CLAUDE.md` |
+
+**What the score shows about today's curve (seed 1):** it zigzags. Boss wave 10 scores 4.3 but
+wave 11 scores 5.7; wave 13 is 6.5 and wave 16 is 5.0; wave 23 (9.2) beats the final wave (8.9),
+where the Overlord takes most of the budget and little stands around it.
+
+### Known limitations
+- The weights and references are a first calibration, fitted to today's waves; playtests will move
+  them. The score can't see pathing, focus fire or how readable a telegraph is.
+- Gameplay is unchanged until the next part (the composer) uses the target.
+
+## Wave difficulty 2: each wave built to hit its target ⚠️ (issue #151; playtests to do)
+
+The budget is gone: every wave is built to land on the difficulty its curve sets (part 1, #147).
+
+| What | Status | Where |
+|---|---|---|
+| **The composer:** the boss first, then every minimum the rules ask for, then random types (`spawn_weight`, pulled toward the role shares by each type's solo difficulty) while the wave stays under target + 0.3, until it reaches the target; 4 tries keep the closest. Same seed, same wave | Done, tested | `modes/waves/wave_composer.gd`, `modes/waves/wave_draft.gd` |
+| **Rules:** `EnemyLimit` (min/max of one type) and `AxisLimit` (an axis's share of the difficulty: a cap, or a minimum that makes a themed wave), each for a wave range. None in the default schedule yet | Done, tested | `modes/waves/difficulty/`, `WaveSchedule.rules` |
+| Removed: `WaveBudget`, `base_budget`/`budget_growth`/`budget_curve`, `ModifierCatalog.threat()`. Modifiers act through the score: a Tough wave gets fewer enemies | Done | |
+| **15% harder:** every default wave (20 seeds) lands within 0.3 of its target, about 15% above the old waves. Boss waves sit a little above the next wave (wave 10: 5.43, wave 11: 5.06) | Done, tested | `tests/modes/waves/test_wave_composer.gd` |
+| **Credits unchanged:** more enemies paid about 29% more bounty, which would have undone most of the 15%. Every bounty × 0.78 (Grunt 10 → 8, Tank 90 → 70, Warden 900 → 700...), so two players still earn about 8,650 each from kills and clear bonuses by wave 22, as after #139 (tested) | Done, tested | `enemies/data/*.tres` |
+| Wave report: a Bounty column instead of Budget and Threat | Done | `modes/waves/wave_report.gd` |
+
+### Known limitations
+- **Not played.** How 15% harder feels, and whether Shooters and Supports showing up more often in
+  waves 6–12 than before reads well, needs the playtests.
+- A target is only reached in steps of one enemy, so waves land up to 0.3 above or below it.
+- `EnemyData.cost` is still read by the bots (target danger); the next part replaces it.
+
+## Wave difficulty 3: no more enemy cost ✅ (issue #153)
+
+| What | Status | Where |
+|---|---|---|
+| `EnemyData.cost` is gone (from the script and every enemy file): the composer never needed it, and its last user was the co-op bots' target danger | Done | `enemies/enemy_data.gd`, `enemies/data/`, `tests/net/data/` |
+| Bots rank an enemy by its difficulty alone, with the 0.7 exponent undone (`BotBrain.danger_of`): in Grunts, a Runner or Swarmer 0.8, a Support 2.0, a Shooter 2.9, a Tank 3.5, the bosses 7 to 26 (with cost: Support 4, Shooter 3, Tank 7, bosses 12 to 40) | Done, tested | `bots/bot_brain.gd`, `bots/bot_controller.gd` |
+
+### Known limitations
+- Bots now rank a Shooter a little above a Support (2.9 against 2.0; with cost it was 3 against 4),
+  so they focus healers a bit less. Raise the Sustain axis's weight if playtests want healers
+  focused first.
+
 ## Waves starts with 0 bots ✅ (issue #155)
 
 The host menu's bot count now starts at the chosen mode's own `bot_fill_to`: 0 for Waves, 4 for

@@ -21,6 +21,5 @@ move_speed = 110.0
 repath_interval = 0.25
 movement = ExtResource("3_chase")
 attack = SubResource("Resource_ranged")
-cost = 1.0
 spawn_weight = 1.0
 bounty = 10

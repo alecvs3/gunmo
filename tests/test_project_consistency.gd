@@ -59,7 +59,7 @@ func _problems(resource: Resource) -> Array[String]:
 		_need(problems, weapon.magazine_size > 0 and weapon.bullet_speed > 1.0, "magazine/speed")
 	elif resource is EnemyData:
 		var enemy := resource as EnemyData
-		_need(problems, enemy.cost > 0 and enemy.spawn_weight > 0.0, "cost/spawn_weight")
+		_need(problems, enemy.spawn_weight > 0.0, "spawn_weight")
 		_need(problems, enemy.max_health > 0, "max_health")
 		_need(problems, enemy.movement != null and enemy.attack != null, "no movement/attack")
 	elif resource is UpgradeData:
