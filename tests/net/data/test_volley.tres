@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_data.gd" id="1_edata"]
+[ext_resource type="Script" path="res://enemies/behaviours/volley_attack.gd" id="2_volley"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/chase.tres" id="3_chase"]
+[ext_resource type="Resource" path="res://enemies/behaviours/data/boss_bolt.tres" id="4_bolt"]
+
+[sub_resource type="Resource" id="Resource_volley"]
+script = ExtResource("2_volley")
+interval = 1.2
+windup = 0.4
+weapon = ExtResource("4_bolt")
+shots = 5
+spread_degrees = 40.0
+attack_range = 700.0
+
+[resource]
+script = ExtResource("1_edata")
+display_name = "Test volley"
+color = Color(0.7, 0.5, 1, 1)
+max_health = 60
+move_speed = 90.0
+repath_interval = 0.25
+movement = ExtResource("3_chase")
+attack = SubResource("Resource_volley")
+spawn_weight = 1.0
+bounty = 10

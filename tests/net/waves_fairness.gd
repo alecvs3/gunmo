@@ -1,0 +1,272 @@
+extends "res://tests/net/fairness.gd"
+## Smoke scenario I, Waves at 160 ms (docs/LATENCY_PLAN.md, step 1: the lag lab). A host and a
+## client with simulated latency (the role's "latency,jitter,loss%" argument, 80 ms each way by
+## default) sit in the lobby of a Waves match (no wave ever starts). The host spawns 3 Runners
+## (melee), a test spitter and a test volley enemy (a 5-bolt fan after a 0.4 s windup); they hunt
+## only the client. Every hit on an enemy deals 1 damage and the host tops them up; the client
+## can be hurt but the host refills its health every frame. The client strafes for 40 s and
+## shoots the nearest enemy, and measures what a 160 ms player feels:
+##   hit_feedback_ms        own hit on a Runner -> its health drops on our screen (the hit sound)
+##   predicted_confirm_share  hits our screen predicted that the host confirmed
+##   bullet_visible_share   enemy bullets that hit us: drawn on our player at the judged tick
+##   hurt_feedback_ms       such a bullet first drawn on us -> our hurt sound (EVENT_HURT)
+##   melee_fair_share       melee hits on us where the enemy we drew touched us at the judged tick
+##   melee_gap_px           how far that drawn enemy's contact square was from our hitbox
+## For melee the host sends, on a test-only topic, the client's own tick (its timeline stamp)
+## and the enemies touching it when each melee hit landed.
+## The numbers have no budget yet: each later step of the plan turns on the one it fixes. It
+## fails only when there are too few samples to judge.
+## Usage: -s res://tests/net/waves_fairness.gd -- <waveshost|wavesclient> <port>
+## [latency,jitter,loss%]. It runs before the autoloads exist, so it names no project classes.
+
+const WAVES_MATCH_PATH: String = "res://tests/net/data/fair_waves_match.tres"
+const RUNNER_PATH: String = "res://enemies/data/runner.tres"
+const VOLLEY_PATH: String = "res://tests/net/data/test_volley.tres"
+const RUNNERS: int = 3
+## Longer than H: its shares need more samples to be steady from run to run.
+const WAVES_PLAY_SECONDS: float = 40.0
+## Test-only NetChannel event topic (no game code uses it): the host reports a melee hit.
+const MELEE_TOPIC: int = 200
+## One tick of a Runner's movement (230 px/s at 60 Hz), for blending between ticks (px).
+const MELEE_SLACK: float = 4.0
+const MIN_BULLET_HITS: int = 3
+const MIN_MELEE_HITS: int = 3
+## Bullet.Mode.REMOTE.
+const REMOTE: int = 2
+## Ticks of drawn positions the client keeps.
+const KEEP_TICKS: int = 600
+
+## Client: tick of its own timeline -> {enemy net id: where we drew it}.
+var _drawn_enemies: Dictionary = {}
+## Client: enemy net id -> half the size of its contact square.
+var _contact_half: Dictionary = {}
+## Client: shot key -> {tick of its own timeline: where we drew that enemy bullet}.
+var _drawn_bullets: Dictionary = {}
+## Client: when each EVENT_HURT not yet matched to its bullet arrived (usec).
+var _hurt_usec: Array[int] = []
+var _bullet_visible: int = 0
+var _bullet_hidden: int = 0
+var _melee_fair: int = 0
+var _melee_unfair: int = 0
+
+
+func _initialize() -> void:
+	_metric_label = "WAVEFAIR"
+	_play_seconds = WAVES_PLAY_SECONDS
+	_boot("waveshost", 7800, WATCHDOG_SECONDS)
+
+
+func _run() -> void:
+	if _role == "waveshost":
+		await _run_waves_host()
+	else:
+		await _run_client()
+	_finish("")
+
+
+func _run_waves_host() -> void:
+	var net: Node = root.get_node("NetworkManager")
+	root.get_node("Main").call("_load_match_settings", WAVES_MATCH_PATH)
+	_check(net.host(_port) == OK, "host() failed")
+	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
+	_check(net.peers.size() == 2, "client never joined")
+	await create_timer(3.0).timeout
+	var client: Node2D = _client_on_host()
+	_check(client != null, "no client player on the host")
+	if client != null:
+		client.get_node("HealthComponent").damaged.connect(_on_client_damaged.bind(client))
+	var hunters: Array[Node] = _spawn_enemies(RUNNER_PATH, RUNNERS)
+	hunters += _spawn_enemies(SPITTER_PATH, 1)
+	hunters += _spawn_enemies(VOLLEY_PATH, 1)
+	for enemy: Node in hunters:
+		enemy.set("_base_damage_taken", TEST_DAMAGE_TAKEN)
+	while net.peers.size() >= 2:
+		_hold_waves_host_frame(client)
+		await process_frame
+	net.leave()
+	await create_timer(0.5).timeout
+
+
+## Host, every frame: our own player is out of the fight, the client never runs out of health
+## and the enemies never die.
+func _hold_waves_host_frame(client: Node2D) -> void:
+	var own: Node = root.get_node_or_null(_level_path() + "/Players/1")
+	if own != null:
+		own.get_node("HitboxComponent").monitorable = false
+		own.get_node("HealthComponent").invulnerable = true
+		own.remove_from_group(LIVING_GROUP)
+	if is_instance_valid(client):
+		var health: Node = client.get_node("HealthComponent")
+		health.call("set_health", health.max_health)
+	for enemy: Node in _enemies():
+		var health: Node = enemy.get_node("HealthComponent")
+		if _needs_top_up(health):
+			health.call("set_health", health.max_health)
+
+
+## Host: a melee hit (source 0; bullets carry their shooter's id) tells the client its own tick
+## and which enemies were touching it.
+func _on_client_damaged(_amount: int, source_id: int, client: Node2D) -> void:
+	if source_id != 0:
+		return
+	var hitbox: Node = client.get_node("HitboxComponent")
+	var touching: Array[int] = []
+	for enemy: Node in _enemies():
+		if hitbox in enemy.get_node("ContactArea").get_overlapping_areas():
+			touching.append(enemy.get_node("NetEntity").net_id)
+	var buffer := StreamPeerBuffer.new()
+	buffer.put_32(client.get("timeline").call("newest_tick"))
+	buffer.put_u8(touching.size())
+	for net_id in touching:
+		buffer.put_u32(net_id)
+	var channel: Object = root.get_node("NetworkManager").channel
+	channel.call("send_event", client.name.to_int(), MELEE_TOPIC, buffer.data_array)
+
+
+func _aim_targets() -> Array[Node]:
+	return _enemies()
+
+
+## Runners only: the test enemies' data can't load on clients (outside enemies/data/), so
+## their health on our screen doesn't follow the host's.
+func _feedback_targets() -> Array[Node]:
+	var runners: Array[Node] = []
+	for enemy: Node in _enemies():
+		if enemy.get("data_path") == RUNNER_PATH:
+			runners.append(enemy)
+	return runners
+
+
+func _on_physics_frame() -> void:
+	super._on_physics_frame()
+	var tick: int = roundi(root.get_node("NetworkManager").clock.server_tick_now())
+	_record_drawn_enemies(tick)
+	_record_drawn_bullets(tick)
+	for old: Dictionary in [_own_positions, _tick_usec, _drawn_enemies]:
+		old.erase(tick - KEEP_TICKS)
+
+
+func _record_drawn_enemies(tick: int) -> void:
+	var drawn: Dictionary = {}
+	for enemy: Node2D in _enemies():
+		var net_id: int = enemy.get_node("NetEntity").net_id
+		drawn[net_id] = enemy.global_position
+		if not _contact_half.has(net_id):
+			var shape: CollisionShape2D = enemy.get_node("ContactArea/CollisionShape2D")
+			_contact_half[net_id] = shape.shape.get("size") * shape.scale / 2.0
+	_drawn_enemies[tick] = drawn
+
+
+func _record_drawn_bullets(tick: int) -> void:
+	var projectiles: Node = root.get_node_or_null(_level_path() + "/Projectiles")
+	if projectiles == null:
+		return
+	for bullet: Node in projectiles.get_children():
+		if bullet.get("mode") != REMOTE or not (bullet as Node2D).visible:
+			continue
+		var key: String = bullet.get("shot").call("key")
+		var track: Dictionary = _drawn_bullets.get(key, {})
+		track[tick] = (bullet as Node2D).global_position
+		_drawn_bullets[key] = track
+
+
+func _on_event(topic: int, data: PackedByteArray) -> void:
+	if data.is_empty():
+		return
+	var buffer := StreamPeerBuffer.new()
+	buffer.data_array = data
+	if topic == MELEE_TOPIC:
+		_judge_melee(buffer)
+		return
+	if topic != TOPIC:
+		return
+	match buffer.get_u8():
+		EVENT_HURT:
+			_hurt_usec.append(Time.get_ticks_usec())
+
+		EVENT_ENDED:
+			_judge_bullet(buffer)
+
+
+## An enemy bullet that hit us (announced right after its EVENT_HURT): was it drawn on our player
+## at the tick it was judged on, and how long after it first was did the hurt sound come?
+func _judge_bullet(buffer: StreamPeerBuffer) -> void:
+	var shooter_id: int = buffer.get_32()
+	var key: String = "%d:%d" % [shooter_id, buffer.get_u32()]
+	buffer.get_float()
+	buffer.get_float()
+	var tick: int = roundi(buffer.get_double())
+	var hit_something: bool = buffer.get_u8() == 1
+	if _hurt_usec.is_empty() or not hit_something or shooter_id >= 0:
+		return
+	var hurt_usec: int = _hurt_usec.pop_front()
+	if not _own_positions.has(tick):
+		return
+	var track: Dictionary = _drawn_bullets.get(key, {})
+	var visible: bool = track.has(tick) and _on_player(track[tick], tick)
+	_bullet_visible += 1 if visible else 0
+	_bullet_hidden += 0 if visible else 1
+	var first: int = _first_touch(track)
+	if first >= 0 and _tick_usec.has(first):
+		_add("hurt_feedback_ms", (hurt_usec - int(_tick_usec[first])) / 1000.0)
+
+
+func _on_player(point: Vector2, tick: int) -> bool:
+	return (_own_positions[tick] as Vector2).distance_to(point) <= ON_PLAYER_DISTANCE
+
+
+## The first tick a bullet was drawn on our player (-1 = never).
+func _first_touch(track: Dictionary) -> int:
+	var ticks: Array = track.keys()
+	ticks.sort()
+	for tick: int in ticks:
+		if _own_positions.has(tick) and _on_player(track[tick], tick):
+			return tick
+	return -1
+
+
+## A melee hit the host judged on our tick `tick`: did one of the enemies touching us there
+## touch us as we drew it?
+func _judge_melee(buffer: StreamPeerBuffer) -> void:
+	var tick: int = buffer.get_32()
+	var count: int = buffer.get_u8()
+	var drawn: Dictionary = _drawn_enemies.get(tick, {})
+	var gap: float = INF
+	for i in count:
+		var net_id: int = buffer.get_u32()
+		if drawn.has(net_id) and _own_positions.has(tick):
+			gap = minf(gap, _contact_gap(drawn[net_id], _contact_half[net_id], tick))
+	if is_inf(gap):
+		return
+	_melee_fair += 1 if gap <= MELEE_SLACK else 0
+	_melee_unfair += 0 if gap <= MELEE_SLACK else 1
+	_add("melee_gap_px", maxf(gap, 0.0))
+
+
+## Pixels between an enemy's contact square (centred on it) and our hitbox at `tick`; 0 or less
+## means they touch.
+func _contact_gap(center: Vector2, half: Vector2, tick: int) -> float:
+	var own: Vector2 = _own_positions[tick]
+	var closest := Vector2(
+		clampf(own.x, center.x - half.x, center.x + half.x),
+		clampf(own.y, center.y - half.y, center.y + half.y)
+	)
+	var radius: float = _own_player().get_node("HitboxComponent/CollisionShape2D").shape.get(
+		"radius"
+	)
+	return own.distance_to(closest) - radius
+
+
+func _report() -> void:
+	_report_hit_feedback()
+	var bullet_hits: int = _bullet_visible + _bullet_hidden
+	_metric("bullet_hits_on_client", bullet_hits)
+	_metric("bullet_visible_share", _bullet_visible / float(maxi(bullet_hits, 1)))
+	_metric("hurt_feedback_ms_p50", _percentile("hurt_feedback_ms", 0.5))
+	var melee_hits: int = _melee_fair + _melee_unfair
+	_metric("melee_hits_on_client", melee_hits)
+	_metric("melee_fair_share", _melee_fair / float(maxi(melee_hits, 1)))
+	_metric("melee_gap_px_p50", _percentile("melee_gap_px", 0.5))
+	_metric("melee_gap_px_p95", _percentile("melee_gap_px", 0.95))
+	_check(bullet_hits >= MIN_BULLET_HITS, "only %d enemy bullet hits to judge" % bullet_hits)
+	_check(melee_hits >= MIN_MELEE_HITS, "only %d melee hits to judge" % melee_hits)

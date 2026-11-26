@@ -1,4 +1,4 @@
-# Runs the headless multiplayer smoke test in eight scenarios:
+# Runs the headless multiplayer smoke test in nine scenarios:
 #   A  listen host + client with simulated 80 ms latency + client with the wrong build
 #   B  dedicated server + shooting client (simulated 60 ms) + observing client
 #   C  the wave loop: quick 2-wave match, ready-up, victory, restart, defeat (host + client)
@@ -8,10 +8,13 @@
 #   G  latency: own-input response, smoothing delay and hitches clean and under simulated lag,
 #      host input buffer; checked against shared/network/latency_budget.tres
 #   H  fairness: a client with 160 ms round trip vs 2 bots; bot hits must be where the
-#      client's own screen had it (fair dodging)
+#      client's own screen had it (fair dodging); also times the client's own hit feedback
+#   I  Waves at 160 ms (the latency plan's lag lab): a client vs melee Runners, a spitter and a
+#      volley enemy; measures hit feedback, enemy bullets drawn on the client and melee hits
+#      judged against where the client saw the enemy
 #   S  soak (opt-in, only with -Only S): the stress scene for 10 minutes; memory, objects and
 #      nodes must not keep growing. Run it before a release or after big changes.
-# A-E only check behaviour, so they run at the same time (each on its own port). F, G and H
+# A-E only check behaviour, so they run at the same time (each on its own port). F, G, H and I
 # measure timing, so each runs alone afterwards: other processes would skew their numbers.
 # Usage (from the repo root):
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
@@ -65,7 +68,10 @@ $scenarios = @(
        Roles = @((Role "latencyhost"), (Role "latencyclient" -Late)) },
     @{ Id = "H"; Title = "fairness under 160 ms round trip (fair dodging)"; Alone = $true
        Script = "res://tests/net/fairness.gd"; Metrics = "FAIRNESS"
-       Roles = @((Role "fairhost"), (Role "fairclient" -Late)) },
+       Roles = @((Role "fairhost"), (Role "fairclient" "80,0,0" -Late)) },
+    @{ Id = "I"; Title = "Waves at 160 ms round trip (hit feedback, bullets, melee)"; Alone = $true
+       Script = "res://tests/net/waves_fairness.gd"; Metrics = "WAVEFAIR"
+       Roles = @((Role "waveshost"), (Role "wavesclient" "80,0,0" -Late)) },
     @{ Id = "S"; Title = "soak ($SoakSeconds s of stress, memory and node counts)"; Alone = $true
        Script = "res://tests/net/stress.gd"; Metrics = "STRESS"; Optional = $true
        Extra = "$SoakSeconds"; Timeout = $SoakSeconds + 120
