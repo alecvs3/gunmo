@@ -86,6 +86,8 @@ request, pop-up menu or game mode. Use one when it fits.
 ## How Claude should work here
 - **Plan first.** For anything bigger than a small fix, list the files you'll touch and the approach, then wait for an OK.
 - **Keep changes small:** one GitHub issue per branch, and say `Closes #N` in the PR.
+- **Split big requests.** If a request covers more than one issue (several milestones, a whole new system), first propose how to split it into issues, then do one at a time, each with its own PR. Big batches leave code that nobody on the team understands. If the developer still wants it in one go after seeing the split, do that.
+- **Explain each PR's design.** End every PR description with a short "How it works" section in plain words: the main pieces, how data flows between them, and what it touches in existing systems, so the developer who didn't write it can follow it.
 - **Say what you're about to change.** There are no fixed areas yet (see Ownership), so before a big change name the systems it touches, in case the other developer is working there.
 - **Follow the roadmap.** `docs/ROADMAP.md` lists the next milestones and their steps in order, each with how to test it.
 - **Edit scene files carefully.** Keep `.tscn` diffs minimal and explain them. Never edit `project.godot`, `.import` files or `export_presets.cfg` without asking.
