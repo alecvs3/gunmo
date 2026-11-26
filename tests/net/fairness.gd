@@ -70,9 +70,15 @@ var _move: Vector2 = Vector2.ZERO
 var _firing: bool = false
 var _meter: HitFeedbackMeter = null
 var _incoming: IncomingHitJudge = null
-## Client: the present tick of the last rendered frame. Remote bullets move when a frame is
-## drawn, before the next physics step records them, so their positions belong to this tick.
-var _drawn_tick: int = 0
+## Client: the tick the host files our latest input under (PlayerTimeline's rule: our stamp, or
+## one past the previous one when a slow frame ran several ticks on one stamp; -1 = none yet).
+var _stamp: int = -1
+## Client: rendered frames and physics ticks while watching (a slow machine runs several ticks
+## per frame).
+var _frames: int = 0
+var _ticks: int = 0
+## Host: bot shots fired (shooter ids below 0, above ENEMY_SHOOTER_BASE).
+var _bot_shots: int = 0
 ## How long the client plays (scenario I plays longer for steadier numbers).
 var _play_seconds: float = PLAY_SECONDS
 
@@ -97,12 +103,17 @@ func _run_host() -> void:
 	await _wait_until(func() -> bool: return net.peers.size() >= 2, 20.0)
 	_check(net.peers.size() == 2, "client never joined")
 	await create_timer(3.0).timeout
-	root.get_node("EventBus").shot_fired.connect(_count_enemy_bolt)
+	root.get_node("EventBus").shot_fired.connect(_count_shot)
 	_spawn_enemies(SPITTER_PATH, SPITTERS)
 	while net.peers.size() >= 2:
 		_hold_host_frame()
 		await process_frame
-	_info("spitters alive %d, enemy bolts fired %d" % [_enemies().size(), _enemy_bolts])
+	_info(
+		(
+			"spitters alive %d, enemy bolts fired %d, bot shots fired %d"
+			% [_enemies().size(), _enemy_bolts, _bot_shots]
+		)
+	)
 	net.leave()
 	await create_timer(0.5).timeout
 
@@ -140,9 +151,12 @@ func _needs_top_up(health: Node) -> bool:
 	return health.current_health <= maxi(roundi(health.max_health * TOP_UP_SHARE), 3)
 
 
-func _count_enemy_bolt(shot: RefCounted) -> void:
-	if shot.get("shooter_id") <= ENEMY_SHOOTER_BASE:
+func _count_shot(shot: RefCounted) -> void:
+	var shooter_id: int = shot.get("shooter_id")
+	if shooter_id <= ENEMY_SHOOTER_BASE:
 		_enemy_bolts += 1
+	elif shooter_id < 0:
+		_bot_shots += 1
 
 
 func _run_client() -> void:
@@ -180,7 +194,7 @@ func _start_watching(net: Node) -> void:
 	process_frame.connect(_meter.poll)
 	_incoming = IncomingHitJudge.new(_own_positions, _tick_usec, _add)
 	_incoming.watch(level.get_node("Projectiles"))
-	process_frame.connect(_on_process_frame)
+	process_frame.connect(func() -> void: _frames += 1)
 
 
 ## Strafes (half a second walking, half a second standing) and fires for _play_seconds, then
@@ -199,28 +213,33 @@ func _play() -> void:
 	await create_timer(1.0).timeout
 
 
+## Runs before this tick's prediction. Our present only moves when a frame is drawn, so it is
+## still the one the last frame drew remote bullets at: their positions are filed under it.
 func _on_physics_frame() -> void:
+	_ticks += 1
 	_record_own_position()
 	_steer()
 	var projectiles: Node = root.get_node_or_null(_level_path() + "/Projectiles")
 	if projectiles != null:
-		_incoming.record(_drawn_tick, projectiles)
+		_incoming.record(_present(), projectiles)
 
 
-## Runs just before the frame's _process, where remote bullets take the present they are drawn at.
-func _on_process_frame() -> void:
-	_drawn_tick = roundi(root.get_node("NetworkManager").clock.server_tick_now())
+## Our view of the host's present tick (what our inputs are stamped with).
+func _present() -> int:
+	return roundi(root.get_node("NetworkManager").clock.server_tick_now())
 
 
-## The tick the client stamps on its inputs (its view of the host's present) -> where its own
-## player is after that tick's prediction.
+## Where our own player is after the last input, filed under the tick the host files that input
+## under (_stamp), then the stamp for the input this tick makes. A frame that runs several ticks
+## stamps them all with one present; the host gives them the next free ticks, so this does too.
 func _record_own_position() -> void:
 	var player: Node2D = _own_player()
 	if player == null:
 		return
-	var tick: int = roundi(root.get_node("NetworkManager").clock.server_tick_now())
-	_own_positions[tick] = player.get_node("HitboxComponent").call("center")
-	_tick_usec[tick] = Time.get_ticks_usec()
+	if _stamp >= 0:
+		_own_positions[_stamp] = player.get_node("HitboxComponent").call("center")
+	_stamp = maxi(_present(), _stamp + 1)
+	_tick_usec[_stamp] = Time.get_ticks_usec()
 
 
 ## Moves as _play() says and aims at (and, while firing, shoots) the nearest target.
@@ -288,6 +307,7 @@ func _on_contact_hurt(_buffer: StreamPeerBuffer) -> void:
 
 
 func _report() -> void:
+	_report_counts()
 	var hits: int = _incoming.bot_hits()
 	var share: float = IncomingHitJudge.share(_incoming.bot_fair, _incoming.bot_unfair)
 	print("FAIRNESS METRIC bot_hits_on_client %d" % hits)
@@ -305,6 +325,16 @@ func _report() -> void:
 	)
 	_report_incoming()
 	_report_hit_feedback()
+
+
+## What explains a low hit count: how slow our frames were, and hits that couldn't be judged.
+func _report_counts() -> void:
+	_info(
+		(
+			"%d frames for %d ticks; %d bullet hits on us, %d judged, %d without an own position"
+			% [_frames, _ticks, _incoming.hurt_count, _incoming.judged(), _incoming.no_sample]
+		)
+	)
 
 
 ## Bullets that hit us: drawn on us when they hit (those we could draw in time), and the hurt
