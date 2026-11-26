@@ -105,13 +105,38 @@ func test_hit_origin_defaults_to_the_muzzle() -> void:
 	assert_eq(shot.hit_origin, Vector2(38, 5), "enemies' shots keep testing from where they start")
 
 
-func _fire(origin: Vector2, direction: Vector2, team: StringName = &"tests") -> Bullet:
+func test_our_own_bullet_tells_when_it_lands_on_our_screen() -> void:
+	var target: Dictionary = _make_target(Vector2(30, 0), 100)
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT, &"tests", Bullet.Mode.PREDICTED)
+	watch_signals(bullet)
+	_tick(bullet, 10)
+	assert_signal_emit_count(bullet, "hit_predicted", 1)
+	var landed: Array = get_signal_parameters(bullet, "hit_predicted")
+	assert_eq(landed[2], target["hitbox"], "on the target it stopped on")
+	assert_eq((target["health"] as HealthComponent).current_health, 100, "it deals nothing")
+
+
+func test_the_hosts_bullet_never_predicts() -> void:
+	_make_target(Vector2(30, 0), 100)
+	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)
+	watch_signals(bullet)
+	_tick(bullet, 10)
+	assert_signal_emit_count(bullet, "hit_landed", 1)
+	assert_signal_not_emitted(bullet, "hit_predicted")
+
+
+func _fire(
+	origin: Vector2,
+	direction: Vector2,
+	team: StringName = &"tests",
+	mode: Bullet.Mode = Bullet.Mode.AUTHORITATIVE
+) -> Bullet:
 	var shot: Shot = Shot.from_weapon(data, origin, direction)
 	shot.shooter_id = 4
 	shot.team = team
 	shot.view_tick = NetworkManager.clock.tick
 	var bullet: Bullet = BULLET_SCENE.instantiate()
-	bullet.setup(shot, Bullet.Mode.AUTHORITATIVE)
+	bullet.setup(shot, mode)
 	add_child_autofree(bullet)
 	bullet.set_physics_process(false)
 	return bullet

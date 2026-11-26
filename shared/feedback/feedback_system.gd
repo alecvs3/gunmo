@@ -2,6 +2,9 @@ class_name FeedbackSystem
 extends Node
 ## The level's "game feel" effects and world sounds, on every peer. Looks and sounds only.
 ## - Damage numbers: any HitFeedback asks through EventBus.damage_seen.
+## - Our own hits (EventBus.hit_predicted, when the mode's latency policy allows): the target
+##   flashes and the hit sound plays the moment our bullet lands on our screen; the host's
+##   number for it follows without a second sound.
 ## - Death bursts: the host sees EventBus.enemy_killed, shows the burst and tells every client
 ##   where (EVENT_DEATH). Clients never guess from an enemy disappearing, because a match reset
 ##   removes enemies too.
@@ -60,6 +63,7 @@ func _ready() -> void:
 		sounds = SoundData.load_default()
 	add_child(_sound)
 	EventBus.damage_seen.connect(_show_number)
+	EventBus.hit_predicted.connect(_on_hit_predicted)
 	EventBus.blast_shown.connect(_on_blast_shown)
 	EventBus.shot_shown.connect(_on_shot_shown)
 	EventBus.local_player_hurt.connect(_on_local_player_hurt.unbind(1))
@@ -69,14 +73,27 @@ func _ready() -> void:
 		NetworkManager.channel.event_received.connect(_on_event_received)
 
 
-func _show_number(at: Vector2, amount: int, big: bool) -> void:
+func _show_number(at: Vector2, amount: int, big: bool, predicted: bool) -> void:
 	var number := DamageNumber.new()
 	number.data = data
 	number.amount = amount
 	number.big = big
 	number.position = at + Vector2(randf_range(-1.0, 1.0) * data.number_spread, -16.0)
 	effects_root.add_child(number)
-	_sound.play_at(sounds.enemy_big_hit if big else sounds.enemy_hit, at)
+	if not predicted:
+		_sound.play_at(sounds.enemy_big_hit if big else sounds.enemy_hit, at)
+
+
+## Our own bullet landed on `target` on our screen: flash it and, for targets that show
+## numbers (enemies), play the hit sound now. Whether it was a big hit is only known once the
+## host's number arrives, so this is always the normal hit sound.
+func _on_hit_predicted(_shot: RefCounted, at: Vector2, target: Node2D) -> void:
+	var feedback := target.get_node_or_null("HitFeedback") as HitFeedback
+	if feedback == null:
+		return
+	feedback.flash()
+	if feedback.show_numbers:
+		_sound.play_at(sounds.enemy_hit, at)
 
 
 func _show_burst(at: Vector2, color: Color, size_scale: float, boss: bool) -> void:

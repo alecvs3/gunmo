@@ -48,7 +48,12 @@ signal path_step_requested(index: int)
 signal match_restart_requested
 ## Every peer, looks only: something drawn at `at` lost `amount` health (a HitFeedback saw it
 ## in the host's numbers); `big` = a big share of its max health. The FeedbackSystem shows it.
-signal damage_seen(at: Vector2, amount: int, big: bool)
+## `predicted` = our own screen already showed this hit (hit_predicted), so its sound has played.
+signal damage_seen(at: Vector2, amount: int, big: bool, predicted: bool)
+## The shooter's peer, looks and sounds only: our own bullet (a Shot) landed on `target` at `at`
+## on our screen, before the host's verdict (only while the mode's LatencyPolicy has
+## predict_hit_effects on). The FeedbackSystem flashes the target and plays the hit sound now.
+signal hit_predicted(shot: RefCounted, at: Vector2, target: Node2D)
 ## Host: an enemy exploded (a Bomber) at `at`; its damage is already dealt. The
 ## ProjectileSystem shows the blast here and on every client.
 signal blast_requested(at: Vector2, radius: float)

@@ -8,7 +8,11 @@ reloading are `shared/components/weapon_component.gd`.
    direction with seeded spread, the weapon's numbers, `fire_tick` and `view_tick`.
 2. Host: EventBus `shot_fired` → `projectile_system.gd` spawns an AUTHORITATIVE `Bullet` and
    announces it to everyone except the shooter (reliable event, `EVENT_FIRED`).
-   Owner client: `shot_predicted` → a PREDICTED bullet, shown at once, deals nothing.
+   Owner client: `shot_predicted` → a PREDICTED bullet, shown at once, deals nothing. When it
+   lands on a target it emits `hit_predicted`; with the mode's `LatencyPolicy.predict_hit_effects`
+   on, ProjectileSystem passes it on as EventBus `hit_predicted` and the target flashes (and the
+   hit sound plays) at once. The host's health drop for it then shows only the number
+   (`shared/feedback/predicted_hits.gd`).
    Other clients: a REMOTE bullet, drawn on their render timeline.
 3. The host's bullet sweeps along its path each tick (`bullet.gd`); the first sweep starts at
    `Shot.hit_origin` (a player's body; the muzzle for enemies). Human shots are tested

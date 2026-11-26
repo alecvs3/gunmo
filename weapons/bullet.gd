@@ -17,6 +17,8 @@ extends Node2D
 signal finished(bullet: Bullet, end_point: Vector2, hit_something: bool, end_tick: float)
 ## AUTHORITATIVE: the bullet hit `hitbox` (it may fly on if it pierces).
 signal hit_landed(bullet: Bullet, at: Vector2, hitbox: HitboxComponent)
+## PREDICTED: our own bullet landed on `hitbox` on our screen (the host's verdict follows).
+signal hit_predicted(bullet: Bullet, at: Vector2, hitbox: HitboxComponent)
 
 enum Mode { AUTHORITATIVE, PREDICTED, REMOTE }
 
@@ -163,6 +165,8 @@ func _hit(target: LagCompensator.Hit) -> void:
 	var landed: bool = true
 	if mode == Mode.AUTHORITATIVE:
 		landed = _damage(target.hitbox, target.point)
+	elif mode == Mode.PREDICTED:
+		hit_predicted.emit(self, target.point, target.hitbox)
 	if _pierce_left <= 0 or not landed:
 		_stop(target.point, true)
 		return

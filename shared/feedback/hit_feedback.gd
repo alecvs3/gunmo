@@ -4,6 +4,8 @@ extends Node
 ## white and (if `show_numbers`) asks for a damage number (EventBus.damage_seen). It reads the
 ## health the host decided (on clients it comes from snapshots), so it never decides anything.
 ## Healing and respawns (health going up) show nothing.
+## Our own hits can flash at once (flash(), from EventBus.hit_predicted); the host's drop for a
+## hit already shown that way doesn't flash again (PredictedHits).
 
 const FLASH_SHADER: Shader = preload("res://shared/feedback/hit_flash.gdshader")
 
@@ -18,6 +20,7 @@ const FLASH_SHADER: Shader = preload("res://shared/feedback/hit_flash.gdshader")
 var _last_health: int = -1
 var _flash_left: float = 0.0
 var _material := ShaderMaterial.new()
+var _predicted := PredictedHits.new()
 
 
 ## Health lost since last frame (0 when it rose or stayed, or on the first look).
@@ -51,8 +54,24 @@ func _process(delta: float) -> void:
 		_material.set_shader_parameter("flash", weight)
 
 
-func _on_lost(amount: int) -> void:
+## Our own bullet landed on this target on our screen: flash now, before the host's verdict.
+func flash() -> void:
 	_flash_left = data.flash_seconds
+	_predicted.add(_now(), _window())
+
+
+func _on_lost(amount: int) -> void:
+	var predicted: bool = _predicted.consume(_now(), _window())
+	if not predicted:
+		_flash_left = data.flash_seconds
 	if show_numbers and target is Node2D:
 		var big: bool = data.is_big_hit(amount, health.max_health)
-		EventBus.damage_seen.emit((target as Node2D).global_position, amount, big)
+		EventBus.damage_seen.emit((target as Node2D).global_position, amount, big, predicted)
+
+
+func _now() -> float:
+	return Time.get_ticks_msec() / 1000.0
+
+
+func _window() -> float:
+	return NetworkManager.latency_policy.predicted_hit_seconds

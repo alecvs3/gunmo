@@ -206,6 +206,13 @@ func _shield_blocks(incoming: Vector2) -> bool:
 	return enemy_data.shield.blocks(_facing.angle(), incoming)
 
 
+## Every peer: whether its shield would block a hit along `incoming` as it is drawn here (the
+## facing from its snapshot). Looks only: a shooter's PC uses it so a shot it sees stopped by
+## the shield doesn't flash as a hit (the host's own check decides).
+func blocks_as_drawn(incoming: Vector2) -> bool:
+	return enemy_data.shield != null and enemy_data.shield.blocks(_facing_target, incoming)
+
+
 ## Host: standing still while it winds up an attack that wants that (a Charger's dash).
 func _is_rooted() -> bool:
 	return _windup_left > 0.0 and enemy_data.attack_in(_phase).stands_still_while_winding_up()

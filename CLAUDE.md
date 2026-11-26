@@ -29,7 +29,8 @@ shared/components/ HealthComponent, HitboxComponent, WeaponComponent, Knockback,
 shared/feedback/ looks and sounds only: HitFeedback (hit flash, damage numbers), FeedbackSystem (numbers,
                  death bursts, world sounds), FeedbackData (tuning, camera shake), SoundData +
                  SoundPlayback (which sound for each moment; files in assets/kenney_sounds/ and
-                 assets/pixabay_sounds/; each gun's WeaponData.fire_sound)
+                 assets/pixabay_sounds/; each gun's WeaponData.fire_sound), PredictedHits (our own
+                 hits shown at once are not shown again when the host's drop arrives)
 player/*         Player scene: input, movement (PlayerMotor), prediction, snapshot (PlayerNetSync)
 weapons/*        WeaponData, Shot, Bullet, ProjectileSystem, rockets (Explosion), fair dodging
                  (TimelineHits)

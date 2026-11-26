@@ -1,11 +1,13 @@
 extends RefCounted
 ## Client side of smoke scenarios H and I: how long our own hits take to show.
-## A PREDICTED bullet (our own copy) that stops on a target counts as a predicted hit on that
-## target (skipped when two targets are close enough to be the one). Its feedback is the first
-## drop of that target's health on our screen, which is what HitFeedback reacts to today (hit
-## sound, flash, damage number). The scenarios make every test hit deal exactly 1 damage, so a
-## drop of N answers the N oldest predicted hits on that target. Also counts how many predicted
-## hits the host confirmed (EVENT_HIT).
+## A PREDICTED bullet (our own copy) that stops on a target counts as a predicted hit. Its
+## feedback is EventBus.hit_predicted for that shot (the flash and hit sound play there; it
+## fires when the mode's latency policy has predict_hit_effects on). Without it, the feedback is
+## the first drop of the target's health on our screen, which is what HitFeedback reacts to then:
+## the target is the one whose hitbox is near where the bullet stopped (skipped when two are),
+## and since the scenarios make every test hit deal exactly 1 damage, a drop of N answers the N
+## oldest predicted hits on that target. Also counts how many predicted hits the host confirmed
+## (EVENT_HIT).
 ## It names no project classes (smoke scripts run before the autoloads exist).
 
 ## Bullet.Mode.PREDICTED.
@@ -30,6 +32,8 @@ var _pending: Dictionary = {}
 var _last_health: Dictionary = {}
 var _predicted_keys: Array[String] = []
 var _confirmed: Dictionary = {}
+## Shot key -> usec when EventBus.hit_predicted showed it.
+var _shown_usec: Dictionary = {}
 
 
 func _init(targets: Callable, add: Callable) -> void:
@@ -37,10 +41,12 @@ func _init(targets: Callable, add: Callable) -> void:
 	_add = add
 
 
-## Starts watching our own bullets (spawned under `projectiles`) and the host's confirmations.
-func watch(projectiles: Node, projectile_system: Node) -> void:
+## Starts watching our own bullets (spawned under `projectiles`), their predicted hit effects
+## (`event_bus`) and the host's confirmations.
+func watch(projectiles: Node, projectile_system: Node, event_bus: Node) -> void:
 	projectiles.child_entered_tree.connect(_on_projectile)
 	projectile_system.connect("hit_confirmed", _on_hit_confirmed)
+	event_bus.connect("hit_predicted", _on_hit_shown)
 
 
 ## Call every rendered frame: compares each target's health with last frame.
@@ -79,6 +85,13 @@ func _on_predicted_finished(
 ) -> void:
 	if not hit_something:
 		return
+	var key: String = bullet.get("shot").call("key")
+	if _shown_usec.has(key):
+		_predicted_keys.append(key)
+		var waited: int = maxi(int(_shown_usec[key]) - Time.get_ticks_usec(), 0)
+		_add.call("hit_feedback_ms", waited / 1000.0)
+		_shown_usec.erase(key)
+		return
 	var target: Node = _nearest_target(end_point)
 	if target == null:
 		return
@@ -86,7 +99,12 @@ func _on_predicted_finished(
 	var times: Array = _pending.get(id, [])
 	times.append(Time.get_ticks_usec())
 	_pending[id] = times
-	_predicted_keys.append(bullet.get("shot").call("key"))
+	_predicted_keys.append(key)
+
+
+## Fires as the bullet lands, just before its `finished` (same frame).
+func _on_hit_shown(shot: RefCounted, _at: Vector2, _target: Node2D) -> void:
+	_shown_usec[shot.call("key")] = Time.get_ticks_usec()
 
 
 func _on_hit_confirmed(shot_key: String, _at: Vector2) -> void:
