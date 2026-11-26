@@ -15,7 +15,9 @@ extends "res://tests/net/fairness.gd"
 ##   melee_fair_share       melee hits on us where the enemy we drew touched us at the judged tick
 ##   melee_gap_px           how far that drawn enemy's contact square was from our hitbox
 ## For melee, the host's EVENT_HURT for each touch names the enemy and the tick of our own
-## timeline it was judged on (fair contact, step 5).
+## timeline it was judged on (fair contact, step 5), and the test's host also sends where it had
+## us at that tick (test-only topic): a hit while a shove had moved us without our screen knowing
+## yet is counted apart (melee_hits_while_displaced), like bullet hits while displaced.
 ## Each step of the plan turns on the budget of the number it fixes: hit_feedback_ms and
 ## predicted_confirm_share (step 3), bullet_visible_share and hurt_feedback_ms (step 4),
 ## melee_fair_share and melee_gap_px (step 5).
@@ -32,6 +34,12 @@ const WAVES_PLAY_SECONDS: float = 40.0
 const MELEE_SLACK: float = 4.0
 const MIN_BULLET_HITS: int = 3
 const MIN_MELEE_HITS: int = 3
+## Test-only NetChannel topic (no game code uses it): where the host had the client at the tick a
+## touch on it was judged on.
+const HOST_VIEW_TOPIC: int = 200
+## Our own screen had us further than this from where the host did (px): displaced (a shove our
+## prediction hasn't learnt of yet), so the hit is counted apart.
+const DISPLACED_PX: float = 6.0
 ## Fair contact (latency plan step 5): melee hits where the enemy we drew touched us.
 const MIN_MELEE_FAIR_SHARE: float = 0.85
 const MAX_MELEE_GAP_P95_PX: float = 12.0
@@ -44,6 +52,11 @@ var _drawn_enemies: Dictionary = {}
 var _contact_half: Dictionary = {}
 var _melee_fair: int = 0
 var _melee_unfair: int = 0
+## Client: melee hits while our screen had us elsewhere than the host (counted apart).
+var _melee_displaced: int = 0
+## Client: judged tick -> net ids of the enemies whose touch EVENT_HURT came, waiting for the
+## host's view of us at that tick.
+var _pending_melee: Dictionary = {}
 
 
 func _initialize() -> void:
@@ -74,6 +87,7 @@ func _run_waves_host() -> void:
 	hunters += _spawn_enemies(VOLLEY_PATH, 1)
 	for enemy: Node in hunters:
 		enemy.set("_base_damage_taken", TEST_DAMAGE_TAKEN)
+	root.get_node("EventBus").contact_hit.connect(_tell_host_view.bind(client))
 	while net.peers.size() >= 2:
 		_hold_waves_host_frame(client)
 		await process_frame
@@ -140,8 +154,51 @@ func _on_contact_hurt(buffer: StreamPeerBuffer) -> void:
 	var tick: int = buffer.get_u32()
 	if tick >= 1 << 31:
 		return
+	var waiting: Array = _pending_melee.get(tick, [])
+	waiting.append(net_id)
+	_pending_melee[tick] = waiting
+
+
+## Host (test only): where the host had the client at the tick a touch on it was judged on.
+func _tell_host_view(enemy: Node2D, hitbox: Node, client: Node2D) -> void:
+	if not is_instance_valid(client) or hitbox != client.get_node("HitboxComponent"):
+		return
+	var tick: int = enemy.call("judged_tick", hitbox)
+	if tick < 0:
+		return
+	var place: RefCounted = client.get("timeline").get("history").call("sample", tick)
+	var buffer := StreamPeerBuffer.new()
+	buffer.put_32(tick)
+	buffer.put_float(place.get("position").x)
+	buffer.put_float(place.get("position").y)
+	var channel: Object = root.get_node("NetworkManager").channel
+	channel.call("send_event", client.name.to_int(), HOST_VIEW_TOPIC, buffer.data_array)
+
+
+func _on_event(topic: int, data: PackedByteArray) -> void:
+	if topic != HOST_VIEW_TOPIC or data.is_empty():
+		super._on_event(topic, data)
+		return
+	var buffer := StreamPeerBuffer.new()
+	buffer.data_array = data
+	var tick: int = buffer.get_32()
+	var host_view := Vector2(buffer.get_float(), buffer.get_float())
+	var waiting: Array = _pending_melee.get(tick, [])
+	if waiting.is_empty():
+		return
+	_judge_melee(waiting.pop_front(), tick, host_view)
+	if waiting.is_empty():
+		_pending_melee.erase(tick)
+
+
+## A touch the host judged on our tick `tick`, with us at `host_view` there: did that enemy, as we
+## drew it, touch us where our screen had us?
+func _judge_melee(net_id: int, tick: int, host_view: Vector2) -> void:
 	var drawn: Vector2 = _drawn_enemy_at(net_id, tick)
 	if not drawn.is_finite() or not _own_positions.has(tick):
+		return
+	if (_own_positions[tick] as Vector2).distance_to(host_view) > DISPLACED_PX:
+		_melee_displaced += 1
 		return
 	var gap: float = _contact_gap(drawn, _contact_half[net_id], tick)
 	_melee_fair += 1 if gap <= MELEE_SLACK else 0
@@ -182,6 +239,7 @@ func _report() -> void:
 	var bullet_hits: int = _incoming.bullet_hits()
 	var melee_hits: int = _melee_fair + _melee_unfair
 	_metric("melee_hits_on_client", melee_hits)
+	_metric("melee_hits_while_displaced", _melee_displaced)
 	_metric("melee_fair_share", _melee_fair / float(maxi(melee_hits, 1)))
 	_metric("melee_gap_px_p50", _percentile("melee_gap_px", 0.5))
 	_metric("melee_gap_px_p95", _percentile("melee_gap_px", 0.95))
