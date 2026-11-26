@@ -16,8 +16,14 @@ signal peer_left(peer_id: int)
 enum State { OFFLINE, HOSTING, JOINING, CONNECTED }
 
 const DEFAULT_CONFIG: NetworkConfig = preload("res://shared/network/default_network_config.tres")
+const DEFAULT_LATENCY_POLICY: LatencyPolicy = preload(
+	"res://shared/network/default_latency_policy.tres"
+)
 
 var config: NetworkConfig = DEFAULT_CONFIG
+## How this match hides latency: the running mode's policy (GameMode sets it on every peer), or
+## the default with everything off. Shared code reads this, never which mode is running.
+var latency_policy: LatencyPolicy = DEFAULT_LATENCY_POLICY
 var state: State = State.OFFLINE
 ## Every connected peer id, including our own. The host is always id 1.
 var peers: Array[int] = []
@@ -150,6 +156,11 @@ func configure_simulator(latency_ms: int, jitter_ms: int, loss: float) -> void:
 		NetLog.write(
 			"network simulator: +%d ms ±%d ms, %.0f%% loss" % [latency_ms, jitter_ms, loss * 100.0]
 		)
+
+
+## The running mode's latency policy; null puts back the default (everything off).
+func use_latency_policy(policy: LatencyPolicy) -> void:
+	latency_policy = policy if policy != null else DEFAULT_LATENCY_POLICY
 
 
 func _create_children() -> void:

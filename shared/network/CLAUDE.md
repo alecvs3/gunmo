@@ -26,6 +26,7 @@ Read `docs/NETCODE.md` for the full design. This page is the short version for w
 | `handshake.gd`, `join_gate.gd`, `build_info.gd` | Who may join: same `PROTOCOL` and build, lobby not full |
 | `ping_tracker.gd`, `net_stats.gd`, `jitter_meter.gd`, `net_log.gd` | Measurements for F3, the logs and the latency checks |
 | `latency_budget.gd`, `latency_budget.tres` | The input-delay and smoothing goals, checked by smoke scenario G |
+| `latency_policy.gd`, `default_latency_policy.tres` | How a match hides latency (predicted hit effects, fair contact...): each mode sets its own (`modes/data/*_latency.tres`); read it from `NetworkManager.latency_policy`, never by asking which mode runs. The default turns everything off |
 | `launch_args.gd` | `--host`, `--join`, `--dedicated`, `--net-sim`, `--match` |
 
 Tuning lives in `default_network_config.tres` (`NetworkConfig`), never in code.

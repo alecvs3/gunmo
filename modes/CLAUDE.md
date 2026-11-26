@@ -13,6 +13,10 @@ reviewed by both developers.
 - Everything else (HUD, scoreboard, results) listens to EventBus `match_state_changed` and never
   asks which mode is running (rule 7). `MatchNetState.mode_kind` only picks the UI layout.
 - Phases: `LOBBY`, `BREAK`, `ACTIVE`, `VICTORY`, `DEFEAT`. Ready-up works in LOBBY and BREAK.
+- **Latency policy:** each mode scene sets `latency_policy` (`modes/data/waves_latency.tres`,
+  `modes/data/gun_game_latency.tres`). While the mode is in the tree, `GameMode` hands it to
+  `NetworkManager.latency_policy` on every peer, so Waves and Gun Game can hide lag differently
+  without shared code asking which mode runs. A new mode needs one (or gets the all-off default).
 - Hooks a mode overrides: `_start()`, `restart()`, `_on_ready_changed()`, `_on_peer_joined()`,
   `_on_player_killed()`, `_on_request()`, `_prepare_new_bot()`, `_on_bot_removed()`.
 - Bots: the base fills empty slots up to `bot_fill_to` (`_sync_bots()`); a mode calls it when

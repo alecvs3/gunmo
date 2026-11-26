@@ -15,6 +15,10 @@ const REQUEST_READY: int = 1
 ## Bot profile when the match settings name none.
 const FALLBACK_BOT_PROFILE: String = "res://bots/profiles/normal.tres"
 
+## How this mode hides latency (modes/data/*_latency.tres). Set on the mode scene, so every peer
+## has the same one without sending it; handed to NetworkManager while the mode is in the tree.
+@export var latency_policy: LatencyPolicy
+
 var settings: MatchSettings
 var level: Level
 ## Host: the live state. Clients: the newest state from the host.
@@ -29,6 +33,15 @@ var _published := MatchNetState.new()
 func setup(map: Level, match_settings: MatchSettings) -> void:
 	level = map
 	settings = match_settings
+
+
+## Every peer: this mode's latency policy applies while it runs.
+func _enter_tree() -> void:
+	NetworkManager.use_latency_policy(latency_policy)
+
+
+func _exit_tree() -> void:
+	NetworkManager.use_latency_policy(null)
 
 
 func _ready() -> void:
