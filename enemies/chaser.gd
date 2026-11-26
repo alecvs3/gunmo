@@ -43,6 +43,10 @@ var _windup_left: float = 0.0
 var _windup_total: float = 0.0
 ## Host: which way it aimed when the windup began (a Charger dashes this way).
 var _windup_aim: Vector2 = Vector2.RIGHT
+## Host: a wind-up volley's shots, built when its aim locked and sent to every peer ahead of
+## time (LatencyPolicy.schedule_windup_shots); they leave at _locked_fire_tick.
+var _locked_shots: Array[Shot] = []
+var _locked_fire_tick: int = 0
 ## Host: a Charger's dash (ChargeAttack); idle for every other enemy.
 var _dash := EnemyDash.new()
 ## Host: a Bomber already exploded (so its death doesn't pop a second blast).
@@ -216,8 +220,11 @@ func blocks_as_drawn(incoming: Vector2) -> bool:
 	return enemy_data.shield != null and enemy_data.shield.blocks(_facing_target, incoming)
 
 
-## Host: standing still while it winds up an attack that wants that (a Charger's dash).
+## Host: standing still while it winds up an attack that wants that (a Charger's dash), and
+## from the moment a volley's aim locks until it fires (its shots leave from where it stands).
 func _is_rooted() -> bool:
+	if not _locked_shots.is_empty():
+		return true
 	return _windup_left > 0.0 and enemy_data.attack_in(_phase).stands_still_while_winding_up()
 
 
@@ -251,15 +258,8 @@ func _find_nearest_target() -> Node2D:
 ## A telegraphed attack winds up first (every peer sees the ring fill), then fires.
 func _attack(target: Node2D, delta: float) -> void:
 	var attack: EnemyAttack = enemy_data.attack_in(_phase)
-	if _windup_left > 0.0:
-		_windup_left = maxf(_windup_left - delta, 0.0)
-		if _windup_left <= 0.0:
-			_attack_cooldown_left = attack.interval
-			attack.perform(self, target, _touching_hitboxes())
-		_telegraph.progress = (
-			EnemyNetState.to_telegraph(_windup_left, _windup_total)
-			/ float(EnemyNetState.TELEGRAPH_STEPS)
-		)
+	if _windup_left > 0.0 or not _locked_shots.is_empty():
+		_wind_up(attack, target, delta)
 		return
 	_attack_cooldown_left = maxf(_attack_cooldown_left - delta, 0.0)
 	if _attack_cooldown_left > 0.0:
@@ -279,6 +279,50 @@ func _attack(target: Node2D, delta: float) -> void:
 			_windup_aim = global_position.direction_to(target.global_position)
 	elif attack.perform(self, target, _touching_hitboxes()):
 		_attack_cooldown_left = attack.interval
+
+
+## Host: one tick of a windup. A volley locks its aim near the end and fires the locked shots
+## on their tick; any other attack performs when the windup runs out.
+func _wind_up(attack: EnemyAttack, target: Node2D, delta: float) -> void:
+	_windup_left = maxf(_windup_left - delta, 0.0)
+	var policy: LatencyPolicy = NetworkManager.latency_policy
+	var lock_now: bool = EnemyAttack.lock_left(_windup_left, policy.aim_lock_seconds) <= 0.0
+	if _locked_shots.is_empty() and _windup_left > 0.0 and lock_now:
+		if policy.schedule_windup_shots and attack.schedules_shots(policy.aim_lock_seconds):
+			_lock_aim(attack, target)
+	if not _locked_shots.is_empty():
+		if NetworkManager.clock.tick >= _locked_fire_tick:
+			_fire_locked_shots(attack)
+	elif _windup_left <= 0.0:
+		_attack_cooldown_left = attack.interval
+		attack.perform(self, target, _touching_hitboxes())
+	_telegraph.progress = (
+		EnemyNetState.to_telegraph(_windup_left, _windup_total)
+		/ float(EnemyNetState.TELEGRAPH_STEPS)
+	)
+
+
+## Host: build the volley now and tell every peer, so its bullets reach them before they leave.
+func _lock_aim(attack: EnemyAttack, target: Node2D) -> void:
+	_locked_fire_tick = NetworkManager.clock.tick + ceili(_windup_left * NetClock.tick_rate())
+	_locked_shots = attack.build_shots(self, target, _locked_fire_tick)
+	if not _locked_shots.is_empty():
+		EventBus.shots_scheduled.emit(_locked_shots)
+
+
+func _fire_locked_shots(attack: EnemyAttack) -> void:
+	for shot in _locked_shots:
+		EventBus.shot_fired.emit(shot)
+	_locked_shots.clear()
+	_windup_left = 0.0
+	_attack_cooldown_left = attack.interval
+
+
+## Host: leaving before a locked volley fired (died, or the match reset): its shots never leave.
+func _exit_tree() -> void:
+	if not _locked_shots.is_empty():
+		EventBus.shots_cancelled.emit(_locked_shots)
+		_locked_shots.clear()
 
 
 ## Host: a ChargeAttack's windup is over: dash the way it aimed when the warning began.

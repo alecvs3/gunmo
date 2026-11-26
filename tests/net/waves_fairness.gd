@@ -20,7 +20,7 @@ extends "res://tests/net/fairness.gd"
 ## yet is counted apart (melee_hits_while_displaced), like bullet hits while displaced.
 ## Each step of the plan turns on the budget of the number it fixes: hit_feedback_ms and
 ## predicted_confirm_share (step 3), bullet_visible_share and hurt_feedback_ms (step 4),
-## melee_fair_share and melee_gap_px (step 5).
+## melee_fair_share and melee_gap_px (step 5), volley_visible_share (step 6).
 ## Usage: -s res://tests/net/waves_fairness.gd -- <waveshost|wavesclient> <port>
 ## [latency,jitter,loss%]. It runs before the autoloads exist, so it names no project classes.
 
@@ -43,6 +43,9 @@ const DISPLACED_PX: float = 6.0
 ## Fair contact (latency plan step 5): melee hits where the enemy we drew touched us.
 const MIN_MELEE_FAIR_SHARE: float = 0.85
 const MAX_MELEE_GAP_P95_PX: float = 12.0
+## Scheduled wind-up shots (latency plan step 6): the volley enemy's bullets that hit us were
+## all drawn on us (they reach us before they leave).
+const MIN_VOLLEY_VISIBLE_SHARE: float = 0.95
 ## Ticks of drawn positions the client keeps.
 const KEEP_TICKS: int = 600
 
@@ -50,6 +53,8 @@ const KEEP_TICKS: int = 600
 var _drawn_enemies: Dictionary = {}
 ## Client: enemy net id -> half the size of its contact square.
 var _contact_half: Dictionary = {}
+## Client: net ids of the volley test enemies.
+var _volley_ids: Dictionary = {}
 var _melee_fair: int = 0
 var _melee_unfair: int = 0
 ## Client: melee hits while our screen had us elsewhere than the host (counted apart).
@@ -139,6 +144,8 @@ func _record_drawn_enemies(tick: int) -> void:
 	for enemy: Node2D in _enemies():
 		var net_id: int = enemy.get_node("NetEntity").net_id
 		drawn[net_id] = enemy.global_position
+		if enemy.get("data_path") == VOLLEY_PATH:
+			_volley_ids[net_id] = true
 		if not _contact_half.has(net_id):
 			var shape: CollisionShape2D = enemy.get_node("ContactArea/CollisionShape2D")
 			_contact_half[net_id] = shape.shape.get("size") * shape.scale / 2.0
@@ -245,7 +252,25 @@ func _report() -> void:
 	_metric("melee_gap_px_p95", _percentile("melee_gap_px", 0.95))
 	_check(bullet_hits >= MIN_BULLET_HITS, "only %d enemy bullet hits to judge" % bullet_hits)
 	_check(melee_hits >= MIN_MELEE_HITS, "only %d melee hits to judge" % melee_hits)
+	_report_volley()
 	var fair: float = _melee_fair / float(maxi(melee_hits, 1))
 	var gap_p95: float = _percentile("melee_gap_px", 0.95)
 	_check(fair >= MIN_MELEE_FAIR_SHARE, "only %.0f%% of melee hits touched us" % (fair * 100))
 	_check(gap_p95 <= MAX_MELEE_GAP_P95_PX, "melee hits %.0f px away (p95)" % gap_p95)
+
+
+## The volley enemy's bullets that hit us: drawn on us when they hit (scheduled shots).
+func _report_volley() -> void:
+	var seen: int = 0
+	var judged: int = 0
+	for shooter_id: int in _incoming.by_shooter:
+		if _volley_ids.has(ENEMY_SHOOTER_BASE - shooter_id):
+			seen += _incoming.by_shooter[shooter_id][0]
+			judged += _incoming.by_shooter[shooter_id][1]
+	var share: float = seen / float(maxi(judged, 1))
+	_metric("volley_hits_on_client", judged)
+	_metric("volley_visible_share", share)
+	_check(judged >= MIN_BULLET_HITS, "only %d volley hits to judge" % judged)
+	_check(
+		share >= MIN_VOLLEY_VISIBLE_SHARE, "only %.0f%% of volley hits drawn on us" % (share * 100)
+	)

@@ -116,6 +116,30 @@ func test_our_own_bullet_tells_when_it_lands_on_our_screen() -> void:
 	assert_eq((target["health"] as HealthComponent).current_health, 100, "it deals nothing")
 
 
+func test_a_scheduled_bullet_waits_hidden_then_shows_on_the_present() -> void:
+	var now: float = NetworkManager.clock.server_tick_now()
+	var waiting: Bullet = _scheduled(now + 10.0)
+	waiting._process(0.0)
+	assert_false(waiting.visible, "hidden before it leaves")
+	var left: Bullet = _scheduled(now - 5.0)
+	left._process(0.0)
+	assert_true(left.visible)
+	var expected: Vector2 = left.shot.point_at(NetworkManager.clock.server_tick_now() - (now - 5.0))
+	assert_almost_eq(left.position.distance_to(expected), 0.0, 0.5, "on the present, no catch-up")
+
+
+func _scheduled(fire_tick: float) -> Bullet:
+	var shot: Shot = Shot.from_weapon(data, Vector2.ZERO, Vector2.RIGHT)
+	shot.shooter_id = -1048600
+	shot.fire_tick = fire_tick
+	var bullet: Bullet = BULLET_SCENE.instantiate()
+	bullet.setup(shot, Bullet.Mode.REMOTE)
+	bullet.scheduled = true
+	add_child_autofree(bullet)
+	bullet.set_process(false)
+	return bullet
+
+
 func test_the_hosts_bullet_never_predicts() -> void:
 	_make_target(Vector2(30, 0), 100)
 	var bullet: Bullet = _fire(Vector2.ZERO, Vector2.RIGHT)

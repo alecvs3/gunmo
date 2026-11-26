@@ -32,6 +32,23 @@ func perform(_enemy: Node2D, _target: Node2D, _touching: Array[HitboxComponent])
 	return false
 
 
+## Whether this attack, with a windup, can lock its aim `aim_lock` seconds before it fires and
+## send its shots ahead (LatencyPolicy.schedule_windup_shots). Only attacks that fire shots.
+func schedules_shots(_aim_lock: float) -> bool:
+	return false
+
+
+## Host: the shots this attack would fire, stamped to leave at `fire_tick` (attacks that
+## schedule shots override it).
+func build_shots(_enemy: Node2D, _target: Node2D, _fire_tick: float) -> Array[Shot]:
+	return []
+
+
+## Pure: seconds of a windup left until its aim locks (0 or less = locked).
+static func lock_left(windup_left: float, aim_lock: float) -> float:
+	return windup_left - aim_lock
+
+
 ## Pure: seconds from one attack to the next (the windup, then the cooldown).
 func cycle_seconds() -> float:
 	return maxf(interval + windup, 0.05)
