@@ -244,11 +244,15 @@ delay, command budget, prediction snap distance, max rewind, simulator defaults)
 - Snapshots are full states, not deltas (about 10 bytes per enemy). Fine for hundreds of enemies
   at 30 snapshots per second; delta compression can be added inside `SnapshotCodec` later.
 - Exported (non-editor) builds compare by version number only, not by build fingerprint.
-- **A Runner's shove isn't predicted.** Your PC learns of a melee knockback one round trip later,
-  so for a moment your screen has you where the host no longer does; a hit in that moment
-  (bullet or melee) can look unfair. Smoke I counts bullet hits like that apart
-  (`bullet_hits_while_displaced`, 4–7 per run at 160 ms); melee hits right after a shove are
-  why `melee_fair_share` sits near its 85% budget. Predicting the shove would fix both.
+- **A melee shove isn't predicted.** Your PC learns of a knockback one round trip later, so for a
+  moment your screen has you where the host no longer does; a hit in that moment (bullet or
+  melee) can look unfair. Smoke I counts those apart: `bullet_hits_while_displaced` (5–16 per
+  run at 160 ms) and `melee_hits_while_displaced` (about half of all melee hits with three
+  Runners on you). Every other melee hit is fair (gap 0–2 px). Predicting the shove was tried
+  twice (2026-11-26), both made it worse: first from a "ready to strike" bit (it arrives late),
+  then from the host tick the touch is ready plus the player's input lead (melee fair share
+  80–83% and a 21–23 px worst gap, against 83–90% and 9–12 px without). A shove predicted even
+  a tick or two off moves you while the enemy is still on you.
 - **Point-blank shots without a windup** (the spitter, Shooters) can hit before their
   `EVENT_FIRED` reaches you (one-way latency): no drawing can show them
   (`bullet_hits_before_drawn` in smoke H and I). Wind-up volleys are sent ahead instead.

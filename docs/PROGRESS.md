@@ -1413,8 +1413,10 @@ it busy while another shoots its back).
 - **Not played over the internet yet.** The numbers come from simulated lag (smoke H and I); the
   playtest checklist is in the step 7 PR.
 - **The enemy hit sound is still empty**, so "instant" is the flash until a sound is chosen.
-- **Melee knockback isn't predicted:** right after a Runner's shove your screen briefly has you
-  where the host doesn't, so `melee_fair_share` sits near its 85% budget (85–92% over the runs).
+- **Melee shoves aren't predicted:** right after a shove your screen briefly has you where the
+  host doesn't. In smoke I about half the melee hits (three Runners on you) land like that and are
+  counted apart; all the others are fair. Predicting the shove was tried twice and made it worse
+  (docs/NETCODE.md, "Known limits").
 - **Point-blank shots without a windup** (spitter, Shooter) can still hit before your PC hears of
   them (about 10 per Waves run at 160 ms).
 - **Above about 200 ms round trip** Gun Game hits get rejected more (lag compensation stops at
