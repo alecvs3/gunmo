@@ -6,8 +6,10 @@ extends Node
 ##   Owner client: a predicted bullet for every EventBus.shot_predicted, shown at once.
 ##   Other clients: a remote bullet for every announcement.
 ## Every hit the host decides is confirmed to the shooter (EVENT_HIT), including hits a
-## piercing bullet flies through, and the player who was hit is told where it came from
-## (EVENT_HURT, for the hit-direction marker).
+## piercing bullet flies through, and the player who was hit is told which shot it was and where
+## it came from (EVENT_HURT, for the hit-direction marker and hurt sound). A bot's or enemy's
+## bullet that visibly reaches our own player plays that at once (Bullet.reached_us, with the
+## mode's LatencyPolicy.predict_own_hurt on); the host's EVENT_HURT for it then plays nothing.
 ## Announcements are reliable NetChannel events, so no bullet is ever missed or left flying.
 ## Shots that explode (rockets) are detonated by the host where they land (Explosion), and
 ## every peer is shown the blast (EVENT_BLAST).
@@ -35,6 +37,31 @@ const EVENT_BLAST: int = 5
 @export var projectiles_root: Node2D
 
 var _bullets: Dictionary = {}
+## Client: shot key -> seconds when its hurt was shown before the host's EVENT_HURT.
+var _hurt_shown: Dictionary = {}
+
+
+## EVENT_HURT: the victim is told which shot hit it and from where.
+static func encode_hurt(from_direction: Vector2, shooter_id: int, shot_id: int) -> PackedByteArray:
+	var buffer := StreamPeerBuffer.new()
+	buffer.put_u8(EVENT_HURT)
+	NetCodec.put_vector2(buffer, from_direction)
+	buffer.put_32(shooter_id)
+	buffer.put_u32(shot_id)
+	return buffer.data_array
+
+
+## Decodes an EVENT_HURT payload (after its kind byte) into [from_direction, shot key], or []
+## if bad.
+static func decode_hurt(buffer: StreamPeerBuffer) -> Array:
+	if buffer.get_available_bytes() < 16:
+		return []
+	var from_direction: Vector2 = NetCodec.get_vector2(buffer)
+	var shooter_id: int = buffer.get_32()
+	var shot_id: int = buffer.get_u32()
+	if not from_direction.is_finite():
+		return []
+	return [from_direction.normalized(), "%d:%d" % [shooter_id, shot_id]]
 
 
 func _ready() -> void:
@@ -71,6 +98,8 @@ func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
 		bullet.hit_landed.connect(_on_bullet_hit_explode)
 	elif mode == Bullet.Mode.PREDICTED:
 		bullet.hit_predicted.connect(_on_hit_predicted)
+	else:
+		bullet.reached_us.connect(_on_reached_us)
 	_bullets[shot.key()] = bullet
 	projectiles_root.add_child(bullet)
 	EventBus.shot_shown.emit(shot)
@@ -132,7 +161,7 @@ func _show_blast(at: Vector2, radius: float) -> void:
 ## Host: tell the shooter its bullet hit (the host's own shots are confirmed locally), and
 ## the player it hit which way it came from.
 func _on_bullet_hit(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> void:
-	_tell_victim(hitbox.owner_id, -bullet.shot.direction)
+	_tell_victim(hitbox.owner_id, -bullet.shot.direction, bullet.shot)
 	var shooter_id: int = bullet.shot.shooter_id
 	if shooter_id == multiplayer.get_unique_id():
 		hit_confirmed.emit(bullet.shot.key(), at)
@@ -159,14 +188,38 @@ func _on_hit_predicted(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> 
 
 
 ## `from_direction` points from the victim toward where the bullet came from.
-func _tell_victim(victim_id: int, from_direction: Vector2) -> void:
+func _tell_victim(victim_id: int, from_direction: Vector2, shot: Shot) -> void:
 	if victim_id == multiplayer.get_unique_id():
 		EventBus.local_player_hurt.emit(from_direction)
 	elif victim_id in multiplayer.get_peers():
-		var buffer := StreamPeerBuffer.new()
-		buffer.put_u8(EVENT_HURT)
-		NetCodec.put_vector2(buffer, from_direction)
-		NetworkManager.channel.send_event(victim_id, TOPIC, buffer.data_array)
+		var payload: PackedByteArray = encode_hurt(from_direction, shot.shooter_id, shot.shot_id)
+		NetworkManager.channel.send_event(victim_id, TOPIC, payload)
+
+
+## Client: a bot's or enemy's bullet visibly reached our own player: hurt now, not when the
+## host's verdict arrives one round trip later.
+func _on_reached_us(bullet: Bullet) -> void:
+	var now: float = Time.get_ticks_msec() / 1000.0
+	_forget_old_hurts(now, NetworkManager.latency_policy.predicted_hit_seconds)
+	_hurt_shown[bullet.shot.key()] = now
+	EventBus.local_player_hurt.emit(-bullet.shot.direction)
+
+
+## A shown hurt the host never confirmed in time was a misprediction (its sound already played).
+func _forget_old_hurts(now: float, window: float) -> void:
+	for key: String in _hurt_shown.keys():
+		if now - float(_hurt_shown[key]) > window:
+			_hurt_shown.erase(key)
+
+
+## Client: the host says a shot hurt us. Shown already (it visibly reached us) = nothing more.
+func _on_hurt(hurt: Array) -> void:
+	if hurt.is_empty():
+		return
+	if _hurt_shown.has(hurt[1]):
+		_hurt_shown.erase(hurt[1])
+		return
+	EventBus.local_player_hurt.emit(hurt[0])
 
 
 func _on_event_received(topic: int, data: PackedByteArray) -> void:
@@ -185,9 +238,7 @@ func _on_event_received(topic: int, data: PackedByteArray) -> void:
 			var at: Vector2 = NetCodec.get_vector2(buffer)
 			_show_blast(at, buffer.get_float())
 		EVENT_HURT:
-			var from_direction: Vector2 = NetCodec.get_vector2(buffer)
-			if from_direction.is_finite():
-				EventBus.local_player_hurt.emit(from_direction.normalized())
+			_on_hurt(decode_hurt(buffer))
 
 
 func _on_shot_ended(buffer: StreamPeerBuffer) -> void:

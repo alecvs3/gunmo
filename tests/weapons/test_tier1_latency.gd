@@ -89,6 +89,42 @@ func test_catch_up_moves_from_the_past_to_the_present() -> void:
 	assert_eq(Bullet.display_tick(112.0, 122.0, 100.0, 12.0), 122.0, "then on the present")
 
 
+func test_reach_is_the_flight_to_the_closest_point() -> void:
+	var shot: Shot = _shot(Vector2.ZERO, Vector2.RIGHT, 6.0)
+	assert_almost_eq(Bullet.reach_ticks(shot, Vector2(120, 30)), 20.0, 0.001)
+
+
+func test_a_close_bullet_catches_up_before_it_reaches_us() -> void:
+	var delay: float = 7.0
+	var reach: float = 20.0
+	var ticks: float = Bullet.catch_up_ticks(reach, delay, 12.0)
+	assert_gt(ticks, 0.0, "still eased in")
+	assert_lt(ticks + delay, reach, "on the present before it arrives")
+
+
+func test_a_far_bullet_keeps_the_full_catch_up() -> void:
+	assert_eq(Bullet.catch_up_ticks(200.0, 7.0, 12.0), 12.0)
+
+
+func test_a_bullet_about_to_arrive_is_drawn_at_the_present() -> void:
+	assert_eq(Bullet.catch_up_ticks(10.0, 7.0, 12.0), 0.0, "1.5 ticks is under SNAP_TICKS")
+	assert_eq(Bullet.catch_up_ticks(5.0, 7.0, 12.0), 0.0, "it would arrive before it shows")
+
+
+func test_the_hurt_event_names_the_shot() -> void:
+	var payload: PackedByteArray = ProjectileSystem.encode_hurt(Vector2(0, -2), -1048590, 77)
+	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload)
+	assert_eq(buffer.get_u8(), ProjectileSystem.EVENT_HURT)
+	assert_eq(ProjectileSystem.decode_hurt(buffer), [Vector2.UP, "-1048590:77"])
+
+
+func test_a_short_hurt_event_is_dropped() -> void:
+	var payload: PackedByteArray = ProjectileSystem.encode_hurt(Vector2.UP, 3, 4)
+	var buffer: StreamPeerBuffer = NetCodec.buffer_from(payload.slice(0, 10))
+	buffer.get_u8()
+	assert_eq(ProjectileSystem.decode_hurt(buffer), [])
+
+
 func test_only_bullets_passing_near_catch_up() -> void:
 	var shot: Shot = _shot(Vector2.ZERO, Vector2.RIGHT, 20.0)
 	assert_true(Bullet.passes_near(shot, Vector2(500, 60), 150.0))

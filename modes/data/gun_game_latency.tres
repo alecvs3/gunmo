@@ -5,4 +5,6 @@
 [resource]
 script = ExtResource("1_policy")
 predict_hit_effects = true
+snap_close_threats = true
+predict_own_hurt = true
 victim_rewind = 0.25
