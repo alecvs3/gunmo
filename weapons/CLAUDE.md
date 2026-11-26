@@ -20,6 +20,9 @@ reloading are `shared/components/weapon_component.gd`.
    shooter id; enemies use `Shot.enemy_shooter_id(net_id)`) are tested against remote humans
    on their own timeline (`timeline_hits.gd`, fair dodging).
    Ranged enemies fire through the same `shot_fired` (`enemies/behaviours/ranged_attack.gd`).
+   A wind-up volley in Waves locks its aim early and its shots reach every peer ahead
+   (EventBus `shots_scheduled` → `EVENT_SCHEDULED`; `Bullet.scheduled`, `aim_line.gd`), then
+   leave through `shot_fired` on their tick (docs/NETCODE.md, "Shooting").
 4. On a hit the host applies damage and knockback, then tells the shooter (`EVENT_HIT`) and
    the victim (`EVENT_HURT`). When the bullet ends, everyone is told where and when
    (`EVENT_ENDED`).
