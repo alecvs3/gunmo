@@ -78,6 +78,13 @@ share of max health, so a boss at 1.0 out-heals the players. Add it to `BOSSES` 
   (damage, healing or summons per second; recipe `tune-wave-difficulty`).
 - **AI runs only on the host** (rule 3). Clients only draw it.
 - Shots go through EventBus `shot_fired` like a player's, so `ProjectileSystem` handles them.
+  A volley with a `windup` of at least `LatencyPolicy.aim_lock_seconds` locks its aim early
+  in Waves and sends its shots ahead (`schedules_shots()`, `build_shots()`): a new
+  shot-firing attack with a windup should build its shots in `build_shots()` the same way.
+- **Contact** (melee, a dash): hurt players through the `touching` hitboxes the chaser hands to
+  `perform()` (`ChaserEnemy._touching_hitboxes()`), never your own Area2D test, and emit
+  EventBus `contact_hit` for each hit. Then fair contact (`enemies/contact_judge.gd`: in Waves a
+  touch counts where the victim saw the enemy) and the victim's hurt marker come for free.
 - Death fires EventBus `enemy_killed`. Never call into the mode directly.
 - Plan first: this is bigger than a data change, so list the files and wait for an OK.
 

@@ -20,6 +20,8 @@
 #   .\tests\net\run_smoke.ps1 -Godot "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe"
 #   -Only A,E   just those scenarios (letters)
 #   -Only S -SoakSeconds 1800   a longer soak
+#   -Only H,I -ClientSim "125,10,0"   H and I with that client lag instead (latency ms each
+#      way, jitter ms, loss %): the lag sweep in docs/NETCODE.md ("Known limits")
 # or set the GODOT environment variable once and run it without -Godot.
 # Exit code 0 = every role passed. Logs go to %TEMP%\gunmo_net_smoke (or -LogDir).
 param(
@@ -28,7 +30,8 @@ param(
     [int]$TimeoutSeconds = 120,
     [string]$LogDir = (Join-Path $env:TEMP "gunmo_net_smoke"),
     [string[]]$Only = @(),
-    [int]$SoakSeconds = 600
+    [int]$SoakSeconds = 600,
+    [string]$ClientSim = ""
 )
 
 if (-not $Godot -or -not (Test-Path $Godot)) {
@@ -78,6 +81,11 @@ $scenarios = @(
        Roles = @((Role "stresshost"), (Role "stressclient")) }
 )
 for ($i = 0; $i -lt $scenarios.Count; $i++) { $scenarios[$i].Port = $Port + $i }
+if ($ClientSim) {
+    foreach ($scenario in $scenarios | Where-Object { $_.Id -in @("H", "I") }) {
+        foreach ($role in $scenario.Roles | Where-Object { $_.Sim }) { $role.Sim = $ClientSim }
+    }
+}
 if ($Only.Count) { $scenarios = @($scenarios | Where-Object { $Only -contains $_.Id }) }
 else { $scenarios = @($scenarios | Where-Object { -not $_.Optional }) }
 

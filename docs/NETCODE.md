@@ -60,7 +60,23 @@ frame (always `NetClock.tick_delta()`).
 - **Other clients:** place the bullet on their render timeline (REMOTE), so it lines up with the
   shooter they see, and end it exactly where and when the host said. A bullet whose path comes
   near your own player catches up from that past timeline to the present over its first
-  0.2 s, so a bullet that hits you visibly reaches you when the damage lands.
+  0.2 s, so a bullet that hits you visibly reaches you when the damage lands. A bot's or
+  enemy's bullet catches up before it can reach you (`Bullet.catch_up_ticks`: the ticks until it
+  reaches you, minus the render delay, halved), or is drawn on the present at once when that
+  is under 6 ticks (`LatencyPolicy.snap_close_threats`).
+- **Your own hits show at once** (`LatencyPolicy.predict_hit_effects`): when your PREDICTED
+  bullet lands, EventBus `hit_predicted` flashes the target and plays its hit sound; the host's
+  health drop for it then shows only the number (`shared/feedback/predicted_hits.gd`, the idea
+  of DDNet's predicted events). A hit the host never confirms still flashed (a misprediction;
+  the smoke test checks the host confirms at least 90%).
+- **Hurt at once** (`LatencyPolicy.predict_own_hurt`): a bot's or enemy's bullet, drawn on the
+  present, that sweeps into your player plays the hurt sound, marker and shake then
+  (`Bullet.reached_us`); `EVENT_HURT` names the shot, so the host's verdict doesn't repeat it.
+- **Wind-up volleys are sent ahead** (`LatencyPolicy.schedule_windup_shots`, Waves): with
+  `aim_lock_seconds` (0.25) of windup left, the enemy locks its aim, stands still and builds the
+  volley's shots with a fire tick ahead; every peer gets them at once (`EVENT_SCHEDULED`), waits
+  with an aim line (`weapons/aim_line.gd`) and shows them on the present from the tick they
+  leave (`Bullet.scheduled`). If the enemy leaves first, they're ended (`EVENT_ENDED`).
 - **Bots' and enemies' bullets and fair dodging** (`weapons/timeline_hits.gd`): every input carries the
   sender's view of the host clock (`InputCommand.client_tick`), and the host records where each
   remote player's own inputs put them on that timeline (`Player.timeline`). A bot's bullet is
@@ -71,8 +87,41 @@ frame (always `NetClock.tick_delta()`).
   (`AimLead.intercept`), from where that player's own screen has them. Ranged enemies
   (`RangedAttack`) fire as shooter `Shot.enemy_shooter_id(net_id)`, a negative id far below any
   bot's, so their bullets get the same fair dodging; they lead from the host's view.
-- The player who was hit gets `EVENT_HURT` with the direction it came from (the HUD's
-  hit-direction marker, `ui/hurt_indicator.gd`).
+- The player who was hit gets `EVENT_HURT` with what hit it (a bullet's shot, or an enemy's
+  touch and the tick it was judged on) and the direction it came from (the HUD's hit-direction
+  marker, `ui/hurt_indicator.gd`, and the hurt sound).
+
+## Contact attacks (melee, dashes)
+
+An enemy hurts the players its `ChaserEnemy._touching_hitboxes()` returns (MeleeAttack, a
+Charger's dash). With `LatencyPolicy.fair_contact` on (Waves), a remote human counts as touched
+only if the enemy, **where that player saw it**, touched **where that player's own input put
+them**: every input carries `InputCommand.view_tick` (the client's render tick), the player's
+timeline keeps it with the input's stamp (`PlayerTimeline.view_at`), `LagCompensator.position_at`
+gives the enemy's place then, and `ContactJudge` (`enemies/contact_judge.gd`) tests the enemy's
+contact square against the player's round hitbox. The host still decides (rule 1); it only
+judges on the victim's view, like fair dodging does for bullets. The host's own player and bots
+keep the plain overlap. Every touch is reported (EventBus `contact_hit` → `EVENT_HURT`).
+A client could send an old `view_tick` to be judged against older enemy positions, but it is
+clamped to `victim_rewind` (0.3 s) before its stamp, and in co-op nobody gains from it.
+
+## Latency policy per mode
+
+Each mode scene sets a `LatencyPolicy` (`modes/data/*_latency.tres`); `GameMode` hands it to
+`NetworkManager.latency_policy` while it runs, so shared code reads the policy, never the mode.
+The default (`shared/network/default_latency_policy.tres`) turns everything off.
+
+| Policy field | Waves | Gun Game | Why they differ |
+|---|---|---|---|
+| `predict_hit_effects` | on | on | Your own hit should never wait. |
+| `predict_damage_numbers` | off | off | Numbers wait for the host's real value. |
+| `predicted_hit_seconds` | 0.5 | 0.5 | How long a shown hit waits for the host's verdict. |
+| `snap_close_threats` | on | on | Gun Game: bots' bullets only (humans' are lag-compensated). |
+| `predict_own_hurt` | on | on | Gun Game: bots' bullets only. |
+| `fair_contact` | on | off | Only Waves has contact attacks. |
+| `victim_rewind` | 0.30 s | 0.25 s | PvE can favour the defender a little more. |
+| `schedule_windup_shots` | on | off | Only Waves has wind-up attacks. |
+| `aim_lock_seconds` | 0.25 s | — | At least one-way latency plus smoothing. |
 - `ProjectileSystem.hit_confirmed` fires on the shooter's PC when the host confirms a hit
   (use it for hit markers).
 
@@ -195,3 +244,29 @@ delay, command budget, prediction snap distance, max rewind, simulator defaults)
 - Snapshots are full states, not deltas (about 10 bytes per enemy). Fine for hundreds of enemies
   at 30 snapshots per second; delta compression can be added inside `SnapshotCodec` later.
 - Exported (non-editor) builds compare by version number only, not by build fingerprint.
+- **A Runner's shove isn't predicted.** Your PC learns of a melee knockback one round trip later,
+  so for a moment your screen has you where the host no longer does; a hit in that moment
+  (bullet or melee) can look unfair. Smoke I counts bullet hits like that apart
+  (`bullet_hits_while_displaced`, 4–7 per run at 160 ms); melee hits right after a shove are
+  why `melee_fair_share` sits near its 85% budget. Predicting the shove would fix both.
+- **Point-blank shots without a windup** (the spitter, Shooters) can hit before their
+  `EVENT_FIRED` reaches you (one-way latency): no drawing can show them
+  (`bullet_hits_before_drawn` in smoke H and I). Wind-up volleys are sent ahead instead.
+- **Enemies react to you late** (80–160 ms): they are drawn in the past, by design. Predicting
+  them forward would break fair contact (`docs/LATENCY_PLAN.md`, section 4).
+- **Where fairness breaks** (lag sweep, 2026-11-26: smoke H and I with the client at each
+  latency each way and 10 ms jitter, one run each, `run_smoke.ps1 -Only H,I -ClientSim "125,10,0"`):
+
+  | Latency each way (round trip) | 0 (0) | 40 (80) | 80 (160) | 125 (250) | 160 (320) |
+  |---|---|---|---|---|---|
+  | Own hit shown, p50 | 0 ms | 0 ms | 0 ms | 0 ms | 0 ms |
+  | Shown hits the host confirmed, Gun Game / Waves | 1.00 / 0.99 | 0.99 / 0.99 | 0.94 / 0.95 | 0.87 / 0.94 | 0.79 / 0.93 |
+  | Hits on you drawn on you, Gun Game / Waves | 0.98 / 1.00 | 0.98 / 1.00 | 1.00 / 1.00 | 1.00 / 0.90 | 1.00 / 1.00 |
+  | Volley hits drawn on you | 1.00 | 1.00 | 1.00 | 0.88 | 1.00 |
+  | Melee fair share / worst 5% gap | 0.99 / 1 px | 0.92 / 6 px | 0.87 / 10 px | 0.88 / 9 px | 0.88 / 7 px |
+  | Every budget met | yes | yes | yes | no | no |
+
+  What breaks first, above about 200 ms round trip: in Gun Game, lag compensation stops at
+  `max_rewind` (0.25 s), so a shooter's hits on what they saw get rejected more often (shown hit,
+  no damage); and a volley's 0.25 s aim lock no longer covers one-way latency plus smoothing, so
+  some boss pellets arrive late. Fair contact holds (its `victim_rewind` is 0.3 s).

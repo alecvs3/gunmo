@@ -1393,3 +1393,30 @@ it busy while another shoots its back).
 - The difficulty score doesn't know about the shield, so it rates the Shielder as easier than it is.
 - Bots don't flank it on purpose; they keep shooting the shield.
 - Not played: the numbers are a first draft.
+
+## Latency: fair play at 160 ms ⚠️ (playtest over the internet to do)
+
+`docs/LATENCY_PLAN.md`, all 7 steps, for what Yusuf felt at 160 ms round trip. How it works:
+`docs/NETCODE.md` ("Shooting", "Contact attacks", "Latency policy per mode", "Known limits").
+
+| What | Status | Where |
+|---|---|---|
+| **Lag lab:** smoke I (Waves at 160 ms) and H measure what a laggy player feels, each with budgets | Done | `tests/net/waves_fairness.gd`, `fairness.gd`, `incoming_hit_judge.gd`, `hit_feedback_meter.gd` |
+| **Latency policy per mode:** Waves and Gun Game hide lag differently; shared code reads the policy | Done, tested | `shared/network/latency_policy.gd`, `modes/data/*_latency.tres` |
+| **Your own hits show at once** (flash and hit sound; the number waits for the host): 220 ms → 0 ms | Done, tested | `shared/feedback/predicted_hits.gd`, `weapons/bullet.gd` |
+| **Hits on you are drawn on you** (close bot and enemy bullets catch up in time) and the **hurt sound plays at once**: drawn 18–28% → 96–100%, hurt 70–166 ms → about 0 ms | Done, tested | `weapons/bullet.gd`, `weapons/projectile_system.gd` |
+| **Fair melee** (Waves): a touch counts where you saw the enemy; melee now gives the hurt marker and sound. Worst gap 38–44 px → 7–11 px | Done, tested | `enemies/contact_judge.gd`, `enemies/chaser.gd`, `player/player_timeline.gd` |
+| **Boss volleys sent ahead** (Waves): bosses lock their aim 0.25 s early, stand still and show aim lines; their pellets are drawn on you when they hit | Done, tested | `enemies/chaser.gd`, `weapons/aim_line.gd` |
+| **Lag sweep** 0–320 ms round trip: every budget holds up to 160 ms | Done | `docs/NETCODE.md`, "Known limits" |
+
+### Known limitations
+- **Not played over the internet yet.** The numbers come from simulated lag (smoke H and I); the
+  playtest checklist is in the step 7 PR.
+- **The enemy hit sound is still empty**, so "instant" is the flash until a sound is chosen.
+- **Melee knockback isn't predicted:** right after a Runner's shove your screen briefly has you
+  where the host doesn't, so `melee_fair_share` sits near its 85% budget (85–92% over the runs).
+- **Point-blank shots without a windup** (spitter, Shooter) can still hit before your PC hears of
+  them (about 10 per Waves run at 160 ms).
+- **Above about 200 ms round trip** Gun Game hits get rejected more (lag compensation stops at
+  0.25 s) and some boss pellets arrive late (the aim lock is 0.25 s).
+- Timing scenarios F–I give false failures with the Godot editor open.
