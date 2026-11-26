@@ -10,7 +10,8 @@ const TYPES: Array[String] = [
 	"splitter",
 	"support",
 	"charger",
-	"bomber"
+	"bomber",
+	"shielder",
 ]
 ## Types the waves never buy directly (they come from others).
 const SPAWNED_ONLY: Array[String] = ["splitling"]
@@ -106,6 +107,20 @@ func test_bomber_blows_up_and_carries_a_bomb() -> void:
 	assert_true(bomber.look is BombLook, "it has its own look")
 	assert_gt(bomber.move_speed, _load("grunt").move_speed, "fast")
 	assert_lt(bomber.max_health, _load("grunt").max_health, "fragile")
+
+
+func test_shielder_blocks_from_the_front_and_turns_slowly() -> void:
+	var shielder: EnemyData = _load("shielder")
+	assert_not_null(shielder.shield, "it carries a shield")
+	var look := shielder.look as ShieldLook
+	assert_not_null(look, "it has its own look")
+	if shielder.shield != null and look != null:
+		assert_eq(look.arc_degrees, shielder.shield.arc_degrees, "the plate shows the real arc")
+		assert_lt(shielder.shield.arc_degrees, 180.0, "its sides and back are open")
+		assert_lt(shielder.shield.turn_speed_degrees, 180.0, "slow enough to get around")
+	assert_eq(shielder.flinch_degrees, 0.0, "a flinch would swing the shield aside")
+	for type: int in DamageType.Type.values():
+		assert_almost_eq(shielder.taken(type), 1.0, 0.001, "no damage type counters it")
 
 
 func test_received_heal_scales_and_rounds() -> void:

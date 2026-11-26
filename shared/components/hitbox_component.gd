@@ -12,6 +12,9 @@ extends Area2D
 ## The player this hitbox belongs to (0 = not a player). Its own shots never hit it, even
 ## when there are no teams (free-for-all).
 var owner_id: int = 0
+## Host, optional: called with the direction a hit travels; true = the hit is blocked (a
+## Shielder's shield) and does nothing. Empty for everyone without a shield.
+var guard: Callable = Callable()
 
 var _radius: float = 0.0
 var _half_extents: Vector2 = Vector2.ZERO
@@ -34,17 +37,23 @@ func _exit_tree() -> void:
 
 
 ## Host only (HealthComponent ignores it elsewhere). damage_type is a DamageType.Type: the
-## target's traits take more or less of it.
+## target's traits take more or less of it. `incoming` is the direction the hit travels
+## (a bullet's flight, away from a blast); Vector2.ZERO = from no side, never blocked.
+## False = a guard blocked it: no damage, no push.
 func hit(
 	damage: int,
 	source_id: int,
 	push: Vector2 = Vector2.ZERO,
-	damage_type: int = DamageType.Type.KINETIC
-) -> void:
+	damage_type: int = DamageType.Type.KINETIC,
+	incoming: Vector2 = Vector2.ZERO
+) -> bool:
+	if incoming != Vector2.ZERO and guard.is_valid() and guard.call(incoming):
+		return false
 	if health != null:
 		health.take_damage(damage, source_id, damage_type)
 	if knockback != null and multiplayer.is_server():
 		knockback.apply(push)
+	return true
 
 
 ## False while its owner is dead or gone.

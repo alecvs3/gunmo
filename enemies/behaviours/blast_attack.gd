@@ -58,8 +58,9 @@ func blast(at: Vector2, own: HitboxComponent, hurts_players: bool, source_id: in
 		if hitbox == own or not hitbox.is_hittable() or not hurts(hitbox.team, hurts_players):
 			continue
 		if reaches(at, hitbox.center()):
-			var push: Vector2 = at.direction_to(hitbox.center()) * knockback
-			hitbox.hit(damage_to(hitbox.team), source_id, push, DamageType.Type.BLAST)
+			var away: Vector2 = at.direction_to(hitbox.center())
+			var damage: int = damage_to(hitbox.team)
+			hitbox.hit(damage, source_id, away * knockback, DamageType.Type.BLAST, away)
 	EventBus.blast_requested.emit(at, radius)
 
 

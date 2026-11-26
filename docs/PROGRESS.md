@@ -1375,3 +1375,21 @@ into a crowd of other enemies.
 - The difficulty score counts its one blast like steady melee damage, so it may rate the Bomber a bit high.
 - Bots don't back away from a lit fuse on purpose.
 - Not played: the numbers are a first draft.
+
+## Enemy overhaul 3: the Shielder ⚠️ (issue #170; playtests to do)
+
+An enemy beaten by position, not by a gun: its shield blocks every damage type from the
+front, rockets included, so players have to get around it (or, in co-op, one player keeps
+it busy while another shoots its back).
+
+| What | Status | Where |
+|---|---|---|
+| **Shielder** (from wave 7, 150 health, slow): a shield over its front (110°) blocks every hit from there; sides and back take full damage. It turns towards its target at 90°/s, never flinches, and shoves players with the shield (14 damage, big push) | Done, tested | `enemies/data/shielder.tres`, `enemies/behaviours/enemy_shield.gd` |
+| **Blocking:** `HitboxComponent.hit()` takes the direction a hit travels (`incoming`) and returns false when a `guard` blocks it (no damage, no push). Bullets pass their flight direction (a blocked bullet stops even with pierce left; a rocket still explodes on the shield), blasts pass "away from the blast". Pet powers pass none, so they get through | Done, tested | `shared/components/hitbox_component.gd`, `weapons/bullet.gd`, `weapons/explosion.gd` |
+| **Look:** `ShieldLook`, a curved metal plate exactly as wide as the blocking arc | Done, tested | `enemies/looks/shield_look.gd` |
+
+### Known limitations
+- A blocked shot shows no "blocked" effect yet: the bullet just stops at the shield.
+- The difficulty score doesn't know about the shield, so it rates the Shielder as easier than it is.
+- Bots don't flank it on purpose; they keep shooting the shield.
+- Not played: the numbers are a first draft.
