@@ -1422,3 +1422,19 @@ it busy while another shoots its back).
 - **Above about 200 ms round trip** Gun Game hits get rejected more (lag compensation stops at
   0.25 s) and some boss pellets arrive late (the aim lock is 0.25 s).
 - Timing scenarios F–I give false failures with the Godot editor open.
+
+## Smoke H: enough hits to judge on slow machines ✅ (#197)
+
+Smoke H sometimes failed on CI with "only N bot/enemy hits to judge". A slow machine runs several
+ticks in one drawn frame; they share one tick stamp and the host numbers them T, T+1, T+2, but the
+test only recorded where the client was at T, so hits on the other ticks were silently skipped.
+
+| What | Status | Where |
+|---|---|---|
+| The client records its position under the tick the host files each input under, and drawn bullets every rendered frame under the tick that frame drew (a point-blank boss pellet is first drawn right after its tick) | Done, tested (H 5/5, I passes; at 20 fps 0 hits skipped) | `tests/net/fairness.gd` |
+| `SMOKE INFO` explains a low count: frames vs ticks, hits on us, judged, skipped; host: bot shots fired | Done | `tests/net/fairness.gd`, `tests/net/incoming_hit_judge.gd` |
+
+### Known limitations
+- **A client at 20 fps gets fewer of its own hits confirmed** (81–93%, budget 90%): its own bullet
+  is tested against bots frozen for a slow frame, the host's against bots moving every tick. Not seen
+  on CI (96%+); the game side is in `weapons/`.

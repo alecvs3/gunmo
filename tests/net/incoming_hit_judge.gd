@@ -36,6 +36,10 @@ var hidden: int = 0
 var never_drawn: int = 0
 ## Hits where the host's hit point was not on our player as our screen had it (see above).
 var displaced: int = 0
+## Bot or enemy bullets the host said hit us (EVENT_ENDED after an EVENT_HURT).
+var hurt_count: int = 0
+## Of those, hits we couldn't judge: their tick has no own-position sample.
+var no_sample: int = 0
 ## Shooter id -> [drawn on us, judged] for every judged hit except displaced ones (scenario I
 ## reads one enemy's share from it).
 var by_shooter: Dictionary = {}
@@ -65,7 +69,7 @@ func watch(projectiles: Node) -> void:
 	projectiles.child_entered_tree.connect(_on_projectile)
 
 
-## Every physics frame: where we drew each remote bullet in the last rendered frame, whose
+## Every rendered frame: where we drew each remote bullet in the last rendered frame, whose
 ## present was our own `tick`.
 func record(tick: int, projectiles: Node) -> void:
 	for bullet: Node in projectiles.get_children():
@@ -97,7 +101,9 @@ func on_ended(buffer: StreamPeerBuffer) -> void:
 		return
 	var hurt_usec: int = _hurt_usec[key]
 	_hurt_usec.erase(key)
+	hurt_count += 1
 	if not _own_positions.has(tick):
+		no_sample += 1
 		return
 	var reach: float = PLAYER_RADIUS + float(_radius.get(key, 6.0)) + SLACK
 	var where_we_saw_us: bool = _on_player(end_point, tick, reach)
@@ -119,6 +125,11 @@ func on_ended(buffer: StreamPeerBuffer) -> void:
 	var first: int = _first_touch(track, reach)
 	if first >= 0 and _tick_usec.has(first):
 		_add.call("hurt_feedback_ms", (hurt_usec - int(_tick_usec[first])) / 1000.0)
+
+
+## Hits judged fair or unfair (every hit we had an own position for).
+func judged() -> int:
+	return bot_hits() + enemy_hits()
 
 
 func bot_hits() -> int:

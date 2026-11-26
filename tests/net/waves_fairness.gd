@@ -241,6 +241,7 @@ func _contact_gap(center: Vector2, half: Vector2, tick: int) -> float:
 
 
 func _report() -> void:
+	_report_counts()
 	_report_hit_feedback()
 	_report_incoming()
 	var bullet_hits: int = _incoming.bullet_hits()
