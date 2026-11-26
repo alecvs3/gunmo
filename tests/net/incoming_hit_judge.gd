@@ -69,7 +69,7 @@ func watch(projectiles: Node) -> void:
 	projectiles.child_entered_tree.connect(_on_projectile)
 
 
-## Every physics frame: where we drew each remote bullet in the last rendered frame, whose
+## Every rendered frame: where we drew each remote bullet in the last rendered frame, whose
 ## present was our own `tick`.
 func record(tick: int, projectiles: Node) -> void:
 	for bullet: Node in projectiles.get_children():

@@ -1431,7 +1431,7 @@ test only recorded where the client was at T, so hits on the other ticks were si
 
 | What | Status | Where |
 |---|---|---|
-| The client records its position under the tick the host files each input under, and drawn bullets under the tick they were drawn at | Done, tested (H 5/5, I passes; at 20 fps 0 hits skipped) | `tests/net/fairness.gd` |
+| The client records its position under the tick the host files each input under, and drawn bullets every rendered frame under the tick that frame drew (a point-blank boss pellet is first drawn right after its tick) | Done, tested (H 5/5, I passes; at 20 fps 0 hits skipped) | `tests/net/fairness.gd` |
 | `SMOKE INFO` explains a low count: frames vs ticks, hits on us, judged, skipped; host: bot shots fired | Done | `tests/net/fairness.gd`, `tests/net/incoming_hit_judge.gd` |
 
 ### Known limitations

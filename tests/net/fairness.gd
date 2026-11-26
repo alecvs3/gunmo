@@ -194,7 +194,7 @@ func _start_watching(net: Node) -> void:
 	process_frame.connect(_meter.poll)
 	_incoming = IncomingHitJudge.new(_own_positions, _tick_usec, _add)
 	_incoming.watch(level.get_node("Projectiles"))
-	process_frame.connect(func() -> void: _frames += 1)
+	process_frame.connect(_on_process_frame)
 
 
 ## Strafes (half a second walking, half a second standing) and fires for _play_seconds, then
@@ -213,12 +213,18 @@ func _play() -> void:
 	await create_timer(1.0).timeout
 
 
-## Runs before this tick's prediction. Our present only moves when a frame is drawn, so it is
-## still the one the last frame drew remote bullets at: their positions are filed under it.
+## Runs before this tick's prediction.
 func _on_physics_frame() -> void:
 	_ticks += 1
 	_record_own_position()
 	_steer()
+
+
+## Runs before this frame's _process, so the clock still has the present the last frame drew
+## remote bullets at: every drawn frame is filed under it (a bullet fired point-blank is first
+## drawn in the frame right after its tick, often before the next physics tick).
+func _on_process_frame() -> void:
+	_frames += 1
 	var projectiles: Node = root.get_node_or_null(_level_path() + "/Projectiles")
 	if projectiles != null:
 		_incoming.record(_present(), projectiles)
