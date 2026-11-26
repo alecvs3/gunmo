@@ -68,6 +68,11 @@ func scale_size(factor: float) -> void:
 	_shape_offset *= factor
 
 
+## The radius of a round hitbox (players'); 0 for a box.
+func circle_radius() -> float:
+	return _radius
+
+
 ## Where the shape's centre is now.
 func center() -> Vector2:
 	return global_position + _shape_offset

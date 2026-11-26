@@ -56,6 +56,8 @@ const TOP_UP_SHARE: float = 0.1
 const TOPIC: int = 1
 const EVENT_ENDED: int = 2
 const EVENT_HURT: int = 4
+## ProjectileSystem.HURT_CONTACT: an EVENT_HURT about an enemy's touch, not a bullet.
+const HURT_CONTACT: int = 1
 
 ## Client: tick of its own timeline -> where its player was.
 var _own_positions: Dictionary = {}
@@ -271,10 +273,18 @@ func _on_event(topic: int, data: PackedByteArray) -> void:
 	buffer.data_array = data
 	match buffer.get_u8():
 		EVENT_HURT:
-			_incoming.on_hurt(buffer)
+			if buffer.get_u8() == HURT_CONTACT:
+				_on_contact_hurt(buffer)
+			else:
+				_incoming.on_hurt(buffer)
 
 		EVENT_ENDED:
 			_incoming.on_ended(buffer)
+
+
+## An enemy's touch hurt us (scenario I judges these; H has no melee enemies).
+func _on_contact_hurt(_buffer: StreamPeerBuffer) -> void:
+	pass
 
 
 func _report() -> void:

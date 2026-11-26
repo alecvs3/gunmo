@@ -10,6 +10,8 @@ extends Node
 ## it came from (EVENT_HURT, for the hit-direction marker and hurt sound). A bot's or enemy's
 ## bullet that visibly reaches our own player plays that at once (Bullet.reached_us, with the
 ## mode's LatencyPolicy.predict_own_hurt on); the host's EVENT_HURT for it then plays nothing.
+## An enemy's touch (EventBus.contact_hit) is told the same way, naming the enemy and the tick
+## of the victim's own timeline it was judged on.
 ## Announcements are reliable NetChannel events, so no bullet is ever missed or left flying.
 ## Shots that explode (rockets) are detonated by the host where they land (Explosion), and
 ## every peer is shown the blast (EVENT_BLAST).
@@ -33,6 +35,9 @@ const EVENT_ENDED: int = 2
 const EVENT_HIT: int = 3
 const EVENT_HURT: int = 4
 const EVENT_BLAST: int = 5
+## What an EVENT_HURT is about.
+const HURT_BULLET: int = 0
+const HURT_CONTACT: int = 1
 
 @export var projectiles_root: Node2D
 
@@ -41,33 +46,42 @@ var _bullets: Dictionary = {}
 var _hurt_shown: Dictionary = {}
 
 
-## EVENT_HURT: the victim is told which shot hit it and from where.
-static func encode_hurt(from_direction: Vector2, shooter_id: int, shot_id: int) -> PackedByteArray:
+## EVENT_HURT: the victim is told what hit it and from where. A bullet (HURT_BULLET) names its
+## shot; an enemy's touch (HURT_CONTACT) names the enemy (its shooter id) and, as `detail`, the
+## tick of the victim's own timeline it was judged on (-1 = not judged on their view). `detail`
+## travels as a u32 (shot ids are unsigned; a tick of -1 arrives as 0xFFFFFFFF).
+static func encode_hurt(
+	source: int, from_direction: Vector2, shooter_id: int, detail: int
+) -> PackedByteArray:
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u8(EVENT_HURT)
+	buffer.put_u8(source)
 	NetCodec.put_vector2(buffer, from_direction)
 	buffer.put_32(shooter_id)
-	buffer.put_u32(shot_id)
+	buffer.put_u32(detail & 0xFFFFFFFF)
 	return buffer.data_array
 
 
 ## Decodes an EVENT_HURT payload (after its kind byte) into [from_direction, shot key], or []
-## if bad.
+## if bad. The shot key is "" for an enemy's touch (it can't have been shown before).
 static func decode_hurt(buffer: StreamPeerBuffer) -> Array:
-	if buffer.get_available_bytes() < 16:
+	if buffer.get_available_bytes() < 17:
 		return []
+	var source: int = buffer.get_u8()
 	var from_direction: Vector2 = NetCodec.get_vector2(buffer)
 	var shooter_id: int = buffer.get_32()
-	var shot_id: int = buffer.get_u32()
-	if not from_direction.is_finite():
+	var detail: int = buffer.get_u32()
+	if not from_direction.is_finite() or source not in [HURT_BULLET, HURT_CONTACT]:
 		return []
-	return [from_direction.normalized(), "%d:%d" % [shooter_id, shot_id]]
+	var key: String = "%d:%d" % [shooter_id, detail] if source == HURT_BULLET else ""
+	return [from_direction.normalized(), key]
 
 
 func _ready() -> void:
 	if multiplayer.is_server():
 		EventBus.shot_fired.connect(_on_shot_fired)
 		EventBus.blast_requested.connect(_broadcast_blast)
+		EventBus.contact_hit.connect(_on_contact_hit)
 	else:
 		EventBus.shot_predicted.connect(_spawn.bind(Bullet.Mode.PREDICTED))
 		NetworkManager.channel.event_received.connect(_on_event_received)
@@ -161,7 +175,8 @@ func _show_blast(at: Vector2, radius: float) -> void:
 ## Host: tell the shooter its bullet hit (the host's own shots are confirmed locally), and
 ## the player it hit which way it came from.
 func _on_bullet_hit(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> void:
-	_tell_victim(hitbox.owner_id, -bullet.shot.direction, bullet.shot)
+	var shot: Shot = bullet.shot
+	_tell_victim(hitbox.owner_id, -shot.direction, HURT_BULLET, shot.shooter_id, shot.shot_id)
 	var shooter_id: int = bullet.shot.shooter_id
 	if shooter_id == multiplayer.get_unique_id():
 		hit_confirmed.emit(bullet.shot.key(), at)
@@ -187,12 +202,26 @@ func _on_hit_predicted(bullet: Bullet, at: Vector2, hitbox: HitboxComponent) -> 
 	EventBus.hit_predicted.emit(bullet.shot, at, hitbox.get_parent())
 
 
-## `from_direction` points from the victim toward where the bullet came from.
-func _tell_victim(victim_id: int, from_direction: Vector2, shot: Shot) -> void:
+## Host: an enemy's touch hit a player: tell them which way it came from.
+func _on_contact_hit(enemy: Node2D, hitbox: Node) -> void:
+	var victim := hitbox as HitboxComponent
+	var chaser := enemy as ChaserEnemy
+	if victim == null or chaser == null:
+		return
+	var from_direction: Vector2 = victim.center().direction_to(chaser.global_position)
+	var judged: int = chaser.judged_tick(victim)
+	_tell_victim(victim.owner_id, from_direction, HURT_CONTACT, chaser.shooter_id(), judged)
+
+
+## `from_direction` points from the victim toward where the hit came from; `detail` is the
+## shot id for a bullet, the judged tick for a touch (see encode_hurt).
+func _tell_victim(
+	victim_id: int, from_direction: Vector2, source: int, shooter_id: int, detail: int
+) -> void:
 	if victim_id == multiplayer.get_unique_id():
 		EventBus.local_player_hurt.emit(from_direction)
 	elif victim_id in multiplayer.get_peers():
-		var payload: PackedByteArray = encode_hurt(from_direction, shot.shooter_id, shot.shot_id)
+		var payload: PackedByteArray = encode_hurt(source, from_direction, shooter_id, detail)
 		NetworkManager.channel.send_event(victim_id, TOPIC, payload)
 
 
@@ -216,7 +245,7 @@ func _forget_old_hurts(now: float, window: float) -> void:
 func _on_hurt(hurt: Array) -> void:
 	if hurt.is_empty():
 		return
-	if _hurt_shown.has(hurt[1]):
+	if not hurt[1].is_empty() and _hurt_shown.has(hurt[1]):
 		_hurt_shown.erase(hurt[1])
 		return
 	EventBus.local_player_hurt.emit(hurt[0])

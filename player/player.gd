@@ -179,7 +179,11 @@ func _physics_process(_delta: float) -> void:
 		if timeline != null:
 			var hittable: bool = is_alive and _hitbox.monitorable
 			timeline.record(
-				command.client_tick, NetworkManager.clock.tick, _hitbox.center(), hittable
+				command.client_tick,
+				NetworkManager.clock.tick,
+				_hitbox.center(),
+				hittable,
+				command.view_tick
 			)
 	if bot == null and peer_id != multiplayer.get_unique_id():
 		NetworkManager.stats.report_inputs(peer_id, display_name, _commands)
@@ -326,7 +330,8 @@ func _ready_as_host() -> void:
 	_health.died.connect(_on_died)
 	NetworkManager.channel.commands_received.connect(_on_commands_received)
 	if bot == null and peer_id != multiplayer.get_unique_id():
-		timeline = PlayerTimeline.new(NetworkManager.lag_compensator.max_rewind_ticks())
+		var lag: LagCompensator = NetworkManager.lag_compensator
+		timeline = PlayerTimeline.new(lag.max_rewind_ticks(), lag.victim_rewind_ticks())
 	add_to_group(Groups.LIVING_PLAYERS)
 
 

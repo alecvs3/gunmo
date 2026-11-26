@@ -32,6 +32,9 @@ var modifier_mask: int = 0
 var status := EnemyStatus.new()
 
 var _attack_cooldown_left: float = 0.0
+## Host, fair contact: player hitbox -> the tick of that player's own timeline its last touch
+## was judged on (only remote humans are judged that way).
+var _judged_ticks: Dictionary = {}
 var _shots_fired: int = 0
 ## Host: the boss phase it is in (always 0 for other enemies).
 var _phase: int = 0
@@ -323,6 +326,7 @@ func _dash_into_players() -> void:
 	for hitbox in touching:
 		var away: Vector2 = global_position.direction_to(hitbox.center())
 		hitbox.hit(attack.damage, 0, away * attack.knockback)
+		EventBus.contact_hit.emit(self, hitbox)
 	_dash.hit_player()
 
 
@@ -373,14 +377,68 @@ func _add_look() -> void:
 	add_child(_look_layer)
 
 
-## Player hitboxes in the contact area.
+## Host: the tick of the victim's own timeline its last touch on `hitbox` was judged on, or -1
+## (not judged on their view: the host's own player, a bot, or fair contact off).
+func judged_tick(hitbox: HitboxComponent) -> int:
+	return _judged_ticks.get(hitbox, -1)
+
+
+## The player hitboxes it touches. With the mode's LatencyPolicy.fair_contact on, a remote human
+## is touched only if, where they saw this enemy, it touched where their own inputs put them
+## (ContactJudge); everyone else (the host's own player, bots) by the contact area's overlap.
 func _touching_hitboxes() -> Array[HitboxComponent]:
-	var touching: Array[HitboxComponent] = []
+	_judged_ticks.clear()
+	var overlapping: Array[HitboxComponent] = []
 	for area in _contact_area.get_overlapping_areas():
 		var hitbox := area as HitboxComponent
 		if hitbox != null:
+			overlapping.append(hitbox)
+	if not NetworkManager.latency_policy.fair_contact:
+		return overlapping
+	var touching: Array[HitboxComponent] = []
+	var remote: Array[Player] = _remote_humans()
+	for hitbox in overlapping:
+		if remote.all(func(player: Player) -> bool: return player.get_hitbox() != hitbox):
 			touching.append(hitbox)
+	for player in remote:
+		if _touches_as_seen(player):
+			touching.append(player.get_hitbox())
 	return touching
+
+
+## Living players whose inputs carry their own timeline (remote humans).
+func _remote_humans() -> Array[Player]:
+	var found: Array[Player] = []
+	for node in get_tree().get_nodes_in_group(Groups.LIVING_PLAYERS):
+		var player := node as Player
+		if player != null and player.timeline != null:
+			found.append(player)
+	return found
+
+
+## Fair contact for one remote human: at their newest input, where they saw this enemy.
+func _touches_as_seen(player: Player) -> bool:
+	var stamp: int = player.timeline.newest_tick()
+	if stamp < 0:
+		return false
+	var them: PositionHistory.Place = player.timeline.history.sample(stamp)
+	if not them.hittable:
+		return false
+	var lag: LagCompensator = NetworkManager.lag_compensator
+	var me: PositionHistory.Place = lag.position_at(
+		$HitboxComponent, player.timeline.view_at(stamp)
+	)
+	var radius: float = player.get_hitbox().circle_radius()
+	if not ContactJudge.touches(me.position, _contact_half(), them.position, radius):
+		return false
+	_judged_ticks[player.get_hitbox()] = stamp
+	return true
+
+
+## Half the size of the contact square, scaled like the body (_scale_body).
+func _contact_half() -> Vector2:
+	var shape := $ContactArea/CollisionShape2D as CollisionShape2D
+	return (shape.shape as RectangleShape2D).size * shape.scale / 2.0
 
 
 func _on_died(killer_peer_id: int) -> void:
