@@ -39,6 +39,9 @@ const SNAP_TICKS: float = 6.0
 
 var shot: Shot
 var mode: Mode = Mode.AUTHORITATIVE
+## REMOTE: sent ahead of time by a locked wind-up volley (EVENT_SCHEDULED): hidden until its
+## fire_tick, then drawn on the present at once (it needs no catch-up). Set before it's added.
+var scheduled: bool = false
 
 var _age_ticks: float = 0.0
 var _done: bool = false
@@ -117,9 +120,12 @@ func _ready() -> void:
 		set_physics_process(false)
 		hide()
 		var own: Player = Player.find_local(get_tree())
-		_catches_up = own != null and passes_near(shot, own.global_position, THREAT_DISTANCE)
-		if _catches_up:
+		var near: bool = own != null and passes_near(shot, own.global_position, THREAT_DISTANCE)
+		_catches_up = near or scheduled
+		if near:
 			_plan_catch_up(own)
+		if scheduled:
+			_catch_up_ticks = 0.0
 		return
 	set_process(false)
 	if mode == Mode.AUTHORITATIVE:

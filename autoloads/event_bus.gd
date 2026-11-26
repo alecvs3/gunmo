@@ -27,6 +27,12 @@ signal enemy_split(enemy: Node2D, into: Resource, count: int)
 ## Shot signals are typed RefCounted, not Shot: an autoload signal typed with a script class
 ## keeps that script alive past shutdown in Godot 4.7 (leak warnings at exit).
 signal shot_fired(shot: RefCounted)
+## Host: an enemy locked a wind-up volley's aim: these Shots (an Array) leave at their
+## fire_tick, a moment from now. The ProjectileSystem sends them to every peer ahead of time
+## (LatencyPolicy.schedule_windup_shots); shot_fired follows for each when they leave.
+signal shots_scheduled(shots: Array)
+## Host: scheduled Shots that will never leave (the enemy died or the match reset first).
+signal shots_cancelled(shots: Array)
 ## Owner client: our own player fired (a predicted Shot). The ProjectileSystem shows it at
 ## once; the host decides what it hits.
 signal shot_predicted(shot: RefCounted)

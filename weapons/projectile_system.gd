@@ -10,6 +10,9 @@ extends Node
 ## it came from (EVENT_HURT, for the hit-direction marker and hurt sound). A bot's or enemy's
 ## bullet that visibly reaches our own player plays that at once (Bullet.reached_us, with the
 ## mode's LatencyPolicy.predict_own_hurt on); the host's EVENT_HURT for it then plays nothing.
+## A locked wind-up volley's shots (EventBus.shots_scheduled) reach every peer ahead of time
+## (EVENT_SCHEDULED): they wait hidden, with an AimLine each, and leave on their fire tick, so
+## they are on the present from the first frame; the later EVENT_FIRED for them is ignored.
 ## An enemy's touch (EventBus.contact_hit) is told the same way, naming the enemy and the tick
 ## of the victim's own timeline it was judged on.
 ## Announcements are reliable NetChannel events, so no bullet is ever missed or left flying.
@@ -35,6 +38,7 @@ const EVENT_ENDED: int = 2
 const EVENT_HIT: int = 3
 const EVENT_HURT: int = 4
 const EVENT_BLAST: int = 5
+const EVENT_SCHEDULED: int = 6
 ## What an EVENT_HURT is about.
 const HURT_BULLET: int = 0
 const HURT_CONTACT: int = 1
@@ -44,6 +48,8 @@ const HURT_CONTACT: int = 1
 var _bullets: Dictionary = {}
 ## Client: shot key -> seconds when its hurt was shown before the host's EVENT_HURT.
 var _hurt_shown: Dictionary = {}
+## Every peer: shot key -> the AimLine of a scheduled shot that hasn't left yet.
+var _aims: Dictionary = {}
 
 
 ## EVENT_HURT: the victim is told what hit it and from where. A bullet (HURT_BULLET) names its
@@ -82,6 +88,8 @@ func _ready() -> void:
 		EventBus.shot_fired.connect(_on_shot_fired)
 		EventBus.blast_requested.connect(_broadcast_blast)
 		EventBus.contact_hit.connect(_on_contact_hit)
+		EventBus.shots_scheduled.connect(_on_shots_scheduled)
+		EventBus.shots_cancelled.connect(_on_shots_cancelled)
 	else:
 		EventBus.shot_predicted.connect(_spawn.bind(Bullet.Mode.PREDICTED))
 		NetworkManager.channel.event_received.connect(_on_event_received)
@@ -101,11 +109,56 @@ func _on_shot_fired(shot: Shot) -> void:
 			NetworkManager.channel.send_event(peer_id, TOPIC, buffer.data_array)
 
 
-func _spawn(shot: Shot, mode: Bullet.Mode) -> void:
+## Host: a locked volley: show its aim and send its shots to everyone now.
+func _on_shots_scheduled(shots: Array) -> void:
+	for shot: Shot in shots:
+		_show_aim(shot)
+		var buffer := StreamPeerBuffer.new()
+		buffer.put_u8(EVENT_SCHEDULED)
+		shot.encode(buffer)
+		for peer_id in multiplayer.get_peers():
+			NetworkManager.channel.send_event(peer_id, TOPIC, buffer.data_array)
+
+
+## Host: a locked volley that will never leave: end its waiting copies everywhere.
+func _on_shots_cancelled(shots: Array) -> void:
+	for shot: Shot in shots:
+		_hide_aim(shot.key())
+		_announce_end(shot, shot.origin, shot.fire_tick, false)
+
+
+func _show_aim(shot: Shot) -> void:
+	var aim := AimLine.new()
+	aim.setup(shot)
+	_aims[shot.key()] = aim
+	aim.tree_exited.connect(_forget_aim.bind(shot.key()))
+	projectiles_root.add_child(aim)
+
+
+func _forget_aim(key: String) -> void:
+	_aims.erase(key)
+
+
+func _hide_aim(key: String) -> void:
+	var aim: AimLine = _aims.get(key)
+	if aim != null:
+		aim.queue_free()
+
+
+## Client: a locked volley's shot, ahead of time.
+func _on_scheduled(shot: Shot) -> void:
+	if _bullets.has(shot.key()):
+		return
+	_spawn(shot, Bullet.Mode.REMOTE, true)
+	_show_aim(shot)
+
+
+func _spawn(shot: Shot, mode: Bullet.Mode, scheduled: bool = false) -> void:
 	var kind: int = clampi(shot.projectile, 0, PROJECTILE_SCENES.size() - 1)
 	var scene: PackedScene = PROJECTILE_SCENES[kind]
 	var bullet: Bullet = scene.instantiate()
 	bullet.setup(shot, mode)
+	bullet.scheduled = scheduled
 	bullet.finished.connect(_on_bullet_finished)
 	bullet.hit_landed.connect(_on_bullet_hit)
 	if mode == Bullet.Mode.AUTHORITATIVE:
@@ -127,10 +180,15 @@ func _on_bullet_finished(
 		return
 	if not hit_something:
 		_explode(bullet.shot, end_point, null)
+	_announce_end(bullet.shot, end_point, end_tick, hit_something)
+
+
+## Host: tell every peer where and when a shot ended (EVENT_ENDED).
+func _announce_end(shot: Shot, end_point: Vector2, end_tick: float, hit_something: bool) -> void:
 	var buffer := StreamPeerBuffer.new()
 	buffer.put_u8(EVENT_ENDED)
-	buffer.put_32(bullet.shot.shooter_id)
-	buffer.put_u32(bullet.shot.shot_id)
+	buffer.put_32(shot.shooter_id)
+	buffer.put_u32(shot.shot_id)
 	NetCodec.put_vector2(buffer, end_point)
 	buffer.put_double(end_tick)
 	buffer.put_u8(1 if hit_something else 0)
@@ -257,7 +315,11 @@ func _on_event_received(topic: int, data: PackedByteArray) -> void:
 	var buffer: StreamPeerBuffer = NetCodec.buffer_from(data)
 	match buffer.get_u8():
 		EVENT_FIRED:
-			_spawn(Shot.decode(buffer), Bullet.Mode.REMOTE)
+			var shot: Shot = Shot.decode(buffer)
+			if not _bullets.has(shot.key()):
+				_spawn(shot, Bullet.Mode.REMOTE)
+		EVENT_SCHEDULED:
+			_on_scheduled(Shot.decode(buffer))
 		EVENT_ENDED:
 			_on_shot_ended(buffer)
 		EVENT_HIT:
@@ -276,6 +338,7 @@ func _on_shot_ended(buffer: StreamPeerBuffer) -> void:
 	var end_point: Vector2 = NetCodec.get_vector2(buffer)
 	var end_tick: float = buffer.get_double()
 	var hit_something: bool = buffer.get_u8() == 1
+	_hide_aim(key)
 	var bullet: Bullet = _bullets.get(key)
 	if bullet != null:
 		bullet.end_at(end_point, end_tick, hit_something)

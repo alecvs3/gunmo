@@ -19,8 +19,10 @@ extends RefCounted
 const REMOTE: int = 2
 ## Shot.ENEMY_SHOOTER_BASE: enemy shooter ids are at or below it (bots' are above, negative).
 const ENEMY_SHOOTER_BASE: int = -(1 << 20)
-## Player hitbox radius + bullet radius + a little slack for blending between ticks (px).
-const ON_PLAYER_DISTANCE: float = 33.0
+## "On our player": within the player's hitbox radius + the bullet's own radius + a little slack
+## for blending between ticks (px): 33 for a 6 px enemy bolt, 35 for an 8 px boss bolt.
+const PLAYER_RADIUS: float = 21.0
+const SLACK: float = 6.0
 ## A missing sample may be filled between samples this many ticks apart.
 const MAX_GAP_TICKS: int = 4
 
@@ -34,6 +36,9 @@ var hidden: int = 0
 var never_drawn: int = 0
 ## Hits where the host's hit point was not on our player as our screen had it (see above).
 var displaced: int = 0
+## Shooter id -> [drawn on us, judged] for every judged hit except displaced ones (scenario I
+## reads one enemy's share from it).
+var by_shooter: Dictionary = {}
 
 ## Tick -> our player's hitbox centre, and tick -> usec it was recorded (the scene script's).
 var _own_positions: Dictionary
@@ -42,6 +47,8 @@ var _tick_usec: Dictionary
 var _add: Callable
 ## Shot key -> {tick: where we drew it}.
 var _drawn: Dictionary = {}
+## Shot key -> the bullet's radius.
+var _radius: Dictionary = {}
 ## Shot key -> usec our hurt sound played for it.
 var _hurt_usec: Dictionary = {}
 ## Shot key -> usec it reached us on our screen (before the host's EVENT_HURT).
@@ -65,6 +72,7 @@ func record(tick: int, projectiles: Node) -> void:
 		if bullet.get("mode") != REMOTE or not (bullet as Node2D).visible:
 			continue
 		var key: String = bullet.get("shot").call("key")
+		_radius[key] = bullet.get("shot").get("radius")
 		var track: Dictionary = _drawn.get(key, {})
 		track[tick] = (bullet as Node2D).global_position
 		_drawn[key] = track
@@ -91,18 +99,24 @@ func on_ended(buffer: StreamPeerBuffer) -> void:
 	_hurt_usec.erase(key)
 	if not _own_positions.has(tick):
 		return
-	var where_we_saw_us: bool = _on_player(end_point, tick)
+	var reach: float = PLAYER_RADIUS + float(_radius.get(key, 6.0)) + SLACK
+	var where_we_saw_us: bool = _on_player(end_point, tick, reach)
 	_judge_fair(shooter_id, where_we_saw_us)
 	var track: Dictionary = _drawn.get(key, {})
+	if not where_we_saw_us and not track.is_empty():
+		displaced += 1
+		return
+	var drawn: Vector2 = _drawn_at(track, tick)
+	var seen: bool = drawn.is_finite() and _on_player(drawn, tick, reach)
+	var counts: Array = by_shooter.get(shooter_id, [0, 0])
+	by_shooter[shooter_id] = [counts[0] + (1 if seen else 0), counts[1] + 1]
 	if track.keys().filter(func(t: int) -> bool: return t <= tick).is_empty():
 		never_drawn += 1
-	elif not where_we_saw_us:
-		displaced += 1
-	elif _drawn_at(track, tick).is_finite() and _on_player(_drawn_at(track, tick), tick):
+	elif seen:
 		visible += 1
 	else:
 		hidden += 1
-	var first: int = _first_touch(track)
+	var first: int = _first_touch(track, reach)
 	if first >= 0 and _tick_usec.has(first):
 		_add.call("hurt_feedback_ms", (hurt_usec - int(_tick_usec[first])) / 1000.0)
 
@@ -141,8 +155,8 @@ func _judge_fair(shooter_id: int, fair: bool) -> void:
 		bot_unfair += 0 if fair else 1
 
 
-func _on_player(point: Vector2, tick: int) -> bool:
-	return (_own_positions[tick] as Vector2).distance_to(point) <= ON_PLAYER_DISTANCE
+func _on_player(point: Vector2, tick: int, reach: float) -> bool:
+	return (_own_positions[tick] as Vector2).distance_to(point) <= reach
 
 
 ## Where we drew a bullet at our own `tick`. Rendered frames and ticks don't line up (a slow
@@ -164,10 +178,10 @@ func _drawn_at(track: Dictionary, tick: int) -> Vector2:
 
 
 ## The first tick a bullet was drawn on our player (-1 = never).
-func _first_touch(track: Dictionary) -> int:
+func _first_touch(track: Dictionary, reach: float) -> int:
 	var ticks: Array = track.keys()
 	ticks.sort()
 	for tick: int in ticks:
-		if _own_positions.has(tick) and _on_player(track[tick], tick):
+		if _own_positions.has(tick) and _on_player(track[tick], tick, reach):
 			return tick
 	return -1

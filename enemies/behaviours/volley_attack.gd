@@ -53,9 +53,22 @@ func add_stats(stats: EnemyStats, weight: float) -> void:
 
 
 func perform(enemy: Node2D, target: Node2D, _touching: Array[HitboxComponent]) -> bool:
+	var shots: Array[Shot] = build_shots(enemy, target, NetworkManager.clock.server_tick_now())
+	for shot in shots:
+		EventBus.shot_fired.emit(shot)
+	return not shots.is_empty()
+
+
+func schedules_shots(aim_lock: float) -> bool:
+	return weapon != null and windup >= aim_lock
+
+
+## Host: one volley's shots, leaving at `fire_tick` from where the enemy stands now.
+func build_shots(enemy: Node2D, target: Node2D, fire_tick: float) -> Array[Shot]:
+	var shots: Array[Shot] = []
 	var shooter := enemy as ChaserEnemy
 	if shooter == null or (target == null and not is_ring()):
-		return false
+		return shots
 	var aim: Vector2 = Vector2.RIGHT.rotated(shooter.next_shot_id() * 0.37)
 	if target != null:
 		aim = enemy.global_position.direction_to(target.global_position)
@@ -65,7 +78,7 @@ func perform(enemy: Node2D, target: Node2D, _touching: Array[HitboxComponent]) -
 		shot.team = ChaserEnemy.TEAM
 		shot.shooter_id = shooter.shooter_id()
 		shot.shot_id = shooter.next_shot_id()
-		shot.fire_tick = NetworkManager.clock.server_tick_now()
-		shot.view_tick = shot.fire_tick
-		EventBus.shot_fired.emit(shot)
-	return true
+		shot.fire_tick = fire_tick
+		shot.view_tick = fire_tick
+		shots.append(shot)
+	return shots
