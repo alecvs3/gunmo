@@ -7,6 +7,8 @@ extends Node
 const CHASER_SCENE: PackedScene = preload("res://enemies/chaser.tscn")
 ## Group members spawn on a ring this far around the group's point (px).
 const GROUP_SPREAD: float = 26.0
+## Room left between a split or summoned enemy and its parent or siblings (px).
+const SPLIT_GAP: float = 4.0
 
 ## The enemy health this wave planned (its queue at the start; pets measure against it).
 var planned_health: int = 0
@@ -72,12 +74,26 @@ static func count_alive(enemies: Array[Node]) -> int:
 	return count
 
 
-## Where `count` split enemies appear around the point `at` where their parent died.
-static func split_positions(at: Vector2, count: int) -> Array[Vector2]:
+## Where `count` split or summoned enemies appear around their parent at `at`: on a ring just
+## outside the parent's body and far enough apart that they don't touch each other either.
+## `parent_reach` and `child_reach`: ChaserEnemy.body_reach of each.
+static func split_positions(
+	at: Vector2, count: int, parent_reach: float, child_reach: float
+) -> Array[Vector2]:
+	var radius: float = split_radius(count, parent_reach, child_reach)
 	var positions: Array[Vector2] = []
 	for index in count:
-		positions.append(at + group_offset(index + 1, count + 1))
+		positions.append(at + Vector2.RIGHT.rotated(TAU * index / count) * radius)
 	return positions
+
+
+## Pure: the ring's radius for split_positions (px).
+static func split_radius(count: int, parent_reach: float, child_reach: float) -> float:
+	var clear_of_parent: float = parent_reach + child_reach + SPLIT_GAP
+	if count < 2:
+		return clear_of_parent
+	var clear_of_siblings: float = (child_reach + SPLIT_GAP / 2.0) / sin(PI / count)
+	return maxf(clear_of_parent, clear_of_siblings)
 
 
 func _ready() -> void:
@@ -156,8 +172,19 @@ func _on_enemy_split(enemy: Node2D, into: Resource, count: int) -> void:
 	var parent := enemy as ChaserEnemy
 	if _level == null or data == null or parent == null:
 		return
-	for at in split_positions(enemy.global_position, count):
-		_spawn(data, at, parent.modifier_mask)
+	var parent_reach: float = ChaserEnemy.body_reach(parent.enemy_data)
+	var child_reach: float = ChaserEnemy.body_reach(data)
+	for at in split_positions(enemy.global_position, count, parent_reach, child_reach):
+		_spawn(data, _walkable(at), parent.modifier_mask)
+
+
+## Host: the nearest point enemies can walk to (so a spot next to a wall isn't inside it).
+## Unchanged while the level's navigation isn't ready.
+func _walkable(at: Vector2) -> Vector2:
+	var map: RID = _level.get_world_2d().navigation_map
+	if NavigationServer2D.map_get_iteration_id(map) == 0:
+		return at
+	return NavigationServer2D.map_get_closest_point(map, at)
 
 
 ## Host: the final boss died, so the rest of its wave goes with it (the wave is won).

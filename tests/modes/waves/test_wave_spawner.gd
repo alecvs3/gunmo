@@ -43,8 +43,42 @@ func test_group_members_stand_apart() -> void:
 
 func test_split_positions_are_around_the_parent() -> void:
 	var at := Vector2(500, 300)
-	var spots: Array[Vector2] = WaveSpawner.split_positions(at, 2)
+	var spots: Array[Vector2] = WaveSpawner.split_positions(at, 2, 20.0, 20.0)
 	assert_eq(spots.size(), 2)
 	assert_ne(spots[0], spots[1])
 	for spot in spots:
-		assert_almost_eq(spot.distance_to(at), WaveSpawner.GROUP_SPREAD, 0.01)
+		assert_almost_eq(spot.distance_to(at), WaveSpawner.split_radius(2, 20.0, 20.0), 0.01)
+
+
+func test_summons_appear_outside_the_brood_mother() -> void:
+	var boss: EnemyData = load("res://enemies/data/bosses/brood_mother.tres")
+	var swarmer: EnemyData = load("res://enemies/data/swarmer.tres")
+	var at := Vector2(500, 300)
+	var spots: Array[Vector2] = WaveSpawner.split_positions(
+		at, 4, ChaserEnemy.body_reach(boss), ChaserEnemy.body_reach(swarmer)
+	)
+	for spot in spots:
+		assert_false(_boxes_overlap(at, boss, spot, swarmer), "a summon starts clear of the boss")
+
+
+func test_many_children_stand_apart() -> void:
+	var small: EnemyData = load("res://enemies/data/splitling.tres")
+	var spots: Array[Vector2] = WaveSpawner.split_positions(
+		Vector2.ZERO, 12, ChaserEnemy.body_reach(small), ChaserEnemy.body_reach(small)
+	)
+	for i in spots.size():
+		for j in range(i + 1, spots.size()):
+			assert_false(_boxes_overlap(spots[i], small, spots[j], small), "siblings start apart")
+
+
+func test_body_reach_matches_the_scene() -> void:
+	var enemy: ChaserEnemy = load("res://enemies/chaser.tscn").instantiate()
+	var shape := (enemy.get_node("CollisionShape2D") as CollisionShape2D).shape as RectangleShape2D
+	assert_eq(shape.size, Vector2.ONE * ChaserEnemy.BODY_HALF_SIZE * 2.0)
+	enemy.free()
+
+
+## Whether two enemies' collision boxes (axis-aligned squares) overlap.
+func _boxes_overlap(a: Vector2, a_data: EnemyData, b: Vector2, b_data: EnemyData) -> bool:
+	var reach: float = ChaserEnemy.BODY_HALF_SIZE * (a_data.body_scale + b_data.body_scale)
+	return absf(a.x - b.x) < reach and absf(a.y - b.y) < reach
