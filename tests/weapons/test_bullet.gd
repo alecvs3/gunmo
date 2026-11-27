@@ -210,3 +210,15 @@ func test_pierced_target_is_not_hit_twice() -> void:
 	var only: Dictionary = _make_target(Vector2(30, 0), 100)
 	_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 30)
 	assert_eq((only["health"] as HealthComponent).current_health, 65)
+
+
+## Pellets on one tick: an earlier one killed the front enemy, which is only freed at the end
+## of the frame. The next pellet flies through it to the enemy behind instead of being wasted.
+func test_a_target_killed_this_tick_lets_the_next_bullet_through() -> void:
+	var front: Dictionary = _make_target(Vector2(30, 0), 20)
+	var behind: Dictionary = _make_target(Vector2(80, 0), 100)
+	_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 30)
+	assert_true((front["health"] as HealthComponent).is_dead(), "the first bullet kills it")
+	assert_eq((behind["health"] as HealthComponent).current_health, 100, "and stops there")
+	_tick(_fire(Vector2.ZERO, Vector2.RIGHT), 30)
+	assert_eq((behind["health"] as HealthComponent).current_health, 65, "through the dead one")
