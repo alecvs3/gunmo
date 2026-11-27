@@ -1449,7 +1449,10 @@ grunt about 230 px, almost out of the shotgun's own 300 px range.
 |---|---|---|
 | Damage 9 → 13 per pellet (78 per blast, about 101 per second up close), spread 26° → 18°, push 160 → 50 per pellet; per level: damage +1 → +2, knockback +30 → +10 | Done, tested | `weapons/data/shotgun.tres` |
 | Test: a full blast beats the pistol, kills a grunt and keeps it in range | Done | `tests/weapons/test_weapon_set.gd` |
+| Pellets aren't wasted on a dead enemy: the host's bullet flies through a target an earlier bullet killed this tick (it is only freed at the end of the frame) and can hit the one behind. Every gun, mostly felt with the shotgun | Done, tested | `weapons/bullet.gd`, `tests/weapons/test_bullet.gd` |
 
 ### Known limitations
 - Numbers checked on paper only, not played yet. Past about 200 px it still falls behind the SMG
   (by design).
+- Your own screen can't know the front enemy died, so your drawn pellet may still stop on it while
+  the host's goes through (the damage number then shows on the enemy behind).
