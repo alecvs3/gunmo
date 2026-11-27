@@ -42,6 +42,21 @@ func test_weapons_play_differently() -> void:
 		assert_gt(weapon.price, 0, weapon.display_name + " costs credits")
 
 
+## A full blast up close (every pellet hits) out-damages the free pistol, kills a grunt, and
+## pushes it only a little: pushes add up per pellet, and a big one threw targets out of range.
+func test_shotgun_wins_up_close() -> void:
+	var shotgun: WeaponData = _named("Shotgun")
+	var pistol: WeaponData = _named("Pistol")
+	var grunt: EnemyData = load("res://enemies/data/grunt.tres")
+	var blast: int = shotgun.damage * shotgun.pellets
+	assert_gt(blast * shotgun.fire_rate, pistol.damage * pistol.fire_rate, "beats the pistol")
+	assert_gte(blast, grunt.max_health, "a full blast kills a grunt")
+	var push: float = shotgun.knockback * shotgun.pellets * grunt.knockback_taken
+	var slide: float = push * push / (2.0 * grunt.knockback_friction)
+	var shotgun_range: float = shotgun.bullet_speed * shotgun.bullet_lifetime
+	assert_lt(slide, shotgun_range * 0.25, "a blast keeps the grunt in range")
+
+
 func test_index_is_clamped() -> void:
 	assert_eq(catalog.weapon(-5), catalog.weapons[0])
 	assert_eq(catalog.weapon(999), catalog.weapons.back())

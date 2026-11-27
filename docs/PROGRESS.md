@@ -1438,3 +1438,18 @@ test only recorded where the client was at T, so hits on the other ticks were si
 - **A client at 20 fps gets fewer of its own hits confirmed** (81–93%, budget 90%): its own bullet
   is tested against bots frozen for a slow frame, the host's against bots moving every tick. Not seen
   on CI (96%+); the game side is in `weapons/`.
+
+## Shotgun buff ✅ (#199)
+
+The shotgun did less damage than the free pistol even when every pellet hit, its 26° cone wasted
+pellets past about 90 px, and its push added up per pellet (960 px/s for a full blast), which slid a
+grunt about 230 px, almost out of the shotgun's own 300 px range.
+
+| What | Status | Where |
+|---|---|---|
+| Damage 9 → 13 per pellet (78 per blast, about 101 per second up close), spread 26° → 18°, push 160 → 50 per pellet; per level: damage +1 → +2, knockback +30 → +10 | Done, tested | `weapons/data/shotgun.tres` |
+| Test: a full blast beats the pistol, kills a grunt and keeps it in range | Done | `tests/weapons/test_weapon_set.gd` |
+
+### Known limitations
+- Numbers checked on paper only, not played yet. Past about 200 px it still falls behind the SMG
+  (by design).
