@@ -1457,6 +1457,20 @@ grunt about 230 px, almost out of the shotgun's own 300 px range.
 - Your own screen can't know the front enemy died, so your drawn pellet may still stop on it while
   the host's goes through (the damage number then shows on the enemy behind).
 
+## CI runs only the scoped smoke scenarios again ✅ (#204)
+
+CI downloaded the Godot zip into the repository folder. `check.ps1 -Changed` counts untracked files
+as changed (handy locally), and the zip matched no rule in `tools/check_scope.json`, so every pull
+request ran all smoke scenarios, including the timing ones (F, G, H, I) that sometimes fail on
+GitHub's machines.
+
+| What | Status | Where |
+|---|---|---|
+| The Godot zip is downloaded into the runner's temp folder, outside the repository | Done | `.github/workflows/checks.yml` |
+
+### Known limitations
+- This PR itself still runs every scenario (it changes `.github/`); the next normal PR shows the fix.
+
 ## Summons and splits spawn outside their parent ✅ (#201)
 
 The Brood Mother's Swarmers (and any enemy's split children) appeared 26 px from its centre, deep
