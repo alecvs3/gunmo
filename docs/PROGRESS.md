@@ -1438,3 +1438,21 @@ test only recorded where the client was at T, so hits on the other ticks were si
 - **A client at 20 fps gets fewer of its own hits confirmed** (81–93%, budget 90%): its own bullet
   is tested against bots frozen for a slow frame, the host's against bots moving every tick. Not seen
   on CI (96%+); the game side is in `weapons/`.
+
+## Shotgun buff ✅ (#199)
+
+The shotgun did less damage than the free pistol even when every pellet hit, its 26° cone wasted
+pellets past about 90 px, and its push added up per pellet (960 px/s for a full blast), which slid a
+grunt about 230 px, almost out of the shotgun's own 300 px range.
+
+| What | Status | Where |
+|---|---|---|
+| Damage 9 → 13 per pellet (78 per blast, about 101 per second up close), spread 26° → 18°, push 160 → 50 per pellet; per level: damage +1 → +2, knockback +30 → +10 | Done, tested | `weapons/data/shotgun.tres` |
+| Test: a full blast beats the pistol, kills a grunt and keeps it in range | Done, played in a window | `tests/weapons/test_weapon_set.gd` |
+| Pellets aren't wasted on a dead enemy: the host's bullet flies through a target an earlier bullet killed this tick (it is only freed at the end of the frame) and can hit the one behind. Every gun, mostly felt with the shotgun | Done, tested | `weapons/bullet.gd`, `tests/weapons/test_bullet.gd` |
+
+### Known limitations
+- Played in a window on one PC (host only), not yet over a network. Past about 200 px it still
+  falls behind the SMG (by design).
+- Your own screen can't know the front enemy died, so your drawn pellet may still stop on it while
+  the host's goes through (the damage number then shows on the enemy behind).

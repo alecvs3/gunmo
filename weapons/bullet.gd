@@ -229,10 +229,24 @@ func _find_target(from: Vector2, to: Vector2) -> LagCompensator.Hit:
 	var at_tick: float = LagCompensator.PRESENT
 	if mode == Mode.AUTHORITATIVE:
 		at_tick = lag.clamped_tick(shot.view_tick + _age_ticks)
-	var skip: Array[HitboxComponent] = _already_hit
+	var skip: Array[HitboxComponent] = _already_hit.duplicate()
 	if _timeline != null:
-		skip = _already_hit + _timeline.hitboxes()
-	return lag.sweep(from, to, shot.radius, at_tick, shot.team, skip, shot.shooter_id)
+		skip.append_array(_timeline.hitboxes())
+	while true:
+		var hit: LagCompensator.Hit = lag.sweep(
+			from, to, shot.radius, at_tick, shot.team, skip, shot.shooter_id
+		)
+		if hit == null or not _is_dead_on_host(hit.hitbox):
+			return hit
+		skip.append(hit.hitbox)
+	return null
+
+
+## Host: a target an earlier bullet killed this tick (it is freed at the end of the frame) lets
+## the bullet through, so pellets after the kill aren't wasted on it. Clients only see health
+## from snapshots, so they never skip.
+func _is_dead_on_host(hitbox: HitboxComponent) -> bool:
+	return mode == Mode.AUTHORITATIVE and hitbox.health != null and hitbox.health.is_dead()
 
 
 ## Damages (host only) and either stops or, with pierce left, flies on past this target.
