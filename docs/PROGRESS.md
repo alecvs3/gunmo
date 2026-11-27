@@ -1438,3 +1438,18 @@ test only recorded where the client was at T, so hits on the other ticks were si
 - **A client at 20 fps gets fewer of its own hits confirmed** (81–93%, budget 90%): its own bullet
   is tested against bots frozen for a slow frame, the host's against bots moving every tick. Not seen
   on CI (96%+); the game side is in `weapons/`.
+
+## Summons and splits spawn outside their parent ✅ (#201)
+
+The Brood Mother's Swarmers (and any enemy's split children) appeared 26 px from its centre, deep
+inside its 56 px body, so the boss and its brood jammed together and the boss could stop moving.
+
+| What | Status | Where |
+|---|---|---|
+| Children appear on a ring sized from both bodies: clear of the parent and of each other | Done, tested | `modes/waves/wave_spawner.gd` (`split_positions`, `split_radius`), `enemies/chaser.gd` (`body_reach`) |
+| Each spot moves to the nearest walkable point, so none lands in a wall | Done | `modes/waves/wave_spawner.gd` (`_walkable`) |
+
+### Known limitations
+- **Enemies still block each other**, so crowds can queue behind big enemies and clog doorways
+  (#202 replaces this with a soft push apart).
+- A group spawn (Swarmers arriving together) still starts its members 26 px apart, touching.

@@ -15,6 +15,8 @@ const WORLD_MASK: int = 1
 const SELF_DESTRUCT_DAMAGE: int = 100000000
 ## Tint on top of its colour while slowed.
 const FROSTED := Color(0.65, 0.85, 1.3)
+## Half the side of its body's collision box in chaser.tscn, before body_scale (px).
+const BODY_HALF_SIZE: float = 14.0
 
 ## How fast the sprite turns towards its facing (higher = snappier). Looks only.
 @export_range(1.0, 60.0) var turn_rate: float = 12.0
@@ -71,6 +73,11 @@ var _facing_target: float = 0.0
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _contact_area: Area2D = $ContactArea
 @onready var _agent: NavigationAgent2D = $NavigationAgent2D
+
+
+## Pure: how far a `data` enemy's body reaches from its centre at most (its box's corner).
+static func body_reach(data: EnemyData) -> float:
+	return BODY_HALF_SIZE * data.body_scale * sqrt(2.0)
 
 
 func _ready() -> void:
