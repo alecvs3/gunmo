@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://enemies/chaser.gd" id="1_enemy"]
 [ext_resource type="Resource" path="res://enemies/data/grunt.tres" id="2_edata"]
@@ -19,6 +19,9 @@ size = Vector2(32, 32)
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_contact"]
 size = Vector2(36, 36)
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_crowd"]
+radius = 14.0
+
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_spawn"]
 properties/0/path = NodePath("NetEntity:net_id")
 properties/0/spawn = true
@@ -32,7 +35,6 @@ properties/2/replication_mode = 0
 
 [node name="Chaser" type="CharacterBody2D"]
 collision_layer = 4
-collision_mask = 5
 motion_mode = 1
 script = ExtResource("1_enemy")
 enemy_data = ExtResource("2_edata")
@@ -70,6 +72,14 @@ monitorable = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ContactArea"]
 shape = SubResource("RectangleShape2D_contact")
+
+[node name="Crowd" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Crowd"]
+shape = SubResource("CircleShape2D_crowd")
 
 [node name="NavigationAgent2D" type="NavigationAgent2D" parent="."]
 path_desired_distance = 8.0

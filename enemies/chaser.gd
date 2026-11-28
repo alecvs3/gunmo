@@ -17,6 +17,8 @@ const SELF_DESTRUCT_DAMAGE: int = 100000000
 const FROSTED := Color(0.65, 0.85, 1.3)
 ## Half the side of its body's collision box in chaser.tscn, before body_scale (px).
 const BODY_HALF_SIZE: float = 14.0
+## How enemies push each other apart (they don't block each other).
+const CROWD: EnemyCrowd = preload("res://enemies/behaviours/data/crowd.tres")
 
 ## How fast the sprite turns towards its facing (higher = snappier). Looks only.
 @export_range(1.0, 60.0) var turn_rate: float = 12.0
@@ -73,6 +75,7 @@ var _facing_target: float = 0.0
 @onready var _knockback: KnockbackComponent = $KnockbackComponent
 @onready var _contact_area: Area2D = $ContactArea
 @onready var _agent: NavigationAgent2D = $NavigationAgent2D
+@onready var _crowd_area: Area2D = $Crowd
 
 
 ## Pure: how far a `data` enemy's body reaches from its centre at most (its box's corner).
@@ -95,6 +98,7 @@ func _ready() -> void:
 	if not multiplayer.is_server():
 		set_physics_process(false)
 		_contact_area.monitoring = false
+		_crowd_area.monitoring = false
 		return
 	_health.reset()
 	_health.died.connect(_on_died)
@@ -193,7 +197,8 @@ func _move(target: Node2D, delta: float) -> void:
 		if global_position.distance_squared_to(goal) > 1.0:
 			var slow: float = status.speed_factor(NetworkManager.clock.tick)
 			chase = _direction_towards(goal, delta) * _speed * enemy_data.speed_in(_phase) * slow
-	velocity = chase + _knockback.velocity
+	var crowd: Vector2 = Vector2.ZERO if rooted else _crowd_push()
+	velocity = chase + _knockback.velocity + crowd
 	move_and_slide()
 	_knockback.bounce_off_collisions(self)
 	_knockback.step(delta)
@@ -408,8 +413,22 @@ func _scale_body(factor: float) -> void:
 	$HitboxComponent.scale_size(factor)
 	$HitboxComponent/CollisionShape2D.scale = Vector2.ONE * factor
 	$ContactArea/CollisionShape2D.scale = Vector2.ONE * factor
+	$Crowd/CollisionShape2D.scale = Vector2.ONE * factor
 	$CollisionShape2D.scale = Vector2.ONE * factor
 	_telegraph.radius *= factor
+
+
+## Host: the push (px/s) from the enemies it overlaps (EnemyCrowd). Not while it stands still
+## for an attack (a locked volley leaves from where it stands).
+func _crowd_push() -> Vector2:
+	var spots: Array[Vector2] = []
+	var scales: Array[float] = []
+	for body in _crowd_area.get_overlapping_bodies():
+		var other := body as ChaserEnemy
+		if other != null and other != self:
+			spots.append(other.global_position)
+			scales.append(other.enemy_data.body_scale)
+	return CROWD.push(global_position, enemy_data.body_scale, spots, scales, get_instance_id())
 
 
 ## Every peer: its type's extra shapes on the sprite, and a Charger's dash line length.
