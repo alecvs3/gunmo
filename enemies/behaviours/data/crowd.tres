@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="EnemyCrowd" format=3]
+
+[ext_resource type="Script" path="res://enemies/enemy_crowd.gd" id="1_crowd"]
+
+[resource]
+script = ExtResource("1_crowd")
+strength = 25.0
+max_speed = 600.0

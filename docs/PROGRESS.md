@@ -1485,3 +1485,20 @@ inside its 56 px body, so the boss and its brood jammed together and the boss co
 - **Enemies still block each other**, so crowds can queue behind big enemies and clog doorways
   (#202 replaces this with a soft push apart).
 - A group spawn (Swarmers arriving together) still starts its members 26 px apart, touching.
+
+## Enemies push apart instead of blocking each other ✅ (#202)
+
+Enemies were solid to each other and their paths only know walls, so small enemies queued behind
+big ones, crowds clogged doorways and knocked-back enemies bounced off their neighbours.
+
+| What | Status | Where |
+|---|---|---|
+| Enemies only collide with walls; a "Crowd" area on each finds the enemies it overlaps (host only) | Done, tested | `enemies/chaser.tscn`, `enemies/chaser.gd` (`_crowd_push`) |
+| Overlapping enemies push each other apart, harder the deeper they overlap; bigger enemies weigh more (area), so a boss shoves small ones aside | Done, tested | `enemies/enemy_crowd.gd`, tuning in `enemies/behaviours/data/crowd.tres` |
+
+### Known limitations
+- **Enemies can briefly overlap** in a dense crowd, and a crowd reaches players a little faster
+  (nobody blocks anybody). Playtest Waves; the push strength and cap are in `crowd.tres`.
+- An enemy standing still for an attack (a Charger winding up, a boss volley locked) isn't pushed;
+  the others make room around it.
+- A Charger's dash now goes through other enemies instead of stopping on them.
